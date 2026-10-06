@@ -103,7 +103,7 @@ public:
      * @param y Wspolrzedna Y komorki.
      * @return true jesli komorka jest przeszkoda, false w przeciwnym razie.
      */
-    [[nodiscard]] constexpr bool operator[](uint32_t x, uint32_t y) const noexcept {
+    [[nodiscard]] inline bool operator[](uint32_t x, uint32_t y) const noexcept {
         return IsObstacle(x, y);
     }
 

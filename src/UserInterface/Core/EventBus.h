@@ -57,6 +57,18 @@ struct NetworkPacketReceivedEvent : public IEvent {
 };
 
 /**
+ * @brief Mount state changed event.
+ */
+struct MountStateChangedEvent : public IEvent {
+    uint32_t charId;
+    uint32_t mountVnum;
+    uint8_t pos;
+
+    MountStateChangedEvent(uint32_t charId = 0, uint32_t mountVnum = 0, uint8_t pos = 0)
+        : charId(charId), mountVnum(mountVnum), pos(pos) {}
+};
+
+/**
  * @brief Type-erased base handler for events.
  */
 class IEventHandler {
@@ -65,9 +77,9 @@ public:
 
     /**
      * @brief Executes the handler with the given event.
-     * @param event The event to process.
+     * @param eventPtr The event pointer to process.
      */
-    virtual void Execute(const IEvent& event) = 0;
+    virtual void Execute(const void* eventPtr) = 0;
 };
 
 /**
@@ -86,11 +98,11 @@ public:
     explicit EventHandler(Callback callback) : callback_(std::move(callback)) {}
 
     /**
-     * @brief Executes the callback, casting the base event to the specific type.
-     * @param event The base event to process.
+     * @brief Executes the callback, casting the raw pointer to the specific type.
+     * @param eventPtr The raw event pointer to process.
      */
-    void Execute(const IEvent& event) override {
-        callback_(static_cast<const EventType&>(event));
+    void Execute(const void* eventPtr) override {
+        callback_(*reinterpret_cast<const EventType*>(eventPtr));
     }
 
 private:
@@ -112,6 +124,10 @@ public:
     static EventBus& GetInstance() {
         static EventBus instance;
         return instance;
+    }
+
+    static EventBus& Instance() {
+        return GetInstance();
     }
 
     /**
@@ -170,7 +186,7 @@ public:
 
         // Execute collected handlers
         for (const auto& handler : handlersToExecute) {
-            handler->Execute(event);
+            handler->Execute(&event);
         }
     }
 
@@ -190,3 +206,7 @@ private:
 };
 
 } // namespace UserInterface::Core
+
+namespace Core {
+    using EventBus = ::UserInterface::Core::EventBus;
+}

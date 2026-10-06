@@ -52,5 +52,13 @@ namespace Core::Events
         int32_t z; ///< The Z coordinate where the item was dropped.
     };
 
+    /**
+     * @brief Represents deleting a targeted entity.
+     */
+    struct TargetDelete
+    {
+        uint32_t targetId;
+    };
+
 #pragma pack(pop)
 } // namespace Core::Events

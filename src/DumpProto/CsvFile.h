@@ -13,28 +13,28 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 /// \class cCsvAlias
-/// \brief CSV ÆÄÀÏÀ» ¼öÁ¤ÇßÀ» ¶§ ¹ß»ýÇÏ´Â ÀÎµ¦½º ¹®Á¦¸¦ ÁÙÀÌ±â À§ÇÑ 
-/// º°¸í °´Ã¼.
+/// \brief CSV \xc6\xc4\xc0\xcf\xc0\xbb \xbc\xf6\xc1\xa4\xc7\xdf\xc0\xbb \xb6\xa7 \xb9ß»\xfd\xc7Ï´\xc2 \xc0Îµ\xa6\xbd\xba \xb9\xae\xc1\xa6\xb8\xa6 \xc1\xd9\xc0Ì±\xe2 \xc0\xa7\xc7\xd1 
+/// \xba\xb0\xb8\xed \xb0\xb4Ã¼.
 ///
-/// ¿¹¸¦ µé¾î 0¹ø ÄÃ·³ÀÌ A¿¡ °üÇÑ ³»¿ëÀ» Æ÷ÇÔÇÏ°í, 1¹ø ÄÃ·³ÀÌ B¿¡ °üÇÑ ³»¿ëÀ» 
-/// Æ÷ÇÔÇÏ°í ÀÖ¾ú´Âµ¥...
+/// \xbf\xb9\xb8\xa6 \xb5\xe9\xbe\xee 0\xb9\xf8 \xc4Ã·\xb3\xc0\xcc A\xbf\xa1 \xb0\xfc\xc7\xd1 \xb3\xbb\xbf\xeb\xc0\xbb \xc6\xf7\xc7\xd4\xc7Ï°\xed, 1\xb9\xf8 \xc4Ã·\xb3\xc0\xcc B\xbf\xa1 \xb0\xfc\xc7\xd1 \xb3\xbb\xbf\xeb\xc0\xbb 
+/// \xc6\xf7\xc7\xd4\xc7Ï°\xed \xc0Ö¾\xfa\xb4Âµ\xa5...
 ///
 /// <pre>
 /// int a = row.AsInt(0);
 /// int b = row.AsInt(1);
 /// </pre>
 ///
-/// ±× »çÀÌ¿¡ C¿¡ °üÇÑ ³»¿ëÀ» Æ÷ÇÔÇÏ´Â ÄÃ·³ÀÌ ³¢¾îµç °æ¿ì, ÇÏµåÄÚµùµÇ¾î ÀÖ´Â 
-/// 1¹øÀ» Ã£¾Æ¼­ °íÃÄ¾ß ÇÏ´Âµ¥, »ó´çÈ÷ ¿¡·¯°¡ ¹ß»ýÇÏ±â ½¬¿î ÀÛ¾÷ÀÌ´Ù. 
+/// \xb1\xd7 \xbb\xe7\xc0Ì¿\xa1 C\xbf\xa1 \xb0\xfc\xc7\xd1 \xb3\xbb\xbf\xeb\xc0\xbb \xc6\xf7\xc7\xd4\xc7Ï´\xc2 \xc4Ã·\xb3\xc0\xcc \xb3\xa2\xbe\xee\xb5\xe7 \xb0\xe6\xbf\xec, \xc7Ïµ\xe5\xc4Úµ\xf9\xb5Ç¾\xee \xc0Ö´\xc2 
+/// 1\xb9\xf8\xc0\xbb Ã£\xbeÆ¼\xad \xb0\xed\xc3Ä¾\xdf \xc7Ï´Âµ\xa5, \xbb\xf3\xb4\xe7\xc8\xf7 \xbf\xa1\xb7\xaf\xb0\xa1 \xb9ß»\xfd\xc7Ï±\xe2 \xbd\xac\xbf\xee \xc0Û¾\xf7\xc0Ì´\xd9. 
 ///
 /// <pre>
 /// int a = row.AsInt(0);
 /// int c = row.AsInt(1);
-/// int b = row.AsInt(2); <-- ÀÌ ºÎºÐÀ» ÀÏÀÏÀÌ ½Å°æ½á¾ß ÇÑ´Ù.
+/// int b = row.AsInt(2); <-- \xc0\xcc \xbaÎº\xd0\xc0\xbb \xc0\xcf\xc0\xcf\xc0\xcc \xbdÅ°\xe6\xbd\xe1\xbe\xdf \xc7Ñ´\xd9.
 /// </pre>
 /// 
-/// ÀÌ ºÎºÐÀ» ¹®ÀÚ¿­·Î Ã³¸®ÇÏ¸é À¯Áöº¸¼ö¿¡ µé¾î°¡´Â ¼ö°í¸¦ ¾à°£ÀÌ³ª¸¶ ÁÙÀÏ ¼ö 
-/// ÀÖ´Ù.
+/// \xc0\xcc \xbaÎº\xd0\xc0\xbb \xb9\xae\xc0Ú¿\xad\xb7\xce Ã³\xb8\xae\xc7Ï¸\xe9 \xc0\xaf\xc1\xf6\xba\xb8\xbc\xf6\xbf\xa1 \xb5\xe9\xbeî°¡\xb4\xc2 \xbc\xf6\xb0\xed\xb8\xa6 \xbeà°£\xc0Ì³\xaa\xb8\xb6 \xc1\xd9\xc0\xcf \xbc\xf6 
+/// \xc0Ö´\xd9.
 ////////////////////////////////////////////////////////////////////////////////
 
 class cCsvAlias
@@ -50,51 +50,51 @@ private:
     typedef std::map<size_t, std::string> INDEX2NAME_MAP;
 #endif
 
-    NAME2INDEX_MAP m_Name2Index;  ///< ¼¿ ÀÎµ¦½º ´ë½ÅÀ¸·Î »ç¿ëÇÏ±â À§ÇÑ ÀÌ¸§µé
-    INDEX2NAME_MAP m_Index2Name;  ///< Àß¸øµÈ alias¸¦ °Ë»çÇÏ±â À§ÇÑ Ãß°¡ÀûÀÎ ¸Ê
+    NAME2INDEX_MAP m_Name2Index;  ///< \xbc\xbf \xc0Îµ\xa6\xbd\xba \xb4\xeb\xbd\xc5\xc0\xb8\xb7\xce \xbb\xe7\xbf\xeb\xc7Ï±\xe2 \xc0\xa7\xc7\xd1 \xc0Ì¸\xa7\xb5\xe9
+    INDEX2NAME_MAP m_Index2Name;  ///< \xc0ß¸\xf8\xb5\xc8 alias\xb8\xa6 \xb0Ë»\xe7\xc7Ï±\xe2 \xc0\xa7\xc7\xd1 \xc3ß°\xa1\xc0\xfb\xc0\xce \xb8\xca
 
 
 public:
-    /// \brief »ý¼ºÀÚ
+    /// \brief \xbb\xfd\xbc\xba\xc0\xda
     cCsvAlias() {} 
 
-    /// \brief ¼Ò¸êÀÚ
+    /// \brief \xbcÒ¸\xea\xc0\xda
     virtual ~cCsvAlias() {}
 
 
 public:
-    /// \brief ¼¿À» ¾×¼¼½ºÇÒ ¶§, ¼ýÀÚ ´ë½Å »ç¿ëÇÒ ÀÌ¸§À» µî·ÏÇÑ´Ù.
+    /// \brief \xbc\xbf\xc0\xbb \xbe×¼\xbc\xbd\xba\xc7\xd2 \xb6\xa7, \xbc\xfd\xc0\xda \xb4\xeb\xbd\xc5 \xbb\xe7\xbf\xeb\xc7\xd2 \xc0Ì¸\xa7\xc0\xbb \xb5\xee\xb7\xcf\xc7Ñ´\xd9.
     void AddAlias(const char* name, size_t index);
 
-    /// \brief ¸ðµç µ¥ÀÌÅÍ¸¦ »èÁ¦ÇÑ´Ù.
+    /// \brief \xb8\xf0\xb5\xe7 \xb5\xa5\xc0\xcc\xc5Í¸\xa6 \xbb\xe8\xc1\xa6\xc7Ñ´\xd9.
     void Destroy();
 
-    /// \brief ¼ýÀÚ ÀÎµ¦½º¸¦ ÀÌ¸§À¸·Î º¯È¯ÇÑ´Ù.
+    /// \brief \xbc\xfd\xc0\xda \xc0Îµ\xa6\xbd\xba\xb8\xa6 \xc0Ì¸\xa7\xc0\xb8\xb7\xce \xba\xafÈ¯\xc7Ñ´\xd9.
     const char* operator [] (size_t index) const;
 
-    /// \brief ÀÌ¸§À» ¼ýÀÚ ÀÎµ¦½º·Î º¯È¯ÇÑ´Ù.
+    /// \brief \xc0Ì¸\xa7\xc0\xbb \xbc\xfd\xc0\xda \xc0Îµ\xa6\xbd\xba\xb7\xce \xba\xafÈ¯\xc7Ñ´\xd9.
     size_t operator [] (const char* name) const;
 
 
 private:
-    /// \brief º¹»ç »ý¼ºÀÚ ±ÝÁö
+    /// \brief \xba\xb9\xbb\xe7 \xbb\xfd\xbc\xba\xc0\xda \xb1\xdd\xc1\xf6
     cCsvAlias(const cCsvAlias&) {}
 
-    /// \brief ´ëÀÔ ¿¬»êÀÚ ±ÝÁö
+    /// \brief \xb4\xeb\xc0\xd4 \xbf\xac\xbb\xea\xc0\xda \xb1\xdd\xc1\xf6
     const cCsvAlias& operator = (const cCsvAlias&) { return *this; }
 };
 
 
 ////////////////////////////////////////////////////////////////////////////////
 /// \class cCsvRow 
-/// \brief CSV ÆÄÀÏÀÇ ÇÑ ÇàÀ» Ä¸½¶È­ÇÑ Å¬·¡½º
+/// \brief CSV \xc6\xc4\xc0\xcf\xc0\xc7 \xc7\xd1 \xc7\xe0\xc0\xbb Ä¸\xbd\xb6È­\xc7\xd1 Å¬\xb7\xa1\xbd\xba
 ///
-/// CSVÀÇ ±âº» Æ÷¸ËÀº ¿¢¼¿¿¡¼­ º¸ÀÌ´Â ÇÏ³ªÀÇ ¼¿À» ',' ¹®ÀÚ·Î ±¸ºÐÇÑ °ÍÀÌ´Ù.
-/// ÇÏÁö¸¸, ¼¿ ¾È¿¡ Æ¯¼ö ¹®ÀÚ·Î ¾²ÀÌ´Â ',' ¹®ÀÚ³ª '"' ¹®ÀÚ°¡ µé¾î°¥ °æ¿ì, 
-/// ¸ð¾çÀÌ ¾à°£ ÀÌ»óÇÏ°Ô º¯ÇÑ´Ù. ´ÙÀ½Àº ±× º¯È­ÀÇ ¿¹ÀÌ´Ù.
+/// CSV\xc0\xc7 \xb1âº» \xc6\xf7\xb8\xcb\xc0\xba \xbf\xa2\xbc\xbf\xbf\xa1\xbc\xad \xba\xb8\xc0Ì´\xc2 \xc7Ï³\xaa\xc0\xc7 \xbc\xbf\xc0\xbb ',' \xb9\xae\xc0Ú·\xce \xb1\xb8\xba\xd0\xc7\xd1 \xb0\xcd\xc0Ì´\xd9.
+/// \xc7\xcf\xc1\xf6\xb8\xb8, \xbc\xbf \xbeÈ¿\xa1 Æ¯\xbc\xf6 \xb9\xae\xc0Ú·\xce \xbe\xb2\xc0Ì´\xc2 ',' \xb9\xae\xc0Ú³\xaa '"' \xb9\xae\xc0Ú°\xa1 \xb5\xe9\xbeî°¥ \xb0\xe6\xbf\xec, 
+/// \xb8\xf0\xbe\xe7\xc0\xcc \xbeà°£ \xc0Ì»\xf3\xc7Ï°\xd4 \xba\xaf\xc7Ñ´\xd9. \xb4\xd9\xc0\xbd\xc0\xba \xb1\xd7 \xba\xafÈ­\xc0\xc7 \xbf\xb9\xc0Ì´\xd9.
 /// 
 /// <pre>
-/// ¿¢¼¿¿¡¼­ º¸ÀÌ´Â ¸ð¾ç | ½ÇÁ¦ CSV ÆÄÀÏ¿¡ µé¾î°¡ÀÖ´Â ¸ð¾ç
+/// \xbf\xa2\xbc\xbf\xbf\xa1\xbc\xad \xba\xb8\xc0Ì´\xc2 \xb8\xf0\xbe\xe7 | \xbd\xc7\xc1\xa6 CSV \xc6\xc4\xc0Ï¿\xa1 \xb5\xe9\xbeî°¡\xc0Ö´\xc2 \xb8\xf0\xbe\xe7
 /// ---------------------+----------------------------------------------------
 /// ItemPrice            | ItemPrice
 /// Item,Price           | "Item,Price"
@@ -104,9 +104,9 @@ private:
 /// Item",Price          | "Item"",Price"
 /// </pre>
 /// 
-/// ÀÌ ¿¹·Î¼­ ´ÙÀ½°ú °°Àº »çÇ×À» ¾Ë ¼ö ÀÖ´Ù.
-/// - ¼¿ ³»ºÎ¿¡ ',' ¶Ç´Â '"' ¹®ÀÚ°¡ µé¾î°¥ °æ¿ì, ¼¿ ÁÂ¿ì¿¡ '"' ¹®ÀÚ°¡ »ý±ä´Ù.
-/// - ¼¿ ³»ºÎÀÇ '"' ¹®ÀÚ´Â 2°³·Î Ä¡È¯µÈ´Ù.
+/// \xc0\xcc \xbf\xb9\xb7Î¼\xad \xb4\xd9\xc0\xbd\xb0\xfa \xb0\xb0\xc0\xba \xbb\xe7\xc7\xd7\xc0\xbb \xbe\xcb \xbc\xf6 \xc0Ö´\xd9.
+/// - \xbc\xbf \xb3\xbb\xbaÎ¿\xa1 ',' \xb6Ç´\xc2 '"' \xb9\xae\xc0Ú°\xa1 \xb5\xe9\xbeî°¥ \xb0\xe6\xbf\xec, \xbc\xbf \xc1Â¿ì¿¡ '"' \xb9\xae\xc0Ú°\xa1 \xbb\xfd\xb1\xe4\xb4\xd9.
+/// - \xbc\xbf \xb3\xbb\xba\xce\xc0\xc7 '"' \xb9\xae\xc0Ú´\xc2 2\xb0\xb3\xb7\xce Ä¡È¯\xb5È´\xd9.
 ///
 /// \sa cCsvFile
 ////////////////////////////////////////////////////////////////////////////////
@@ -114,51 +114,51 @@ private:
 class cCsvRow : public std::vector<std::string>
 {
 public:
-    /// \brief ±âº» »ý¼ºÀÚ
+    /// \brief \xb1âº» \xbb\xfd\xbc\xba\xc0\xda
     cCsvRow() {}
 
-    /// \brief ¼Ò¸êÀÚ
+    /// \brief \xbcÒ¸\xea\xc0\xda
     ~cCsvRow() {}
 
 
 public:
-    /// \brief ÇØ´ç ¼¿ÀÇ µ¥ÀÌÅÍ¸¦ int ÇüÀ¸·Î ¹ÝÈ¯ÇÑ´Ù.
+    /// \brief \xc7Ø´\xe7 \xbc\xbf\xc0\xc7 \xb5\xa5\xc0\xcc\xc5Í¸\xa6 int \xc7\xfc\xc0\xb8\xb7\xce \xb9\xddÈ¯\xc7Ñ´\xd9.
     int AsInt(size_t index) const { return atoi(at(index).c_str()); }
 
-    /// \brief ÇØ´ç ¼¿ÀÇ µ¥ÀÌÅÍ¸¦ double ÇüÀ¸·Î ¹ÝÈ¯ÇÑ´Ù.
+    /// \brief \xc7Ø´\xe7 \xbc\xbf\xc0\xc7 \xb5\xa5\xc0\xcc\xc5Í¸\xa6 double \xc7\xfc\xc0\xb8\xb7\xce \xb9\xddÈ¯\xc7Ñ´\xd9.
     double AsDouble(size_t index) const { return atof(at(index).c_str()); }
 
-    /// \brief ÇØ´ç ¼¿ÀÇ µ¥ÀÌÅÍ¸¦ ¹®ÀÚ¿­·Î ¹ÝÈ¯ÇÑ´Ù.
+    /// \brief \xc7Ø´\xe7 \xbc\xbf\xc0\xc7 \xb5\xa5\xc0\xcc\xc5Í¸\xa6 \xb9\xae\xc0Ú¿\xad\xb7\xce \xb9\xddÈ¯\xc7Ñ´\xd9.
     const char* AsString(size_t index) const { return at(index).c_str(); }
 
-    /// \brief ÇØ´çÇÏ´Â ÀÌ¸§ÀÇ ¼¿ µ¥ÀÌÅÍ¸¦ int ÇüÀ¸·Î ¹ÝÈ¯ÇÑ´Ù.
+    /// \brief \xc7Ø´\xe7\xc7Ï´\xc2 \xc0Ì¸\xa7\xc0\xc7 \xbc\xbf \xb5\xa5\xc0\xcc\xc5Í¸\xa6 int \xc7\xfc\xc0\xb8\xb7\xce \xb9\xddÈ¯\xc7Ñ´\xd9.
     int AsInt(const char* name, const cCsvAlias& alias) const {
         return atoi( at(alias[name]).c_str() ); 
     }
 
-    /// \brief ÇØ´çÇÏ´Â ÀÌ¸§ÀÇ ¼¿ µ¥ÀÌÅÍ¸¦ int ÇüÀ¸·Î ¹ÝÈ¯ÇÑ´Ù.
+    /// \brief \xc7Ø´\xe7\xc7Ï´\xc2 \xc0Ì¸\xa7\xc0\xc7 \xbc\xbf \xb5\xa5\xc0\xcc\xc5Í¸\xa6 int \xc7\xfc\xc0\xb8\xb7\xce \xb9\xddÈ¯\xc7Ñ´\xd9.
     double AsDouble(const char* name, const cCsvAlias& alias) const {
         return atof( at(alias[name]).c_str() ); 
     }
 
-    /// \brief ÇØ´çÇÏ´Â ÀÌ¸§ÀÇ ¼¿ µ¥ÀÌÅÍ¸¦ ¹®ÀÚ¿­·Î ¹ÝÈ¯ÇÑ´Ù.
+    /// \brief \xc7Ø´\xe7\xc7Ï´\xc2 \xc0Ì¸\xa7\xc0\xc7 \xbc\xbf \xb5\xa5\xc0\xcc\xc5Í¸\xa6 \xb9\xae\xc0Ú¿\xad\xb7\xce \xb9\xddÈ¯\xc7Ñ´\xd9.
     const char* AsString(const char* name, const cCsvAlias& alias) const { 
         return at(alias[name]).c_str(); 
     }
 
 
 private:
-    /// \brief º¹»ç »ý¼ºÀÚ ±ÝÁö
+    /// \brief \xba\xb9\xbb\xe7 \xbb\xfd\xbc\xba\xc0\xda \xb1\xdd\xc1\xf6
     cCsvRow(const cCsvRow&) {}
 
-    /// \brief ´ëÀÔ ¿¬»êÀÚ ±ÝÁö
+    /// \brief \xb4\xeb\xc0\xd4 \xbf\xac\xbb\xea\xc0\xda \xb1\xdd\xc1\xf6
     const cCsvRow& operator = (const cCsvRow&) { return *this; }
 };
 
 
 ////////////////////////////////////////////////////////////////////////////////
 /// \class cCsvFile
-/// \brief CSV(Comma Seperated Values) ÆÄÀÏÀ» read/writeÇÏ±â À§ÇÑ Å¬·¡½º
+/// \brief CSV(Comma Seperated Values) \xc6\xc4\xc0\xcf\xc0\xbb read/write\xc7Ï±\xe2 \xc0\xa7\xc7\xd1 Å¬\xb7\xa1\xbd\xba
 ///
 /// <b>sample</b>
 /// <pre>
@@ -182,8 +182,8 @@ private:
 /// file.save("test.csv", false);
 /// </pre>
 ///
-/// \todo ÆÄÀÏ¿¡¼­¸¸ ÀÐ¾îµéÀÏ °ÍÀÌ ¾Æ´Ï¶ó, ¸Þ¸ð¸® ¼Ò½º·ÎºÎÅÍ ÀÐ´Â ÇÔ¼öµµ 
-/// ÀÖ¾î¾ß ÇÒ µí ÇÏ´Ù.
+/// \todo \xc6\xc4\xc0Ï¿\xa1\xbc\xad\xb8\xb8 \xc0Ð¾\xee\xb5\xe9\xc0\xcf \xb0\xcd\xc0\xcc \xbeÆ´Ï¶\xf3, \xb8Þ¸\xf0\xb8\xae \xbcÒ½\xba\xb7Îº\xce\xc5\xcd \xc0Ð´\xc2 \xc7Ô¼\xf6\xb5\xb5 
+/// \xc0Ö¾\xee\xbe\xdf \xc7\xd2 \xb5\xed \xc7Ï´\xd9.
 ////////////////////////////////////////////////////////////////////////////////
 
 class cCsvFile
@@ -191,55 +191,55 @@ class cCsvFile
 private:
     typedef std::vector<cCsvRow*> ROWS;
 
-    ROWS m_Rows; ///< Çà ÄÃ·º¼Ç
+    ROWS m_Rows; ///< \xc7\xe0 \xc4Ã·\xba\xbc\xc7
 
 
 public:
-    /// \brief »ý¼ºÀÚ
+    /// \brief \xbb\xfd\xbc\xba\xc0\xda
     cCsvFile() {}
 
-    /// \brief ¼Ò¸êÀÚ
+    /// \brief \xbcÒ¸\xea\xc0\xda
     virtual ~cCsvFile() { Destroy(); }
 
 
 public:
-    /// \brief ÁöÁ¤µÈ ÀÌ¸§ÀÇ CSV ÆÄÀÏÀ» ·ÎµåÇÑ´Ù.
+    /// \brief \xc1\xf6\xc1\xa4\xb5\xc8 \xc0Ì¸\xa7\xc0\xc7 CSV \xc6\xc4\xc0\xcf\xc0\xbb \xb7Îµ\xe5\xc7Ñ´\xd9.
     bool Load(const char* fileName, const char seperator=',', const char quote='"');
 
-    /// \brief °¡Áö°í ÀÖ´Â ³»¿ëÀ» CSV ÆÄÀÏ¿¡´Ù ÀúÀåÇÑ´Ù.
+    /// \brief \xb0\xa1\xc1\xf6\xb0\xed \xc0Ö´\xc2 \xb3\xbb\xbf\xeb\xc0\xbb CSV \xc6\xc4\xc0Ï¿\xa1\xb4\xd9 \xc0\xfa\xc0\xe5\xc7Ñ´\xd9.
     bool Save(const char* fileName, bool append=false, char seperator=',', char quote='"') const;
 
-    /// \brief ¸ðµç µ¥ÀÌÅÍ¸¦ ¸Þ¸ð¸®¿¡¼­ »èÁ¦ÇÑ´Ù.
+    /// \brief \xb8\xf0\xb5\xe7 \xb5\xa5\xc0\xcc\xc5Í¸\xa6 \xb8Þ¸ð¸®¿\xa1\xbc\xad \xbb\xe8\xc1\xa6\xc7Ñ´\xd9.
     void Destroy();
 
-    /// \brief ÇØ´çÇÏ´Â ÀÎµ¦½ºÀÇ ÇàÀ» ¹ÝÈ¯ÇÑ´Ù.
+    /// \brief \xc7Ø´\xe7\xc7Ï´\xc2 \xc0Îµ\xa6\xbd\xba\xc0\xc7 \xc7\xe0\xc0\xbb \xb9\xddÈ¯\xc7Ñ´\xd9.
     cCsvRow* operator [] (size_t index);
 
-    /// \brief ÇØ´çÇÏ´Â ÀÎµ¦½ºÀÇ ÇàÀ» ¹ÝÈ¯ÇÑ´Ù.
+    /// \brief \xc7Ø´\xe7\xc7Ï´\xc2 \xc0Îµ\xa6\xbd\xba\xc0\xc7 \xc7\xe0\xc0\xbb \xb9\xddÈ¯\xc7Ñ´\xd9.
     const cCsvRow* operator [] (size_t index) const;
 
-    /// \brief ÇàÀÇ °¹¼ö¸¦ ¹ÝÈ¯ÇÑ´Ù.
+    /// \brief \xc7\xe0\xc0\xc7 \xb0\xb9\xbc\xf6\xb8\xa6 \xb9\xddÈ¯\xc7Ñ´\xd9.
     size_t GetRowCount() const { return m_Rows.size(); }
 
 
 private:
-    /// \brief º¹»ç »ý¼ºÀÚ ±ÝÁö
+    /// \brief \xba\xb9\xbb\xe7 \xbb\xfd\xbc\xba\xc0\xda \xb1\xdd\xc1\xf6
     cCsvFile(const cCsvFile&) {}
 
-    /// \brief ´ëÀÔ ¿¬»êÀÚ ±ÝÁö
+    /// \brief \xb4\xeb\xc0\xd4 \xbf\xac\xbb\xea\xc0\xda \xb1\xdd\xc1\xf6
     const cCsvFile& operator = (const cCsvFile&) { return *this; }
 };
 
 
 ////////////////////////////////////////////////////////////////////////////////
 /// \class cCsvTable
-/// \brief CSV ÆÄÀÏÀ» ÀÌ¿ëÇØ Å×ÀÌºí µ¥ÀÌÅÍ¸¦ ·ÎµåÇÏ´Â °æ¿ì°¡ ¸¹Àºµ¥, ÀÌ Å¬·¡½º´Â 
-/// ±× ÀÛ¾÷À» Á» ´õ ½±°Ô ÇÏ±â À§ÇØ ¸¸µç À¯Æ¿¸®Æ¼ Å¬·¡½º´Ù.
+/// \brief CSV \xc6\xc4\xc0\xcf\xc0\xbb \xc0Ì¿\xeb\xc7\xd8 \xc5\xd7\xc0Ìº\xed \xb5\xa5\xc0\xcc\xc5Í¸\xa6 \xb7Îµ\xe5\xc7Ï´\xc2 \xb0\xe6\xbfì°¡ \xb8\xb9\xc0\xba\xb5\xa5, \xc0\xcc Å¬\xb7\xa1\xbd\xba\xb4\xc2 
+/// \xb1\xd7 \xc0Û¾\xf7\xc0\xbb \xc1\xbb \xb4\xf5 \xbd\xb1\xb0\xd4 \xc7Ï±\xe2 \xc0\xa7\xc7\xd8 \xb8\xb8\xb5\xe7 \xc0\xafÆ¿\xb8\xaeÆ¼ Å¬\xb7\xa1\xbd\xba\xb4\xd9.
 ///
-/// CSV ÆÄÀÏÀ» ·ÎµåÇÏ´Â °æ¿ì, ¼ýÀÚ¸¦ ÀÌ¿ëÇØ ¼¿À» ¾×¼¼½ºÇØ¾ß ÇÏ´Âµ¥, CSV 
-/// ÆÄÀÏÀÇ Æ÷¸ËÀÌ ¹Ù²î´Â °æ¿ì, ÀÌ ¼ýÀÚµéÀ» º¯°æÇØÁà¾ßÇÑ´Ù. ÀÌ ÀÛ¾÷ÀÌ ²Ï 
-/// ½Å°æ ÁýÁßÀ» ¿ä±¸ÇÏ´Â µ¥´Ù°¡, ¿¡·¯°¡ ¹ß»ýÇÏ±â ½±´Ù. ±×·¯¹Ç·Î ¼ýÀÚ·Î 
-/// ¾×¼¼½ºÇÏ±âº¸´Ù´Â ¹®ÀÚ¿­·Î ¾×¼¼½ºÇÏ´Â °ÍÀÌ ¾à°£ ´À¸®Áö¸¸ ³´´Ù°í ÇÒ ¼ö ÀÖ´Ù.
+/// CSV \xc6\xc4\xc0\xcf\xc0\xbb \xb7Îµ\xe5\xc7Ï´\xc2 \xb0\xe6\xbf\xec, \xbc\xfd\xc0Ú¸\xa6 \xc0Ì¿\xeb\xc7\xd8 \xbc\xbf\xc0\xbb \xbe×¼\xbc\xbd\xba\xc7Ø¾\xdf \xc7Ï´Âµ\xa5, CSV 
+/// \xc6\xc4\xc0\xcf\xc0\xc7 \xc6\xf7\xb8\xcb\xc0\xcc \xb9Ù²\xee\xb4\xc2 \xb0\xe6\xbf\xec, \xc0\xcc \xbc\xfd\xc0Úµ\xe9\xc0\xbb \xba\xaf\xb0\xe6\xc7\xd8\xc1\xe0\xbe\xdf\xc7Ñ´\xd9. \xc0\xcc \xc0Û¾\xf7\xc0\xcc \xb2\xcf 
+/// \xbdÅ°\xe6 \xc1\xfd\xc1\xdf\xc0\xbb \xbfä±¸\xc7Ï´\xc2 \xb5\xa5\xb4Ù°\xa1, \xbf\xa1\xb7\xaf\xb0\xa1 \xb9ß»\xfd\xc7Ï±\xe2 \xbd\xb1\xb4\xd9. \xb1×·\xaf\xb9Ç·\xce \xbc\xfd\xc0Ú·\xce 
+/// \xbe×¼\xbc\xbd\xba\xc7Ï±âº¸\xb4Ù´\xc2 \xb9\xae\xc0Ú¿\xad\xb7\xce \xbe×¼\xbc\xbd\xba\xc7Ï´\xc2 \xb0\xcd\xc0\xcc \xbeà°£ \xb4\xc0\xb8\xae\xc1\xf6\xb8\xb8 \xb3\xb4\xb4Ù°\xed \xc7\xd2 \xbc\xf6 \xc0Ö´\xd9.
 ///
 /// <b>sample</b>
 /// <pre>
@@ -262,63 +262,63 @@ private:
 class cCsvTable
 {
 public :
-    cCsvFile  m_File;   ///< CSV ÆÄÀÏ °´Ã¼
+    cCsvFile  m_File;   ///< CSV \xc6\xc4\xc0\xcf \xb0\xb4Ã¼
 private:
-    cCsvAlias m_Alias;  ///< ¹®ÀÚ¿­À» ¼¿ ÀÎµ¦½º·Î º¯È¯ÇÏ±â À§ÇÑ °´Ã¼
-    int       m_CurRow; ///< ÇöÀç È¾´Ü ÁßÀÎ Çà ¹øÈ£
+    cCsvAlias m_Alias;  ///< \xb9\xae\xc0Ú¿\xad\xc0\xbb \xbc\xbf \xc0Îµ\xa6\xbd\xba\xb7\xce \xba\xafÈ¯\xc7Ï±\xe2 \xc0\xa7\xc7\xd1 \xb0\xb4Ã¼
+    int       m_CurRow; ///< \xc7\xf6\xc0\xe7 È¾\xb4\xdc \xc1\xdf\xc0\xce \xc7\xe0 \xb9\xf8È£
 
 
 public:
-    /// \brief »ý¼ºÀÚ
+    /// \brief \xbb\xfd\xbc\xba\xc0\xda
     cCsvTable();
 
-    /// \brief ¼Ò¸êÀÚ
+    /// \brief \xbcÒ¸\xea\xc0\xda
     virtual ~cCsvTable();
 
 
 public:
-    /// \brief ÁöÁ¤µÈ ÀÌ¸§ÀÇ CSV ÆÄÀÏÀ» ·ÎµåÇÑ´Ù.
+    /// \brief \xc1\xf6\xc1\xa4\xb5\xc8 \xc0Ì¸\xa7\xc0\xc7 CSV \xc6\xc4\xc0\xcf\xc0\xbb \xb7Îµ\xe5\xc7Ñ´\xd9.
     bool Load(const char* fileName, const char seperator=',', const char quote='"');
 
-    /// \brief ¼¿À» ¾×¼¼½ºÇÒ ¶§, ¼ýÀÚ ´ë½Å »ç¿ëÇÒ ÀÌ¸§À» µî·ÏÇÑ´Ù.
+    /// \brief \xbc\xbf\xc0\xbb \xbe×¼\xbc\xbd\xba\xc7\xd2 \xb6\xa7, \xbc\xfd\xc0\xda \xb4\xeb\xbd\xc5 \xbb\xe7\xbf\xeb\xc7\xd2 \xc0Ì¸\xa7\xc0\xbb \xb5\xee\xb7\xcf\xc7Ñ´\xd9.
     void AddAlias(const char* name, size_t index) { m_Alias.AddAlias(name, index); }
 
-    /// \brief ´ÙÀ½ ÇàÀ¸·Î ³Ñ¾î°£´Ù.
+    /// \brief \xb4\xd9\xc0\xbd \xc7\xe0\xc0\xb8\xb7\xce \xb3Ñ¾î°£\xb4\xd9.
     bool Next();
 
-    /// \brief ÇöÀç ÇàÀÇ ¼¿ ¼ýÀÚ¸¦ ¹ÝÈ¯ÇÑ´Ù.
+    /// \brief \xc7\xf6\xc0\xe7 \xc7\xe0\xc0\xc7 \xbc\xbf \xbc\xfd\xc0Ú¸\xa6 \xb9\xddÈ¯\xc7Ñ´\xd9.
     size_t ColCount() const;
 
-    /// \brief ÀÎµ¦½º¸¦ ÀÌ¿ëÇØ int ÇüÀ¸·Î ¼¿°ªÀ» ¹ÝÈ¯ÇÑ´Ù.
+    /// \brief \xc0Îµ\xa6\xbd\xba\xb8\xa6 \xc0Ì¿\xeb\xc7\xd8 int \xc7\xfc\xc0\xb8\xb7\xce \xbc\xbf\xb0\xaa\xc0\xbb \xb9\xddÈ¯\xc7Ñ´\xd9.
     int AsInt(size_t index) const;
 
-    /// \brief ÀÎµ¦½º¸¦ ÀÌ¿ëÇØ double ÇüÀ¸·Î ¼¿°ªÀ» ¹ÝÈ¯ÇÑ´Ù.
+    /// \brief \xc0Îµ\xa6\xbd\xba\xb8\xa6 \xc0Ì¿\xeb\xc7\xd8 double \xc7\xfc\xc0\xb8\xb7\xce \xbc\xbf\xb0\xaa\xc0\xbb \xb9\xddÈ¯\xc7Ñ´\xd9.
     double AsDouble(size_t index) const;
 
-    /// \brief ÀÎµ¦½º¸¦ ÀÌ¿ëÇØ std::string ÇüÀ¸·Î ¼¿°ªÀ» ¹ÝÈ¯ÇÑ´Ù.
+    /// \brief \xc0Îµ\xa6\xbd\xba\xb8\xa6 \xc0Ì¿\xeb\xc7\xd8 std::string \xc7\xfc\xc0\xb8\xb7\xce \xbc\xbf\xb0\xaa\xc0\xbb \xb9\xddÈ¯\xc7Ñ´\xd9.
     const char* AsStringByIndex(size_t index) const;
 
-    /// \brief ¼¿ ÀÌ¸§À» ÀÌ¿ëÇØ int ÇüÀ¸·Î ¼¿°ªÀ» ¹ÝÈ¯ÇÑ´Ù.
+    /// \brief \xbc\xbf \xc0Ì¸\xa7\xc0\xbb \xc0Ì¿\xeb\xc7\xd8 int \xc7\xfc\xc0\xb8\xb7\xce \xbc\xbf\xb0\xaa\xc0\xbb \xb9\xddÈ¯\xc7Ñ´\xd9.
     int AsInt(const char* name) const { return AsInt(m_Alias[name]); }
 
-    /// \brief ¼¿ ÀÌ¸§À» ÀÌ¿ëÇØ double ÇüÀ¸·Î ¼¿°ªÀ» ¹ÝÈ¯ÇÑ´Ù.
+    /// \brief \xbc\xbf \xc0Ì¸\xa7\xc0\xbb \xc0Ì¿\xeb\xc7\xd8 double \xc7\xfc\xc0\xb8\xb7\xce \xbc\xbf\xb0\xaa\xc0\xbb \xb9\xddÈ¯\xc7Ñ´\xd9.
     double AsDouble(const char* name) const { return AsDouble(m_Alias[name]); }
 
-    /// \brief ¼¿ ÀÌ¸§À» ÀÌ¿ëÇØ std::string ÇüÀ¸·Î ¼¿°ªÀ» ¹ÝÈ¯ÇÑ´Ù.
+    /// \brief \xbc\xbf \xc0Ì¸\xa7\xc0\xbb \xc0Ì¿\xeb\xc7\xd8 std::string \xc7\xfc\xc0\xb8\xb7\xce \xbc\xbf\xb0\xaa\xc0\xbb \xb9\xddÈ¯\xc7Ñ´\xd9.
     const char* AsString(const char* name) const { return AsStringByIndex(m_Alias[name]); }
 
-    /// \brief alias¸¦ Æ÷ÇÔÇØ ¸ðµç µ¥ÀÌÅÍ¸¦ »èÁ¦ÇÑ´Ù.
+    /// \brief alias\xb8\xa6 \xc6\xf7\xc7\xd4\xc7\xd8 \xb8\xf0\xb5\xe7 \xb5\xa5\xc0\xcc\xc5Í¸\xa6 \xbb\xe8\xc1\xa6\xc7Ñ´\xd9.
     void Destroy();
 
 
 private:
-    /// \brief ÇöÀç ÇàÀ» ¹ÝÈ¯ÇÑ´Ù.
+    /// \brief \xc7\xf6\xc0\xe7 \xc7\xe0\xc0\xbb \xb9\xddÈ¯\xc7Ñ´\xd9.
     const cCsvRow* const CurRow() const;
 
-    /// \brief º¹»ç »ý¼ºÀÚ ±ÝÁö
+    /// \brief \xba\xb9\xbb\xe7 \xbb\xfd\xbc\xba\xc0\xda \xb1\xdd\xc1\xf6
     cCsvTable(const cCsvTable&) {}
 
-    /// \brief ´ëÀÔ ¿¬»êÀÚ ±ÝÁö
+    /// \brief \xb4\xeb\xc0\xd4 \xbf\xac\xbb\xea\xc0\xda \xb1\xdd\xc1\xf6
     const cCsvTable& operator = (const cCsvTable&) { return *this; }
 };
 

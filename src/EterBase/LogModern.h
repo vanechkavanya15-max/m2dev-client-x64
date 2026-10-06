@@ -63,6 +63,16 @@ public:
         Log(LogLevel::Debug, fmt, std::forward<Args>(args)...);
     }
 
+    template <typename... Args>
+    static void Warning(std::format_string<Args...> fmt, Args&&... args) {
+        Log(LogLevel::Warning, fmt, std::forward<Args>(args)...);
+    }
+
+    template <typename... Args>
+    static void Trace(std::format_string<Args...> fmt, Args&&... args) {
+        Log(LogLevel::Debug, fmt, std::forward<Args>(args)...);
+    }
+
 private:
     static void WriteLog(LogLevel level, std::string_view message) {
         std::string_view prefix = "[INFO]";
