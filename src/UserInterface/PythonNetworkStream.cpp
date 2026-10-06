@@ -9,6 +9,8 @@
 #include "MarkManager.h"
 
 #include "ProcessCRC.h"
+#include "Network/PacketDispatcher.h"
+#include "Network/Dispatchers/NetworkStreamPhaseGameBridge.h"
 
 // MARK_BUG_FIX
 static DWORD gs_nextDownloadMarkTime = 0;
@@ -342,6 +344,40 @@ bool CPythonNetworkStream::DispatchPacket(const PacketHandlerMap& handlers)
 	auto it = handlers.find(header);
 	if (it == handlers.end())
 	{
+		// Check if modern C++23 PacketDispatcher can handle this opcode
+		if (Network::PacketDispatcher::Instance().HasHandler(header))
+		{
+			TDynamicSizePacketHeader packetFrame;
+			if (!Peek(sizeof(TDynamicSizePacketHeader), &packetFrame))
+				return false;
+
+			constexpr uint16_t MAX_PACKET_LENGTH = 65000;
+			if (packetFrame.length < PACKET_HEADER_SIZE || packetFrame.length > MAX_PACKET_LENGTH)
+			{
+				TraceError("DispatchPacket: Invalid modern packet length: header 0x%04X length: %u", header, packetFrame.length);
+				ClearRecvBuffer();
+				return false;
+			}
+
+			if (!Peek(packetFrame.length))
+				return false;
+
+			std::vector<uint8_t> packetBuffer(packetFrame.length);
+			if (!Recv(packetFrame.length, packetBuffer.data()))
+				return false;
+
+			LogRecvPacket(header, packetFrame.length);
+
+			std::span<const uint8_t> payload(packetBuffer.data() + PACKET_HEADER_SIZE, packetFrame.length - PACKET_HEADER_SIZE);
+			auto res = Network::Dispatchers::NetworkStreamPhaseGameBridge::RouteGamePacket(header, payload);
+			if (!res.has_value())
+			{
+				TraceError("DispatchPacket: Modern dispatch failed for header 0x%04X: %s", header, EterBase::ToString(res.error()).data());
+				return false;
+			}
+			return true;
+		}
+
 		TraceError("Unknown packet header: 0x%04X (recv_seq #%u), Phase: %s", header, m_dwRecvPacketSeq, m_strPhase.c_str());
 		DumpRecentPackets();
 		ClearRecvBuffer();
@@ -760,6 +796,9 @@ void CPythonNetworkStream::RegisterSelectHandlers()
 
 void CPythonNetworkStream::RegisterGameHandlers()
 {
+	// Initialize modern C++23 PacketDispatcher handlers
+	Network::PacketDispatcher::Instance().RegisterDefaultHandlers();
+
 	auto& h = m_gameHandlers;
 
 	// Phase / control

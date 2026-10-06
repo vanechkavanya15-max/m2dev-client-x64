@@ -5,6 +5,9 @@
 #include "EterBase/Timer.h"
 
 #include "AbstractPlayer.h"
+#include "Core/EventBus.h"
+#include "Core/InventoryEvents.h"
+#include "Services/ISkillService.h"
 
 enum
 {
@@ -628,6 +631,16 @@ void CPythonPlayer::SetItemData(TItemPos Cell, const TItemData & c_rkItemInst)
 	case INVENTORY:
 	case EQUIPMENT:
 		m_playerStatus.aItem[Cell.cell] = c_rkItemInst;
+		if (Cell.window_type == INVENTORY && c_rkItemInst.vnum != 0)
+		{
+			UserInterface::Core::EventBus::GetInstance().Publish(
+				UserInterface::Core::InventoryEvents::ItemAcquired(
+					EterBase::ItemVnum(c_rkItemInst.vnum),
+					EterBase::ItemSlot(Cell.cell),
+					c_rkItemInst.count
+				)
+			);
+		}
 		break;
 	case DRAGON_SOUL_INVENTORY:
 		m_playerStatus.aDSItem[Cell.cell] = c_rkItemInst;
@@ -1107,6 +1120,12 @@ void CPythonPlayer::SetSkillCoolTime(DWORD dwSkillIndex)
 	}
 
 	m_playerStatus.aSkill[dwSlotIndex].isCoolTime=true;
+	UserInterface::Core::EventBus::GetInstance().Publish(
+		UserInterface::Services::SkillCooltimeStartEvent{
+			EterBase::SkillId(dwSkillIndex),
+			0.0f
+		}
+	);
 }
 
 void CPythonPlayer::EndSkillCoolTime(DWORD dwSkillIndex)

@@ -6,6 +6,7 @@
 #include "packet.h"
 
 #include "EterLib/Camera.h"
+#include "ECS/ECSWorldRegistry.h"
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Frame Process
@@ -587,6 +588,16 @@ CInstanceBase * CPythonCharacterManager::CreateInstance(const CInstanceBase::SCr
 	if (c_rkCreateData.m_isMain)
 		SelectInstance(c_rkCreateData.m_dwVID);
 
+	// Register entity into modern C++23 ECS SoA tables
+	(void)UserInterface::ECS::ECSWorldRegistry::GetInstance().RegisterEntity(
+		EterBase::EntityId(c_rkCreateData.m_dwVID),
+		static_cast<float>(c_rkCreateData.m_lPosX),
+		static_cast<float>(c_rkCreateData.m_lPosY),
+		0.0f,
+		c_rkCreateData.m_fRot,
+		0.0f
+	);
+
 	return (pCharacterInstance);
 }
 
@@ -607,6 +618,9 @@ CInstanceBase * CPythonCharacterManager::RegisterInstance(DWORD VirtualID)
 
 void CPythonCharacterManager::DeleteInstance(DWORD dwDelVID)
 {
+	// Remove from modern C++23 ECS SoA tables
+	(void)UserInterface::ECS::ECSWorldRegistry::GetInstance().RemoveEntity(EterBase::EntityId(dwDelVID));
+
 	TCharacterInstanceMap::iterator itor = m_kAliveInstMap.find(dwDelVID);
 
 	if (m_kAliveInstMap.end() == itor)
@@ -962,6 +976,7 @@ void CPythonCharacterManager::DestroyDeadInstanceList()
 
 void CPythonCharacterManager::Destroy()
 {
+	UserInterface::ECS::ECSWorldRegistry::GetInstance().Clear();
 	DeleteAllInstances();
 
 	CInstanceBase::DestroySystem();
