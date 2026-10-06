@@ -57,6 +57,11 @@ target_include_directories(UserInterface PRIVATE
 	${CMAKE_CURRENT_SOURCE_DIR}/Network/Handlers
 	${CMAKE_CURRENT_SOURCE_DIR}/Network/Senders
 	${CMAKE_CURRENT_SOURCE_DIR}/Network/Dispatchers
+	${CMAKE_CURRENT_SOURCE_DIR}/Network/Actors
+	${CMAKE_CURRENT_SOURCE_DIR}/InstanceControllers
+	${CMAKE_CURRENT_SOURCE_DIR}/ECS/SIMD
+	${CMAKE_CURRENT_SOURCE_DIR}/TextTail
+	${CMAKE_CURRENT_SOURCE_DIR}/GroundDrop
 )
 
 GroupSourcesByFolder(UserInterface)
