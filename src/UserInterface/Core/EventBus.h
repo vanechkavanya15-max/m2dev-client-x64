@@ -11,6 +11,7 @@
 #include <string_view>
 #include <mutex>
 #include <atomic>
+#include "../../EterBase/StrongTypes.h"
 
 namespace UserInterface::Core {
 
@@ -75,6 +76,56 @@ struct ActorDeadEvent : public IEvent {
     uint32_t entityId;
 
     explicit ActorDeadEvent(uint32_t id) : entityId(id) {}
+};
+
+/**
+ * @brief Event triggered when TextTail visibility changes due to culling or distance.
+ */
+struct TextTailVisibilityChangedEvent : public IEvent {
+    uint32_t entityId;
+    bool isVisible;
+
+    TextTailVisibilityChangedEvent(uint32_t id = 0, bool vis = false)
+        : entityId(id), isVisible(vis) {}
+};
+
+struct SIMDCullingCompletedEvent : public IEvent {
+    size_t totalCount;
+    size_t visibleCount;
+
+    SIMDCullingCompletedEvent(size_t total = 0, size_t visible = 0)
+        : totalCount(total), visibleCount(visible) {}
+};
+
+struct ItemTooltipCachedEvent : public IEvent {
+    EterBase::ItemVnum vnum;
+
+    explicit ItemTooltipCachedEvent(EterBase::ItemVnum v = EterBase::ItemVnum{0}) : vnum(v) {}
+};
+
+struct AnimHitFrameEvent : public IEvent {
+    EterBase::EntityId entityId;
+    uint32_t motionKey;
+    uint8_t hitIndex;
+
+    AnimHitFrameEvent(EterBase::EntityId id = EterBase::EntityId{0}, uint32_t key = 0, uint8_t hit = 0)
+        : entityId(id), motionKey(key), hitIndex(hit) {}
+};
+
+struct AnimFinishedEvent : public IEvent {
+    EterBase::EntityId entityId;
+    uint32_t motionKey;
+
+    AnimFinishedEvent(EterBase::EntityId id = EterBase::EntityId{0}, uint32_t key = 0)
+        : entityId(id), motionKey(key) {}
+};
+
+struct CustomTitleChangedEvent : public IEvent {
+    std::string title;
+    uint32_t color;
+
+    CustomTitleChangedEvent(std::string_view t = "", uint32_t c = 0)
+        : title(t), color(c) {}
 };
 
 /**

@@ -66,10 +66,10 @@ add_compile_definitions("$<$<CONFIG:Debug>:DEBUG>")
 add_compile_definitions("$<$<CONFIG:RelWithDebInfo>:_DISTRIBUTE>")
 add_compile_definitions("$<$<CONFIG:Release>:_DISTRIBUTE>")
 
-include_directories("src")
-include_directories("extern/include")
-include_directories("vendor/libsodium/src/libsodium/include")
-include_directories("vendor/freetype-2.13.3/include")
+include_directories("${CMAKE_SOURCE_DIR}/src")
+include_directories("${CMAKE_SOURCE_DIR}/extern/include")
+include_directories("${CMAKE_SOURCE_DIR}/vendor/libsodium/src/libsodium/include")
+include_directories("${CMAKE_SOURCE_DIR}/vendor/freetype-2.13.3/include")
 
 # Add subdirectories for libraries and executables
 add_subdirectory(vendor)

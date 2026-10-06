@@ -18,9 +18,13 @@
 // ============================================================================
 // Core::EventBus Forward Declaration
 // ============================================================================
-namespace Core {
+namespace UserInterface::Core {
     class EventBus;
     struct IEvent;
+}
+namespace Core {
+    using EventBus = UserInterface::Core::EventBus;
+    using IEvent = UserInterface::Core::IEvent;
     
     /**
      * @struct AsyncTaskCompletedEvent
