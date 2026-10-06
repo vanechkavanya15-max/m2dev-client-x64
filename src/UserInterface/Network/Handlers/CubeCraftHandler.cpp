@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 /**
  * @file CubeCraftHandler.cpp
  * @brief Modern C++20 handler for Cube Crafting system network events.

@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 /**
  * @file ExchangeAcceptHandler.cpp
  * @brief Implementation of the ExchangeAcceptHandler for modern C++23 architecture.

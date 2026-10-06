@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 #include "TargetDeleteHandler.h"
 #include "../../Core/EventBus.h"
 #include "../../Core/Events.h"

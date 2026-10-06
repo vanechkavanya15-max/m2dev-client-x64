@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 /**
  * @file GuildMemberHandler.cpp
  * @brief Handler for receiving and saving guild member packets from the server.

@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 #include "QuickSlotDelHandler.h"
 #include "../../AbstractPlayer.h"
 #include "../../Packet.h"

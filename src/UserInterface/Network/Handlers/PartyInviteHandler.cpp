@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 #include "UserInterface/Packet.h"
 #include "EterBase/StrongTypes.h"
 #include "EterBase/Result.h"

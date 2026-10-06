@@ -1,5 +1,5 @@
 #include "StdAfx.h"
-#include "Locale.h"
+#include "Locale_Interface.h"
 #include "PythonApplication.h"
 #include "resource.h"
 #include "EterBase/CRC32.h"

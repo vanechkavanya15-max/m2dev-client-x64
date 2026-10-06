@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 #include "ViewEquipHandler.h"
 #include "../../../EterBase/LogModern.h"
 

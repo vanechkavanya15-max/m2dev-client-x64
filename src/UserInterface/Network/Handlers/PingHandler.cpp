@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 #include "PingHandler.h"
 
 #include <EterBase/Timer.h>

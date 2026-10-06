@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 #include "StunHandler.h"
 #include "../../PythonNetworkStream.h"
 #include "../../PythonCharacterManager.h"

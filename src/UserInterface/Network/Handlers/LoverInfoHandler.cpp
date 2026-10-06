@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 #include "LoverInfoHandler.h"
 #include "../../Packet.h"
 #include "../../Core/EventBus.h"

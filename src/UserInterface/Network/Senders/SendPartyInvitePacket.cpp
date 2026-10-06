@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 #include "SendPartyInvitePacket.h"
 #include "../../PythonNetworkStream.h"
 #include "../../Packet.h"

@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 /**
  * @file SafeBoxDelModernHandler.cpp
  * @brief Implementation of the C++23 SafeBox Item Del network packet handler.

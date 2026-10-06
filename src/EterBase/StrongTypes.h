@@ -25,6 +25,8 @@ public:
 
     [[nodiscard]] constexpr Underlying value() const noexcept { return m_value; }
     [[nodiscard]] constexpr Underlying get() const noexcept { return m_value; }
+    [[nodiscard]] constexpr Underlying Value() const noexcept { return m_value; }
+    [[nodiscard]] constexpr Underlying Get() const noexcept { return m_value; }
 
     [[nodiscard]] constexpr explicit operator Underlying() const noexcept { return m_value; }
     [[nodiscard]] constexpr explicit operator bool() const noexcept { return m_value != DefaultValue; }

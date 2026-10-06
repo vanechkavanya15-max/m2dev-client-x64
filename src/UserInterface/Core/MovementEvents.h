@@ -7,17 +7,14 @@
 #include "../../EterBase/Result.h"
 #include "../../EterBase/LogModern.h"
 
-namespace Core::Events
-{
-#pragma pack(push, 1)
+#include "EventBus.h"
 
+namespace UserInterface::Core::Events
+{
     /**
      * @brief Event emitted when an entity's position is updated.
-     * 
-     * Triggered primarily when receiving movement packets from the server,
-     * signaling that a player or mob has moved to a new location.
      */
-    struct PlayerPositionUpdated
+    struct PlayerPositionUpdated : public UserInterface::Core::IEvent
     {
         EterBase::EntityId entityId; ///< The unique identifier of the entity that moved.
         int32_t currentX;            ///< The current X coordinate of the entity.
@@ -25,6 +22,10 @@ namespace Core::Events
         int32_t destinationX;        ///< The destination X coordinate (if moving).
         int32_t destinationY;        ///< The destination Y coordinate (if moving).
         std::optional<uint8_t> rotation; ///< The entity's rotation (scaled 0-255, where actual degrees = rotation * 5.0f).
+
+        PlayerPositionUpdated() = default;
+        PlayerPositionUpdated(EterBase::EntityId id, int32_t curX, int32_t curY, int32_t destX, int32_t destY, std::optional<uint8_t> rot = std::nullopt)
+            : entityId(id), currentX(curX), currentY(curY), destinationX(destX), destinationY(destY), rotation(rot) {}
         
         /**
          * @brief Validates the movement event data.
@@ -41,17 +42,23 @@ namespace Core::Events
         }
     };
 
+    using PlayerPositionUpdatedEvent = PlayerPositionUpdated;
+
     /**
      * @brief Event emitted when an entity reaches its final movement destination.
      * 
      * Triggered locally by the movement engine when a scheduled path
      * finishes, or when a stop packet is received from the server.
      */
-    struct DestinationReached
+    struct DestinationReached : public UserInterface::Core::IEvent
     {
         EterBase::EntityId entityId; ///< The unique identifier of the entity that arrived.
         int32_t finalX;              ///< The final X coordinate reached by the entity.
         int32_t finalY;              ///< The final Y coordinate reached by the entity.
+
+        DestinationReached() = default;
+        DestinationReached(EterBase::EntityId id, int32_t x, int32_t y)
+            : entityId(id), finalX(x), finalY(y) {}
         
         /**
          * @brief Validates the event data.
@@ -67,6 +74,8 @@ namespace Core::Events
             return {};
         }
     };
+
+    using DestinationReachedEvent = DestinationReached;
 
     /**
      * @brief Event emitted when an entity is detected as stuck.
@@ -97,4 +106,9 @@ namespace Core::Events
     };
 
 #pragma pack(pop)
-} // namespace Core::Events
+} // namespace UserInterface::Core::Events
+
+namespace Core::Events {
+    using namespace UserInterface::Core::Events;
+}
+

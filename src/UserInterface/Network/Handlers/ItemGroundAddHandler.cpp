@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 #include "ItemGroundAddHandler.h"
 #include "../../PythonItem.h"
 #include "../../PythonNetworkStream.h"

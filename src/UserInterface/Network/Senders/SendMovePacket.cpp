@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 /**
  * @file SendMovePacket.cpp
  * @brief C++23 Modern Implementation of Movement Packet Sender (Metin2 Standard 2026).

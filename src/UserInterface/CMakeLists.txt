@@ -45,6 +45,20 @@ target_link_libraries(UserInterface
 	Dbghelp
 )
 
+target_include_directories(UserInterface PRIVATE
+	${CMAKE_SOURCE_DIR}
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_CURRENT_SOURCE_DIR}
+	${CMAKE_CURRENT_SOURCE_DIR}/Core
+	${CMAKE_CURRENT_SOURCE_DIR}/Services
+	${CMAKE_CURRENT_SOURCE_DIR}/Actors
+	${CMAKE_CURRENT_SOURCE_DIR}/ECS
+	${CMAKE_CURRENT_SOURCE_DIR}/Network
+	${CMAKE_CURRENT_SOURCE_DIR}/Network/Handlers
+	${CMAKE_CURRENT_SOURCE_DIR}/Network/Senders
+	${CMAKE_CURRENT_SOURCE_DIR}/Network/Dispatchers
+)
+
 GroupSourcesByFolder(UserInterface)
 
 add_custom_command(TARGET UserInterface POST_BUILD

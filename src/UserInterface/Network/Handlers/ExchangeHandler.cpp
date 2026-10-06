@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 /**
  * @file ExchangeHandler.cpp
  * @brief Implementation of the modern C++20 ExchangeHandler.

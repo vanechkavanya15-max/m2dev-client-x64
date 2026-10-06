@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 #include "PointChangeHandler.h"
 #include "../../Packet.h"
 #include "../../PythonCharacterManager.h"

@@ -5,7 +5,7 @@
 #include "PythonWindowManager.h"
 
 #include "EterLib/StateManager.h"
-#include "UserInterface/Locale.h"
+#include "UserInterface/Locale_Interface.h"
 
 BOOL g_bOutlineBoxEnable = FALSE;
 

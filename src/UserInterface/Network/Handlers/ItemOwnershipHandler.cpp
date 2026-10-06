@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 #include "ItemOwnershipHandler.h"
 #include "../../../EterBase/LogModern.h"
 #include <string_view>

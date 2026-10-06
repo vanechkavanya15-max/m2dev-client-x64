@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 #include "../../Packet.h"
 #include "../../PythonQuest.h"
 #include "../../Core/EventBus.h"

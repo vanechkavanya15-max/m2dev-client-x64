@@ -23,7 +23,7 @@
 #endif
 
 #include <dshow.h>
-#include "Locale.h"
+#include "Locale_Interface.h"
 #include "GameType.h"
 
 #define APP_NAME "Metin 2"

@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 #include "PartyUpdateHandler.h"
 #include "../../PythonPlayer.h"
 #include "../../../EterBase/LogModern.h"

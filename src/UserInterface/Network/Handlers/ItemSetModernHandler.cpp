@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 #include "ItemSetModernHandler.h"
 #include "../../PythonNetworkStream.h"
 #include "../../AbstractPlayer.h"

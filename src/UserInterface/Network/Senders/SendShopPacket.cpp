@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 /**
  * @file SendShopPacket.cpp
  * @brief Implementation of network packet senders for Shop interactions.

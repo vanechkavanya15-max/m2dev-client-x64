@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 /**
  * @file ExchangeStartHandler.cpp
  * @brief Nowoczesny handler C++23 dla pakietu rozpoczecia wymiany.

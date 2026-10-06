@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 #include "ExchangeItemDelHandler.h"
 #include "../../Packet.h"
 #include "../../PythonExchange.h"

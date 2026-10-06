@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 #include "PhaseChangeHandler.h"
 #include "../../../EterBase/LogModern.h"
 #include "../../Core/EventBus.h"

@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 #include "../../PythonNetworkStream.h"
 #include "../../PythonSafeBox.h"
 #include "../../Packet.h"

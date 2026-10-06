@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 #include "QuickSlotSwapHandler.h"
 #include "../../AbstractPlayer.h"
 #include "../../../EterBase/Result.h"

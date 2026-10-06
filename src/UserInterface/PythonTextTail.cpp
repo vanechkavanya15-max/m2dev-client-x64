@@ -7,7 +7,7 @@
 #include "PythonTextTail.h"
 #include "PythonCharacterManager.h"
 #include "PythonGuild.h"
-#include "Locale.h"
+#include "Locale_Interface.h"
 #include "MarkManager.h"
 #include "PackLib/PackManager.h"
 

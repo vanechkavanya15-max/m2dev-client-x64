@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 #include "../../BeaviumProtocol.h"
 #include "../../../EterLib/NetStream.h"
 #include "../../../EterBase/StrongTypes.h"

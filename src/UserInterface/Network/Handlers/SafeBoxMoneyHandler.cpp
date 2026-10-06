@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 /**
  * @file SafeBoxMoneyHandler.cpp
  * @brief Implementation of the SafeBox Money Change network packet handler.

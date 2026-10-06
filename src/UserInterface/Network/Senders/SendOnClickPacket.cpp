@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 #include "SendOnClickPacket.h"
 #include "../../Packet.h"
 #include "../../../EterBase/LogModern.h"

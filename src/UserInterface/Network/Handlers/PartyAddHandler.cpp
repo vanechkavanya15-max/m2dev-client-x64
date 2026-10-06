@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 #include "PartyAddHandler.h"
 #include "../../PythonPlayer.h"
 #include <cstring>

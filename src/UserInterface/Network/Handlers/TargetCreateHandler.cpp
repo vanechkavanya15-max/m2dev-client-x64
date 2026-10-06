@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 #include "TargetCreateHandler.h"
 #include "../../../EterBase/LogModern.h"
 #include <cstring>

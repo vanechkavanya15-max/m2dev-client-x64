@@ -2,9 +2,18 @@
 
 #include <cstdint>
 #include <optional>
+#include "../Core/EventBus.h"
 
 namespace UserInterface::Services
 {
+    /**
+     * @brief Zdarzenie rozglaszane po calkowitym wyczyszczeniu paska szybkiego dostepu (np. reset sesji).
+     */
+    struct QuickslotClearedEvent : public Core::IEvent
+    {
+        QuickslotClearedEvent() = default;
+    };
+
     /**
      * @brief Definicja pojedynczego slotu w pasku szybkiego dostepu.
      */

@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 /**
  * @file SendExchangeItemPacket.cpp
  * @brief Modern C++23 implementation for sending the exchange item add packet.

@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 #include "SendAttackPacket.h"
 #include "../../../EterLib/NetStream.h"
 #include "../../../EterBase/LogModern.h"

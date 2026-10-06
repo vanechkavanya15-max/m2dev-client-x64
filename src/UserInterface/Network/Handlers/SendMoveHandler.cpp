@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 #include "SendMoveHandler.h"
 #include "../../PythonBackground.h"
 #include <cmath>

@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 /**
  * @file ExchangeMoneyHandler.cpp
  * @brief Implementation of the modern C++23 ExchangeMoneyHandler.

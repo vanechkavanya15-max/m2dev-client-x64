@@ -75,6 +75,11 @@ namespace UserInterface::ECS
             idToIndexMap_[id] = newIdx;
         }
 
+        [[nodiscard]] const std::unordered_map<uint32_t, size_t>& GetIdToIndexMap() const noexcept
+        {
+            return idToIndexMap_;
+        }
+
         void Remove(uint32_t id)
         {
             auto it = idToIndexMap_.find(id);

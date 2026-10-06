@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 #include "SendSyncPositionPacket.h"
 #include "UserInterface/Packet.h"
 #include "UserInterface/PythonNetworkStream.h"

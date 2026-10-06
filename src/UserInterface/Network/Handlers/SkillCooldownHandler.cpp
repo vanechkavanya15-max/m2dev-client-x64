@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 #include "SkillCooldownHandler.h"
 #include "../../PythonPlayer.h"
 

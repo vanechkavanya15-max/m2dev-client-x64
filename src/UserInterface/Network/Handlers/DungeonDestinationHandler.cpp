@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 /**
  * @file DungeonDestinationHandler.cpp
  * @brief Handler for dungeon destination packet.

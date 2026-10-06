@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 /**
  * @file SendExchangeStartPacket.cpp
  * @brief Implementation of the SendExchangeStartPacketHandler.

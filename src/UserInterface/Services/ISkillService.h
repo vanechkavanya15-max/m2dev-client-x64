@@ -4,9 +4,23 @@
 #include <optional>
 #include "EterBase/StrongTypes.h"
 #include "EterBase/Result.h"
+#include "../Core/EventBus.h"
 
 namespace UserInterface::Services
 {
+    /**
+     * @brief Zdarzenie emitowane po uruchomieniu cooldownu dla danej umiejetnosci.
+     * System powiadamia w ten sposob GUI, ze nalezy zaktualizowac pasek ladowania/timer.
+     */
+    struct SkillCooltimeStartEvent : public Core::IEvent
+    {
+        EterBase::SkillId skillId{0};
+        float duration{0.0f};
+
+        SkillCooltimeStartEvent() = default;
+        SkillCooltimeStartEvent(EterBase::SkillId id, float dur) : skillId(id), duration(dur) {}
+    };
+
     /**
      * @brief Informacja o pojedynczej umiejetnosci gracza.
      */

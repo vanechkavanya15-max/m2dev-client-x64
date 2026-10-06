@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 #include "SendWhisperPacket.h"
 #include <vector>
 #include <cstring>

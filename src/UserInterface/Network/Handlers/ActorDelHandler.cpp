@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 #include "ActorDelHandler.h"
 #include "../../NetworkActorManager.h"
 #include "../../Packet.h"

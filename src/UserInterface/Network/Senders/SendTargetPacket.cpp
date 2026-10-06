@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 #include "SendTargetPacket.h"
 #include "../../Packet.h"
 #include <EterLib/NetStream.h>

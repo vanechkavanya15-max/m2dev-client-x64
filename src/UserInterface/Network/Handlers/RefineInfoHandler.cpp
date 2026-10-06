@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 /**
  * @file RefineInfoHandler.cpp
  * @brief Handles network packets related to item refinement operations.

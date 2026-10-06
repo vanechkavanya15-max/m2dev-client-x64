@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 #include "SendQuestInputPacket.h"
 #include "../../../EterBase/LogModern.h"
 #include <cstring>

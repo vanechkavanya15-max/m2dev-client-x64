@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 #include "QuickSlotAddHandler.hpp"
 #include "../../Packet.h"
 #include "../../PythonNetworkStream.h"

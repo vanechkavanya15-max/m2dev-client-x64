@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 /**
  * @file GuildWarHandler.cpp
  * @brief Handler for Guild War network packets.

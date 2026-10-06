@@ -65,7 +65,7 @@ public:
      * @param targetAngle The target angle in degrees.
      * @return The absolute difference in degrees [0.0, 180.0].
      */
-    static constexpr float GetAngleDifference(float sourceAngle, float targetAngle) noexcept {
+    static inline float GetAngleDifference(float sourceAngle, float targetAngle) noexcept {
         float difference = std::abs(NormalizeAngle(targetAngle) - NormalizeAngle(sourceAngle));
         if (difference > 180.0f) {
             difference = 360.0f - difference;

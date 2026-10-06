@@ -69,6 +69,15 @@ struct MountStateChangedEvent : public IEvent {
 };
 
 /**
+ * @brief Zdarzenie oznaczajace smierc aktora w swiecie gry.
+ */
+struct ActorDeadEvent : public IEvent {
+    uint32_t entityId;
+
+    explicit ActorDeadEvent(uint32_t id) : entityId(id) {}
+};
+
+/**
  * @brief Type-erased base handler for events.
  */
 class IEventHandler {
