@@ -25,6 +25,7 @@ target_link_libraries(UserInterface
 	SpeedTreeLib
 	SphereLib
 	PackLib
+	Client2026
 
 	lzo2
 	libzstd_static
@@ -48,6 +49,7 @@ target_link_libraries(UserInterface
 target_include_directories(UserInterface PRIVATE
 	${CMAKE_SOURCE_DIR}
 	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/src/Client
 	${CMAKE_CURRENT_SOURCE_DIR}
 	${CMAKE_CURRENT_SOURCE_DIR}/Core
 	${CMAKE_CURRENT_SOURCE_DIR}/Services

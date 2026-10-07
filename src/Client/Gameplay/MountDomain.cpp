@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 #include "MountDomain.h"
 #include "../../EterBase/ModernLogger.h"
 #include "../../GameLib/RaceMotionData.h"

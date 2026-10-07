@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 #include "CameraFrustum.h"
 
 namespace Client::Graphics

@@ -1,5 +1,5 @@
 #pragma once
-#include "../../StdAfx.h"
+#include "StdAfx.h"
 #include <d3dx9.h>
 #include <array>
 

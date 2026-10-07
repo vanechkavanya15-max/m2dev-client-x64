@@ -1,13 +1,12 @@
 #pragma once
 
+#include "StdAfx.h"
 #include <cstdint>
 #include <span>
 #include <vector>
 
 #include "../../EterBase/Result.h"
-#include "../../UserInterface/Packets/Packet_CGAttack.h"
-#include "../../UserInterface/Packet.h" // For TPacketCGShoot, TPacketGCDead
-#include "../../UserInterface/Packets/Packet_DamageInfo.h"
+#include "../../UserInterface/Packet.h"
 
 namespace Network::CombatPacketCodec
 {
