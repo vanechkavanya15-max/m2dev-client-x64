@@ -8,6 +8,7 @@
 
 #include "AbstractPlayer.h"
 #include "GameLib/ItemManager.h"
+#include "Network/Dispatchers/NetworkStreamPhaseGameBridge.h"
 
 //////////////////////////////////////////////////////////////////////////
 // SafeBox
@@ -211,6 +212,9 @@ bool CPythonNetworkStream::RecvItemDelPacket()
 	if (!Recv(sizeof(TPacketGCItemDel), &packet_item_set))
 		return false;
 
+	std::span<const uint8_t> payload(reinterpret_cast<const uint8_t*>(&packet_item_set), sizeof(packet_item_set));
+	(void)Network::Dispatchers::NetworkStreamPhaseGameBridge::RouteGamePacket(GC::ITEM_DEL, payload);
+
 	TItemData kItemData;
 	memset(&kItemData, 0, sizeof(TItemData));
 
@@ -226,6 +230,9 @@ bool CPythonNetworkStream::RecvItemSetPacket()
 	TPacketGCItemSet packet_item_set;
 	if (!Recv(sizeof(TPacketGCItemSet), &packet_item_set))
 		return false;
+
+	std::span<const uint8_t> payload(reinterpret_cast<const uint8_t*>(&packet_item_set), sizeof(packet_item_set));
+	(void)Network::Dispatchers::NetworkStreamPhaseGameBridge::RouteGamePacket(GC::ITEM_SET, payload);
 
 	TItemData kItemData;
 	kItemData.vnum	= packet_item_set.vnum;
@@ -290,6 +297,9 @@ bool CPythonNetworkStream::RecvItemUsePacket()
 	if (!Recv(sizeof(TPacketGCItemUse), &packet_item_use))
 		return false;
 
+	std::span<const uint8_t> payload(reinterpret_cast<const uint8_t*>(&packet_item_use), sizeof(packet_item_use));
+	(void)Network::Dispatchers::NetworkStreamPhaseGameBridge::RouteGamePacket(GC::ITEM_USE, payload);
+
 	__RefreshInventoryWindow();
 	return true;
 }
@@ -319,6 +329,9 @@ bool CPythonNetworkStream::RecvItemGroundAddPacket()
 	if (!Recv(sizeof(TPacketGCItemGroundAdd), &packet_item_ground_add))
 		return false;
 
+	std::span<const uint8_t> payload(reinterpret_cast<const uint8_t*>(&packet_item_ground_add), sizeof(packet_item_ground_add));
+	(void)Network::Dispatchers::NetworkStreamPhaseGameBridge::RouteGamePacket(GC::ITEM_GROUND_ADD, payload);
+
 	__GlobalPositionToLocalPosition(packet_item_ground_add.lX, packet_item_ground_add.lY);
 
 	CPythonItem::Instance().CreateItem(packet_item_ground_add.dwVID, 
@@ -337,6 +350,9 @@ bool CPythonNetworkStream::RecvItemOwnership()
 	if (!Recv(sizeof(TPacketGCItemOwnership), &p))
 		return false;
 
+	std::span<const uint8_t> payload(reinterpret_cast<const uint8_t*>(&p), sizeof(p));
+	(void)Network::Dispatchers::NetworkStreamPhaseGameBridge::RouteGamePacket(GC::ITEM_OWNERSHIP, payload);
+
 	CPythonItem::Instance().SetOwnership(p.dwVID, p.szName);
 	return true;
 }
@@ -347,6 +363,9 @@ bool CPythonNetworkStream::RecvItemGroundDelPacket()
 
 	if (!Recv(sizeof(TPacketGCItemGroundDel), &packet_item_ground_del))
 		return false;
+
+	std::span<const uint8_t> payload(reinterpret_cast<const uint8_t*>(&packet_item_ground_del), sizeof(packet_item_ground_del));
+	(void)Network::Dispatchers::NetworkStreamPhaseGameBridge::RouteGamePacket(GC::ITEM_GROUND_DEL, payload);
 
 	CPythonItem::Instance().DeleteItem(packet_item_ground_del.vid);
 	return true;

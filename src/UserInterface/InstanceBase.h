@@ -5,6 +5,8 @@
 
 #include "StdAfx.h"
 #include "AffectFlagContainer.h"
+#include "InstanceControllers/IInstanceMountHorseController.h"
+#include "InstanceControllers/IInstanceAnimationController.h"
 
 class CInstanceBase
 {	

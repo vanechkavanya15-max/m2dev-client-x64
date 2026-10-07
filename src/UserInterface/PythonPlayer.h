@@ -6,6 +6,13 @@
 
 class CInstanceBase;
 
+namespace UserInterface::Services
+{
+	class IInventoryService;
+	class IPlayerStatsService;
+	class ISkillService;
+}
+
 /*
  *	메인 캐릭터 (자신이 조정하는 캐릭터) 가 가진 정보들을 관리한다.
  *
@@ -183,6 +190,10 @@ class CPythonPlayer : public CSingleton<CPythonPlayer>, public IAbstractPlayer
 		CPythonPlayer(void);
 		virtual ~CPythonPlayer(void);
 
+		UserInterface::Services::IInventoryService& GetInventoryService();
+		UserInterface::Services::IPlayerStatsService& GetPlayerStatsService();
+		UserInterface::Services::ISkillService& GetSkillService();
+
 		void	PickCloseMoney();
 		void	PickCloseItem();
 
@@ -241,6 +252,7 @@ class CPythonPlayer : public CSingleton<CPythonPlayer>, public IAbstractPlayer
 		// flying target set
 		void	Clear();
 		void	ClearSkillDict(); // 없어지거나 ClearGame 쪽으로 포함될 함수
+		void	ClearDictionary();
 		void	NEW_ClearSkillData(bool bAll = false);
 
 		void	Update();

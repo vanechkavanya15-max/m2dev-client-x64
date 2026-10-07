@@ -8,6 +8,12 @@ namespace UserInterface::Services
     class PlayerStatsService final : public IPlayerStatsService
     {
     public:
+        static PlayerStatsService& Instance()
+        {
+            static PlayerStatsService s_instance;
+            return s_instance;
+        }
+
         PlayerStatsService() = default;
         ~PlayerStatsService() override = default;
 

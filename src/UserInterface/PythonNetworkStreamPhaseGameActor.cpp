@@ -6,6 +6,7 @@
 #include "PythonApplication.h"
 #include "AbstractPlayer.h"
 #include "GameLib/ActorInstance.h"
+#include "Network/Dispatchers/NetworkStreamPhaseGameBridge.h"
 
 void CPythonNetworkStream::__GlobalPositionToLocalPosition(int32_t& rGlobalX, int32_t& rGlobalY)
 {
@@ -93,6 +94,9 @@ bool CPythonNetworkStream::RecvCharacterAppendPacket()
 	TPacketGCCharacterAdd chrAddPacket;
 	if (!Recv(sizeof(chrAddPacket), &chrAddPacket))
 		return false;
+
+	std::span<const uint8_t> payload(reinterpret_cast<const uint8_t*>(&chrAddPacket), sizeof(chrAddPacket));
+	(void)Network::Dispatchers::NetworkStreamPhaseGameBridge::RouteGamePacket(GC::CHARACTER_ADD, payload);
 
 	__GlobalPositionToLocalPosition(chrAddPacket.x, chrAddPacket.y);
 
@@ -196,6 +200,10 @@ bool CPythonNetworkStream::RecvCharacterAppendPacketNew()
 	TPacketGCCharacterAdd2 chrAddPacket;
 	if (!Recv(sizeof(chrAddPacket), &chrAddPacket))
 		return false;
+
+	std::span<const uint8_t> payload(reinterpret_cast<const uint8_t*>(&chrAddPacket), sizeof(chrAddPacket));
+	(void)Network::Dispatchers::NetworkStreamPhaseGameBridge::RouteGamePacket(GC::CHARACTER_ADD2, payload);
+
 	if(IsInvisibleRace(chrAddPacket.wRaceNum))
 		return true;
 
@@ -355,6 +363,9 @@ bool CPythonNetworkStream::RecvCharacterDeletePacket()
 		return false;
 	}
 
+	std::span<const uint8_t> payload(reinterpret_cast<const uint8_t*>(&chrDelPacket), sizeof(chrDelPacket));
+	(void)Network::Dispatchers::NetworkStreamPhaseGameBridge::RouteGamePacket(GC::CHARACTER_DEL, payload);
+
 	m_rokNetActorMgr->RemoveActor(chrDelPacket.dwVID);
 
 	// 캐릭터가 사라질때 개인 상점도 없애줍니다.
@@ -367,8 +378,34 @@ bool CPythonNetworkStream::RecvCharacterDeletePacket()
 	return true;
 }
 
+bool CPythonNetworkStream::RecvCharacterMovePacket()
+{
+	TPacketGCMove movePacket;
+	if (!Recv(sizeof(TPacketGCMove), &movePacket))
+	{
+		Tracen("CPythonNetworkStream::RecvCharacterMovePacket - PACKET READ ERROR");
+		return false;
+	}
 
-// RecvCharacterMovePacket moved to Network/Handlers/RecvMoveHandler.cpp
+	std::span<const uint8_t> payload(reinterpret_cast<const uint8_t*>(&movePacket), sizeof(movePacket));
+	(void)Network::Dispatchers::NetworkStreamPhaseGameBridge::RouteGamePacket(GC::MOVE, payload);
+
+	__GlobalPositionToLocalPosition(movePacket.lX, movePacket.lY);
+
+	SNetworkMoveActorData netMoveActorData;
+	netMoveActorData.m_dwArg = movePacket.bArg;
+	netMoveActorData.m_dwFunc = movePacket.bFunc;
+	netMoveActorData.m_dwTime = movePacket.dwTime;
+	netMoveActorData.m_dwVID = movePacket.dwVID;
+	netMoveActorData.m_fRot = movePacket.bRot * 5.0f;
+	netMoveActorData.m_lPosX = movePacket.lX;
+	netMoveActorData.m_lPosY = movePacket.lY;
+	netMoveActorData.m_dwDuration = movePacket.dwDuration;
+
+	m_rokNetActorMgr->MoveActor(netMoveActorData);
+
+	return true;
+}
 
 bool CPythonNetworkStream::RecvOwnerShipPacket()
 {

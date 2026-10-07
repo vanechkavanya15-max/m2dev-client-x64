@@ -9,6 +9,12 @@ namespace UserInterface::Services
     class InventoryService : public IInventoryService
     {
     public:
+        static InventoryService& Instance()
+        {
+            static InventoryService s_instance;
+            return s_instance;
+        }
+
         InventoryService() = default;
         ~InventoryService() override = default;
 

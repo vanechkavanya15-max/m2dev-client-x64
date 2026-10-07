@@ -7,7 +7,12 @@
 #include "AbstractPlayer.h"
 #include "Core/EventBus.h"
 #include "Core/InventoryEvents.h"
+#include "Services/IInventoryService.h"
+#include "Services/IPlayerStatsService.h"
 #include "Services/ISkillService.h"
+#include "Services/InventoryService.h"
+#include "Services/PlayerStatsService.h"
+#include "Services/SkillService.h"
 
 enum
 {
@@ -447,6 +452,8 @@ void CPythonPlayer::SetStatus(DWORD dwType, long lValue)
 			m_playerStatus.SetPoint(dwType, lValue);
 			break;
 	}		
+
+	UserInterface::Services::PlayerStatsService::Instance().SetPoint(dwType, lValue);
 }
 
 int CPythonPlayer::GetStatus(DWORD dwType)
@@ -640,6 +647,33 @@ void CPythonPlayer::SetItemData(TItemPos Cell, const TItemData & c_rkItemInst)
 					c_rkItemInst.count
 				)
 			);
+		}
+
+		if (Cell.window_type == INVENTORY)
+		{
+			EterBase::ItemSlot slot(Cell.cell);
+			UserInterface::Services::InventoryItemView itemView{};
+			itemView.slot = slot;
+			itemView.vnum = EterBase::ItemVnum(c_rkItemInst.vnum);
+			itemView.count = c_rkItemInst.count;
+			for (size_t i = 0; i < ITEM_SOCKET_SLOT_MAX_NUM; ++i)
+			{
+				itemView.sockets[i] = c_rkItemInst.alSockets[i];
+			}
+			for (size_t i = 0; i < ITEM_ATTRIBUTE_SLOT_MAX_NUM; ++i)
+			{
+				itemView.attrTypes[i] = c_rkItemInst.aAttr[i].bType;
+				itemView.attrValues[i] = c_rkItemInst.aAttr[i].sValue;
+			}
+
+			if (c_rkItemInst.vnum != 0)
+			{
+				(void)UserInterface::Services::InventoryService::Instance().SetItem(slot, itemView);
+			}
+			else
+			{
+				(void)UserInterface::Services::InventoryService::Instance().RemoveItem(slot);
+			}
 		}
 		break;
 	case DRAGON_SOUL_INVENTORY:
@@ -1687,10 +1721,18 @@ void CPythonPlayer::NEW_ClearSkillData(bool bAll)
 		PyCallClassMemberFunc(m_ppyGameWindow, "BINARY_CheckGameButton", Py_BuildNone());
 }
 
+void CPythonPlayer::ClearDictionary()
+{
+	UserInterface::Services::InventoryService::Instance().Clear();
+	UserInterface::Services::PlayerStatsService::Instance().Clear();
+	UserInterface::Services::SkillService::Instance().Clear();
+}
+
 void CPythonPlayer::ClearSkillDict()
 {
 	// ClearSkillDict
 	m_skillSlotDict.clear();
+	ClearDictionary();
 
 	// Game End - Player Data Reset
 	m_isOpenPrivateShop = false;
@@ -1707,6 +1749,7 @@ void CPythonPlayer::Clear()
 {
 	memset(&m_playerStatus, 0, sizeof(m_playerStatus));
 	NEW_ClearSkillData(true);
+	ClearDictionary();
 
 	m_bisProcessingEmotion = FALSE;
 
@@ -1820,4 +1863,19 @@ CPythonPlayer::CPythonPlayer(void)
 
 CPythonPlayer::~CPythonPlayer(void)
 {
+}
+
+UserInterface::Services::IInventoryService& CPythonPlayer::GetInventoryService()
+{
+	return UserInterface::Services::InventoryService::Instance();
+}
+
+UserInterface::Services::IPlayerStatsService& CPythonPlayer::GetPlayerStatsService()
+{
+	return UserInterface::Services::PlayerStatsService::Instance();
+}
+
+UserInterface::Services::ISkillService& CPythonPlayer::GetSkillService()
+{
+	return UserInterface::Services::SkillService::Instance();
 }

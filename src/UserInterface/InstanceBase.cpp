@@ -10,6 +10,8 @@
 
 #include "EterLib/StateManager.h"
 #include "GameLib/ItemManager.h"
+#include "Core/EventBus.h"
+#include "InstanceControllers/IInstanceMountHorseController.h"
 
 BOOL HAIR_COLOR_ENABLE=FALSE;
 BOOL USE_ARMOR_SPECULAR=FALSE;
@@ -954,11 +956,17 @@ void CInstanceBase::MountHorse(UINT eRace)
 	m_GraphicThingInstance.MountHorse(m_kHorse.GetActorPtr());
 	m_GraphicThingInstance.Stop();
 	m_GraphicThingInstance.RefreshActorInstance();
+
+	const DWORD m_dwVID = GetVirtualID();
+	UserInterface::Core::EventBus::GetInstance().Publish(UserInterface::Core::MountStateChangedEvent(m_dwVID, eRace, 1));
 }
 
 void CInstanceBase::DismountHorse()
 {
 	m_kHorse.Destroy();
+
+	const DWORD m_dwVID = GetVirtualID();
+	UserInterface::Core::EventBus::GetInstance().Publish(UserInterface::Core::MountStateChangedEvent(m_dwVID, 0, 0));
 }
 
 void CInstanceBase::GetInfo(std::string* pstInfo)
