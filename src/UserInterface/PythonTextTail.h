@@ -2,11 +2,19 @@
 
 #include "EterBase/Singleton.h"
 
+namespace UserInterface::TextTail
+{
+	class ITextTailService;
+}
+
 /*
  *	따라다니는 텍스트 처리
  */
 class CPythonTextTail : public CSingleton<CPythonTextTail>
 {
+	public:
+		UserInterface::TextTail::ITextTailService& GetService();
+
 	public:
 		typedef struct STextTail
 		{

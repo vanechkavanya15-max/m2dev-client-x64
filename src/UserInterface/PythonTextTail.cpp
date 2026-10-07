@@ -10,6 +10,8 @@
 #include "Locale_Interface.h"
 #include "MarkManager.h"
 #include "PackLib/PackManager.h"
+#include "TextTail/TextTailService.h"
+#include "EterLib/StateManager.h"
 
 #include <utf8.h>
 // EPlaceDir and TextTailBiDi() template are defined in utf8.h
@@ -119,6 +121,11 @@ void CPythonTextTail::UpdateShowingTextTail()
 			}
 		}
 	}
+
+	D3DXMATRIX matView, matProj;
+	STATEMANAGER.GetTransform(D3DTS_VIEW, &matView);
+	STATEMANAGER.GetTransform(D3DTS_PROJECTION, &matProj);
+	UserInterface::TextTail::TextTailService::Instance().UpdateScreenPositions(reinterpret_cast<float*>(&matView), reinterpret_cast<float*>(&matProj));
 }
 
 void CPythonTextTail::UpdateTextTail(TTextTail * pTextTail)
@@ -152,6 +159,8 @@ void CPythonTextTail::UpdateTextTail(TTextTail * pTextTail)
 		pTextTail->z = pTextTail->z * CPythonGraphic::Instance().GetOrthoDepth() * -1.0f;
 		pTextTail->z += 10.0f;
 	}
+
+	UserInterface::TextTail::TextTailService::Instance().SetTailPosition(pTextTail->dwVirtualID, pTextTail->x, pTextTail->y, pTextTail->z);
 }
 
 void CPythonTextTail::ArrangeTextTail()
