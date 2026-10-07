@@ -29,6 +29,11 @@ namespace UserInterface::Services
             return;
         }
 
+        auto& s = m_skills[id];
+        s.skillId = id;
+        s.totalCooltime = duration;
+        s.cooltimeRemaining = duration;
+
         // Logowanie uruchomienia cooldownu uzywajac nowoczesnego EterBase::ModernLogger::Debug z formatowaniem C++23.
         EterBase::ModernLogger::Debug( "Started skill cooldown for ID {}, duration: {}", id.value(), duration);
 
