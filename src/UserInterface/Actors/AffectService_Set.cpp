@@ -167,7 +167,7 @@ namespace UserInterface::Actors
         mutable std::shared_mutex mutex_;
         std::unordered_map<uint32_t, std::unordered_set<uint32_t>> affects_;
     };
-
+ 
     /**
      * @brief Fabryka uslugi umozliwiajaca utworzenie instancji z zachowaniem enkapsulacji (SOLID).
      */
