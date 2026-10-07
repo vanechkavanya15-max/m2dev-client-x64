@@ -10,6 +10,7 @@
 #include <math.h>
 #include "lineintersect_utils.h"
 #include <assert.h>
+#include "EterBase/MathSIMD.h"
 
 // uncomment the following line to have the code check intermediate results
 //#define CHECK_ANSWERS
@@ -30,23 +31,28 @@ __forceinline void FindNearestPointOnLineSegment(const D3DXVECTOR3 & A1,
 												 D3DXVECTOR3 & Nearest,
 												 float &parameter)
 {
+	const auto vA1 = MathSIMD::Load3(&A1.x);
+	const auto vL = MathSIMD::Load3(&L.x);
+	const auto vB = MathSIMD::Load3(&B.x);
+
 	// Line/Segment is degenerate --- special case #1
-	float D = D3DXVec3LengthSq(&L);
+	float D = MathSIMD::Dot3(vL, vL);
 	if (D < MY_EPSILON*MY_EPSILON)
 	{
 		Nearest = A1;
 		return;
 	}
 	
-	D3DXVECTOR3 AB = B-A1;
+	const auto vAB = DirectX::XMVectorSubtract(vB, vA1);
 	
 	// parameter is computed from Equation (20).
-	parameter = (D3DXVec3Dot(&AB,&L)) / D;
+	parameter = (MathSIMD::Dot3(vAB, vL)) / D;
 	
 	//if (false == infinite_line) 
 	parameter = FMAX(0.0f, FMIN(1.0f, parameter));
 	
-	Nearest = A1 + parameter * L;
+	const auto vNearest = DirectX::XMVectorMultiplyAdd(DirectX::XMVectorReplicate(parameter), vL, vA1);
+	MathSIMD::Store3(&Nearest.x, vNearest);
 	return;
 }
 
@@ -231,12 +237,21 @@ void IntersectLineSegments(const D3DXVECTOR3 & A1,
 	const float epsilon = MY_EPSILON;
 	const float epsilon_squared = MY_EPSILON*MY_EPSILON;
 	
+	const auto vA1 = MathSIMD::Load3(&A1.x);
+	const auto vA2 = MathSIMD::Load3(&A2.x);
+	const auto vB1 = MathSIMD::Load3(&B1.x);
+	const auto vB2 = MathSIMD::Load3(&B2.x);
+
 	// Compute parameters from Equations (1) and (2) in the text
-	D3DXVECTOR3 La = A2-A1;
-	D3DXVECTOR3 Lb = B2-B1;
-	// From Equation (15)
-	float L11 =  D3DXVec3LengthSq(&La);
-	float L22 =  D3DXVec3LengthSq(&Lb);
+	const auto vLa = DirectX::XMVectorSubtract(vA2, vA1);
+	const auto vLb = DirectX::XMVectorSubtract(vB2, vB1);
+	D3DXVECTOR3 La, Lb;
+	MathSIMD::Store3(&La.x, vLa);
+	MathSIMD::Store3(&Lb.x, vLb);
+
+	// From Equation (15) - zoptymalizowane za pomoca MathSIMD::DistanceSq
+	float L11 = MathSIMD::DistanceSq(vA1, vA2);
+	float L22 = MathSIMD::DistanceSq(vB1, vB2);
 	
 	// Line/Segment A is degenerate ---- Special Case #1
 	if (L11 < epsilon_squared)
@@ -256,10 +271,10 @@ void IntersectLineSegments(const D3DXVECTOR3 & A1,
 	else
 	{
 		// Compute more parameters from Equation (3) in the text.
-		D3DXVECTOR3 AB = B1 - A1;
+		const auto vAB = DirectX::XMVectorSubtract(vB1, vA1);
 		
 		// and from Equation (15).
-		float L12 = -D3DXVec3Dot(&La, &Lb);
+		float L12 = -MathSIMD::Dot3(vLa, vLb);
 		
 		float DetL = L11 * L22 - L12 * L12;
 		// Lines/Segments A and B are parallel ---- special case #2.
@@ -275,8 +290,8 @@ void IntersectLineSegments(const D3DXVECTOR3 & A1,
 		else
 		{
 			// from Equation (15)
-			float ra = D3DXVec3Dot(&La, &AB);//Lax * ABx + Lay * ABy + Laz * ABz;
-			float rb = D3DXVec3Dot(&Lb, &AB);//-Lbx * ABx - Lby * ABy - Lbz * ABz;
+			float ra = MathSIMD::Dot3(vLa, vAB);
+			float rb = MathSIMD::Dot3(vLb, vAB);
 			
 			float t = (L11 * rb - ra * L12)/DetL; // Equation (12)
 			
@@ -296,8 +311,11 @@ void IntersectLineSegments(const D3DXVECTOR3 & A1,
 			// if we are dealing with infinite lines or if parameters s and t both
 			// lie in the range [0,1] then just compute the points using Equations
 			// (1) and (2) from the text.
-			OutA = (A1 + s * La);
-			OutB = (B1 + t * Lb);
+			const auto vOutA = DirectX::XMVectorMultiplyAdd(DirectX::XMVectorReplicate(s), vLa, vA1);
+			const auto vOutB = DirectX::XMVectorMultiplyAdd(DirectX::XMVectorReplicate(t), vLb, vB1);
+			MathSIMD::Store3(&OutA.x, vOutA);
+			MathSIMD::Store3(&OutB.x, vOutB);
+
 			// otherwise, at least one of s and t is outside of [0,1] and we have to
 			// handle this case.
 			if ((OUT_OF_RANGE(s) || OUT_OF_RANGE(t)))
@@ -321,17 +339,27 @@ void IntersectLineSegments(const float A1x, const float A1y, const float A1z,
 {
 	float temp = 0.f;
 	float epsilon_squared = epsilon * epsilon;
-	
-	// Compute parameters from Equations (1) and (2) in the text
-	float Lax = A2x - A1x;
-	float Lay = A2y - A1y;
-	float Laz = A2z - A1z;
-	float Lbx = B2x - B1x;
-	float Lby = B2y - B1y;
-	float Lbz = B2z - B1z;
-	// From Equation (15)
-	float L11 =  (Lax * Lax) + (Lay * Lay) + (Laz * Laz);
-	float L22 =  (Lbx * Lbx) + (Lby * Lby) + (Lbz * Lbz);
+
+	const float pA1[3] = { A1x, A1y, A1z };
+	const float pA2[3] = { A2x, A2y, A2z };
+	const float pB1[3] = { B1x, B1y, B1z };
+	const float pB2[3] = { B2x, B2y, B2z };
+	const auto vA1 = MathSIMD::Load3(pA1);
+	const auto vA2 = MathSIMD::Load3(pA2);
+	const auto vB1 = MathSIMD::Load3(pB1);
+	const auto vB2 = MathSIMD::Load3(pB2);
+
+	const auto vLa = DirectX::XMVectorSubtract(vA2, vA1);
+	const auto vLb = DirectX::XMVectorSubtract(vB2, vB1);
+	float la[3], lb[3];
+	MathSIMD::Store3(la, vLa);
+	MathSIMD::Store3(lb, vLb);
+	float Lax = la[0], Lay = la[1], Laz = la[2];
+	float Lbx = lb[0], Lby = lb[1], Lbz = lb[2];
+
+	// From Equation (15) - zoptymalizowane za pomoca MathSIMD::DistanceSq
+	float L11 = MathSIMD::DistanceSq(vA1, vA2);
+	float L22 = MathSIMD::DistanceSq(vB1, vB2);
 	
 	// Line/Segment A is degenerate ---- Special Case #1
 	if (L11 < epsilon_squared)
@@ -356,13 +384,8 @@ void IntersectLineSegments(const float A1x, const float A1y, const float A1z,
 	// Neither line/segment is degenerate
 	else
 	{
-		// Compute more parameters from Equation (3) in the text.
-		float ABx = B1x - A1x;
-		float ABy = B1y - A1y;
-		float ABz = B1z - A1z;
-		
-		// and from Equation (15).
-		float L12 = -(Lax * Lbx) - (Lay * Lby) - (Laz * Lbz);
+		const auto vAB = DirectX::XMVectorSubtract(vB1, vA1);
+		float L12 = -MathSIMD::Dot3(vLa, vLb);
 		
 		float DetL = L11 * L22 - L12 * L12;
 		// Lines/Segments A and B are parallel ---- special case #2.
@@ -380,8 +403,8 @@ void IntersectLineSegments(const float A1x, const float A1y, const float A1z,
 		else
 		{
 			// from Equation (15)
-			float ra = Lax * ABx + Lay * ABy + Laz * ABz;
-			float rb = -Lbx * ABx - Lby * ABy - Lbz * ABz;
+			float ra = MathSIMD::Dot3(vLa, vAB);
+			float rb = MathSIMD::Dot3(vLb, vAB);
 			
 			float t = (L11 * rb - ra * L12)/DetL; // Equation (12)
 			
@@ -398,15 +421,18 @@ void IntersectLineSegments(const float A1x, const float A1y, const float A1z,
 			assert(FABS(check_rb-rb) < epsilon);
 #endif // CHECK_ANSWERS
 			
-			// if we are dealing with infinite lines or if parameters s and t both
-			// lie in the range [0,1] then just compute the points using Equations
-			// (1) and (2) from the text.
-			PointOnSegAx = (A1x + s * Lax);
-			PointOnSegAy = (A1y + s * Lay);
-			PointOnSegAz = (A1z + s * Laz);
-			PointOnSegBx = (B1x + t * Lbx);
-			PointOnSegBy = (B1y + t * Lby);
-			PointOnSegBz = (B1z + t * Lbz);
+			const auto vPointA = DirectX::XMVectorMultiplyAdd(DirectX::XMVectorReplicate(s), vLa, vA1);
+			const auto vPointB = DirectX::XMVectorMultiplyAdd(DirectX::XMVectorReplicate(t), vLb, vB1);
+			float outA[3], outB[3];
+			MathSIMD::Store3(outA, vPointA);
+			MathSIMD::Store3(outB, vPointB);
+			PointOnSegAx = outA[0];
+			PointOnSegAy = outA[1];
+			PointOnSegAz = outA[2];
+			PointOnSegBx = outB[0];
+			PointOnSegBy = outB[1];
+			PointOnSegBz = outB[2];
+
 			// otherwise, at least one of s and t is outside of [0,1] and we have to
 			// handle this case.
 			if (false == infinite_lines && (OUT_OF_RANGE(s) || OUT_OF_RANGE(t)))
@@ -419,7 +445,6 @@ void IntersectLineSegments(const float A1x, const float A1y, const float A1z,
 			}
 		}
 	}
-	
 }
 
 
@@ -480,17 +505,27 @@ void IntersectLineSegments(const float A1x, const float A1y, const float A1z,
 {
 	float temp = 0.f;
 	float epsilon_squared = epsilon * epsilon;
-	
-	// Compute parameters from Equations (1) and (2) in the text
-	float Lax = A2x - A1x;
-	float Lay = A2y - A1y;
-	float Laz = A2z - A1z;
-	float Lbx = B2x - B1x;
-	float Lby = B2y - B1y;
-	float Lbz = B2z - B1z;
-	// From Equation (15)
-	float L11 =  (Lax * Lax) + (Lay * Lay) + (Laz * Laz);
-	float L22 =  (Lbx * Lbx) + (Lby * Lby) + (Lbz * Lbz);
+
+	const float pA1[3] = { A1x, A1y, A1z };
+	const float pA2[3] = { A2x, A2y, A2z };
+	const float pB1[3] = { B1x, B1y, B1z };
+	const float pB2[3] = { B2x, B2y, B2z };
+	const auto vA1 = MathSIMD::Load3(pA1);
+	const auto vA2 = MathSIMD::Load3(pA2);
+	const auto vB1 = MathSIMD::Load3(pB1);
+	const auto vB2 = MathSIMD::Load3(pB2);
+
+	const auto vLa = DirectX::XMVectorSubtract(vA2, vA1);
+	const auto vLb = DirectX::XMVectorSubtract(vB2, vB1);
+	float la[3], lb[3];
+	MathSIMD::Store3(la, vLa);
+	MathSIMD::Store3(lb, vLb);
+	float Lax = la[0], Lay = la[1], Laz = la[2];
+	float Lbx = lb[0], Lby = lb[1], Lbz = lb[2];
+
+	// From Equation (15) - zoptymalizowane za pomoca MathSIMD::DistanceSq
+	float L11 = MathSIMD::DistanceSq(vA1, vA2);
+	float L22 = MathSIMD::DistanceSq(vB1, vB2);
 	
 	// Line/Segment A is degenerate ---- Special Case #1
 	if (L11 < epsilon_squared)
@@ -515,13 +550,8 @@ void IntersectLineSegments(const float A1x, const float A1y, const float A1z,
 	// Neither line/segment is degenerate
 	else
 	{
-		// Compute more parameters from Equation (3) in the text.
-		float ABx = B1x - A1x;
-		float ABy = B1y - A1y;
-		float ABz = B1z - A1z;
-		
-		// and from Equation (15).
-		float L12 = -(Lax * Lbx) - (Lay * Lby) - (Laz * Lbz);
+		const auto vAB = DirectX::XMVectorSubtract(vB1, vA1);
+		float L12 = -MathSIMD::Dot3(vLa, vLb);
 		
 		float DetL = L11 * L22 - L12 * L12;
 		// Lines/Segments A and B are parallel ---- special case #2.
@@ -539,8 +569,8 @@ void IntersectLineSegments(const float A1x, const float A1y, const float A1z,
 		else
 		{
 			// from Equation (15)
-			float ra = Lax * ABx + Lay * ABy + Laz * ABz;
-			float rb = -Lbx * ABx - Lby * ABy - Lbz * ABz;
+			float ra = MathSIMD::Dot3(vLa, vAB);
+			float rb = MathSIMD::Dot3(vLb, vAB);
 			
 			float t = (L11 * rb - ra * L12)/DetL; // Equation (12)
 			
@@ -557,15 +587,18 @@ void IntersectLineSegments(const float A1x, const float A1y, const float A1z,
 			assert(FABS(check_rb-rb) < epsilon);
 #endif // CHECK_ANSWERS
 			
-			// if we are dealing with infinite lines or if parameters s and t both
-			// lie in the range [0,1] then just compute the points using Equations
-			// (1) and (2) from the text.
-			PointOnSegAx = (A1x + s * Lax);
-			PointOnSegAy = (A1y + s * Lay);
-			PointOnSegAz = (A1z + s * Laz);
-			PointOnSegBx = (B1x + t * Lbx);
-			PointOnSegBy = (B1y + t * Lby);
-			PointOnSegBz = (B1z + t * Lbz);
+			const auto vPointA = DirectX::XMVectorMultiplyAdd(DirectX::XMVectorReplicate(s), vLa, vA1);
+			const auto vPointB = DirectX::XMVectorMultiplyAdd(DirectX::XMVectorReplicate(t), vLb, vB1);
+			float outA[3], outB[3];
+			MathSIMD::Store3(outA, vPointA);
+			MathSIMD::Store3(outB, vPointB);
+			PointOnSegAx = outA[0];
+			PointOnSegAy = outA[1];
+			PointOnSegAz = outA[2];
+			PointOnSegBx = outB[0];
+			PointOnSegBy = outB[1];
+			PointOnSegBz = outB[2];
+
 			// otherwise, at least one of s and t is outside of [0,1] and we have to
 			// handle this case.
 			if (false == infinite_lines && (OUT_OF_RANGE(s) || OUT_OF_RANGE(t)))
@@ -579,13 +612,21 @@ void IntersectLineSegments(const float A1x, const float A1y, const float A1z,
 		}
 	}
 	
-	NearestPointX = 0.5f * (PointOnSegAx + PointOnSegBx);
-	NearestPointY = 0.5f * (PointOnSegAy + PointOnSegBy);
-	NearestPointZ = 0.5f * (PointOnSegAz + PointOnSegBz);
-	
-	NearestVectorX = PointOnSegBx - PointOnSegAx;
-	NearestVectorY = PointOnSegBy - PointOnSegAy;
-	NearestVectorZ = PointOnSegBz - PointOnSegAz;
+	const float ptA[3] = { PointOnSegAx, PointOnSegAy, PointOnSegAz };
+	const float ptB[3] = { PointOnSegBx, PointOnSegBy, PointOnSegBz };
+	const auto vPtA = MathSIMD::Load3(ptA);
+	const auto vPtB = MathSIMD::Load3(ptB);
+	const auto vNearestPoint = DirectX::XMVectorMultiply(DirectX::XMVectorAdd(vPtA, vPtB), DirectX::XMVectorReplicate(0.5f));
+	const auto vNearestVector = DirectX::XMVectorSubtract(vPtB, vPtA);
+	float np[3], nv[3];
+	MathSIMD::Store3(np, vNearestPoint);
+	MathSIMD::Store3(nv, vNearestVector);
+	NearestPointX = np[0];
+	NearestPointY = np[1];
+	NearestPointZ = np[2];
+	NearestVectorX = nv[0];
+	NearestVectorY = nv[1];
+	NearestVectorZ = nv[2];
 	
 	// optional check to indicate if the lines truly intersect
 	true_intersection = (FABS(NearestVectorX) +
@@ -628,8 +669,15 @@ void FindNearestPointOnLineSegment(const float A1x, const float A1y, const float
                                    float &NearestPointY, float &NearestPointZ,
                                    float &parameter)
 {
+	const float pA1[3] = { A1x, A1y, A1z };
+	const float pL[3]  = { Lx, Ly, Lz };
+	const float pB[3]  = { Bx, By, Bz };
+	const auto vA1 = MathSIMD::Load3(pA1);
+	const auto vL  = MathSIMD::Load3(pL);
+	const auto vB  = MathSIMD::Load3(pB);
+
 	// Line/Segment is degenerate --- special case #1
-	float D = Lx * Lx + Ly * Ly + Lz * Lz;
+	float D = MathSIMD::Dot3(vL, vL);
 	if (D < epsilon_squared)
 	{
 		NearestPointX = A1x;
@@ -638,18 +686,19 @@ void FindNearestPointOnLineSegment(const float A1x, const float A1y, const float
 		return;
 	}
 	
-	float ABx = Bx - A1x;
-	float ABy = By - A1y;
-	float ABz = Bz - A1z;
+	const auto vAB = DirectX::XMVectorSubtract(vB, vA1);
 	
 	// parameter is computed from Equation (20).
-	parameter = (Lx * ABx + Ly * ABy + Lz * ABz) / D;
+	parameter = (MathSIMD::Dot3(vAB, vL)) / D;
 	
 	if (false == infinite_line) parameter = FMAX(0.0f, FMIN(1.0f, parameter));
 	
-	NearestPointX = A1x + parameter * Lx;
-	NearestPointY = A1y + parameter * Ly;
-	NearestPointZ = A1z + parameter * Lz;
+	const auto vNearest = DirectX::XMVectorMultiplyAdd(DirectX::XMVectorReplicate(parameter), vL, vA1);
+	float res[3];
+	MathSIMD::Store3(res, vNearest);
+	NearestPointX = res[0];
+	NearestPointY = res[1];
+	NearestPointZ = res[2];
 	return;
 }
 

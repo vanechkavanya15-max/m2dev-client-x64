@@ -1,4 +1,4 @@
-﻿///////////////////////////////////////////////////////////////////////  
+///////////////////////////////////////////////////////////////////////  
 //	CSpeedTreeWrapper Class
 //
 //	(c) 2003 IDV, Inc.
@@ -36,9 +36,11 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <cstring>
 #include "EterBase/Debug.h"
 #include "EterBase/Timer.h"
 #include "EterBase/Filename.h"
+#include "EterBase/MathSIMD.h"
 #include "EterLib/ResourceManager.h"
 #include "EterLib/Camera.h"
 #include "EterLib/StateManager.h"
@@ -91,6 +93,9 @@ void CSpeedTreeWrapper::SetVertexShaders(LPDIRECT3DVERTEXDECLARATION9 pBranchVer
 
 void CSpeedTreeWrapper::OnRenderPCBlocker()
 {
+	if (!TestFrustumCulling())
+		return;
+
 	if (!ms_dwBranchVertexShader || !ms_pLeafVertexShaderDecl || !ms_pLeafVertexShader)
 		CSpeedTreeForestDirectX::Instance().EnsureVertexShaders();
 
@@ -239,6 +244,9 @@ void CSpeedTreeWrapper::OnRenderPCBlocker()
 
 void CSpeedTreeWrapper::OnRender()
 {
+	if (!TestFrustumCulling())
+		return;
+
 	if (!ms_dwBranchVertexShader || !ms_pLeafVertexShaderDecl || !ms_pLeafVertexShader)
 		CSpeedTreeForestDirectX::Instance().EnsureVertexShaders();
 
@@ -804,6 +812,15 @@ void CSpeedTreeWrapper::SetupLeafBuffers(void)
 
 void CSpeedTreeWrapper::Advance(void)
 {
+	// Wektorowy test Frustum Culling widocznosci drzewa
+	if (!TestFrustumCulling())
+	{
+		Hide();
+		return;
+	}
+
+	Show();
+
 	// compute LOD level (based on distance from camera)
 	m_pSpeedTree->ComputeLodLevel();
 	m_pSpeedTree->SetLodLevel(1.0f);
@@ -1414,40 +1431,38 @@ void CSpeedTreeWrapper::SetPosition(float x, float y, float z)
 
 bool CSpeedTreeWrapper::GetBoundingSphere(D3DXVECTOR3 & v3Center, float & fRadius)
 {
-	float fX, fY, fZ;
-	
-	fX = m_afBoundingBox[3] - m_afBoundingBox[0];
-	fY = m_afBoundingBox[4] - m_afBoundingBox[1];
-	fZ = m_afBoundingBox[5] - m_afBoundingBox[2];
-	
-	v3Center.x = 0.0f;
-	v3Center.y = 0.0f;
-	v3Center.z = fZ * 0.5f;
-	
-	fRadius = sqrtf(fX * fX + fY * fY + fZ * fZ) * 0.5f * 0.9f; // 0.9f for reduce size
-	
-	D3DXVECTOR3 vec = m_pSpeedTree->GetTreePosition();
-	
-	v3Center+=vec;
-	
+	const DirectX::XMVECTOR vBoxMin = MathSIMD::Load3(&m_afBoundingBox[0]);
+	const DirectX::XMVECTOR vBoxMax = MathSIMD::Load3(&m_afBoundingBox[3]);
+	const DirectX::XMVECTOR vDiff = DirectX::XMVectorSubtract(vBoxMax, vBoxMin);
+
+	fRadius = DirectX::XMVectorGetX(DirectX::XMVector3Length(vDiff)) * 0.5f * 0.9f; // 0.9f dla zmniejszenia promienia zewnetrznego
+
+	const float fHalfZ = DirectX::XMVectorGetZ(vDiff) * 0.5f;
+	const D3DXVECTOR3 vec = m_pSpeedTree->GetTreePosition();
+	const DirectX::XMVECTOR vTreePos = MathSIMD::Load3(&vec.x);
+	const DirectX::XMVECTOR vCenter = DirectX::XMVectorAdd(DirectX::XMVectorSet(0.0f, 0.0f, fHalfZ, 0.0f), vTreePos);
+
+	MathSIMD::Store3(&v3Center.x, vCenter);
 	return true;
 }
 
 void CSpeedTreeWrapper::CalculateBBox()
 {
-	float fX, fY, fZ;
-	
-	fX = m_afBoundingBox[3] - m_afBoundingBox[0];
-	fY = m_afBoundingBox[4] - m_afBoundingBox[1];
-	fZ = m_afBoundingBox[5] - m_afBoundingBox[2];
-	
-	m_v3BBoxMin.x = -fX / 2.0f;
-	m_v3BBoxMin.y = -fY / 2.0f;
+	const DirectX::XMVECTOR vBoxMin = MathSIMD::Load3(&m_afBoundingBox[0]);
+	const DirectX::XMVECTOR vBoxMax = MathSIMD::Load3(&m_afBoundingBox[3]);
+	const DirectX::XMVECTOR vDiff = DirectX::XMVectorSubtract(vBoxMax, vBoxMin);
+
+	const float fHalfX = DirectX::XMVectorGetX(vDiff) * 0.5f;
+	const float fHalfY = DirectX::XMVectorGetY(vDiff) * 0.5f;
+	const float fZ = DirectX::XMVectorGetZ(vDiff);
+
+	m_v3BBoxMin.x = -fHalfX;
+	m_v3BBoxMin.y = -fHalfY;
 	m_v3BBoxMin.z = 0.0f;
-	m_v3BBoxMax.x = fX / 2.0f;
-	m_v3BBoxMax.y = fY / 2.0f;
+	m_v3BBoxMax.x = fHalfX;
+	m_v3BBoxMax.y = fHalfY;
 	m_v3BBoxMax.z = fZ;
-	
+
 	m_v4TBBox[0] = D3DXVECTOR4(m_v3BBoxMin.x, m_v3BBoxMin.y, m_v3BBoxMin.z, 1.0f);
 	m_v4TBBox[1] = D3DXVECTOR4(m_v3BBoxMin.x, m_v3BBoxMax.y, m_v3BBoxMin.z, 1.0f);
 	m_v4TBBox[2] = D3DXVECTOR4(m_v3BBoxMax.x, m_v3BBoxMin.y, m_v3BBoxMin.z, 1.0f);
@@ -1456,37 +1471,74 @@ void CSpeedTreeWrapper::CalculateBBox()
 	m_v4TBBox[5] = D3DXVECTOR4(m_v3BBoxMin.x, m_v3BBoxMax.y, m_v3BBoxMax.z, 1.0f);
 	m_v4TBBox[6] = D3DXVECTOR4(m_v3BBoxMax.x, m_v3BBoxMin.y, m_v3BBoxMax.z, 1.0f);
 	m_v4TBBox[7] = D3DXVECTOR4(m_v3BBoxMax.x, m_v3BBoxMax.y, m_v3BBoxMax.z, 1.0f);
-	
+
 	const D3DXMATRIX & c_rmatTransform = GetTransform();
-	
+	const DirectX::XMMATRIX matTransform = DirectX::XMLoadFloat4x4(reinterpret_cast<const DirectX::XMFLOAT4X4*>(&c_rmatTransform));
+
+	DirectX::XMVECTOR vMin = DirectX::g_XMFltMax;
+	DirectX::XMVECTOR vMax = DirectX::XMVectorNegate(DirectX::g_XMFltMax);
+
 	for (DWORD i = 0; i < 8; ++i)
 	{
-		D3DXVec4Transform(&m_v4TBBox[i], &m_v4TBBox[i], &c_rmatTransform);
-		if (0 == i)
+		DirectX::XMVECTOR vCorner = DirectX::XMLoadFloat4(reinterpret_cast<const DirectX::XMFLOAT4*>(&m_v4TBBox[i]));
+		vCorner = DirectX::XMVector4Transform(vCorner, matTransform);
+		DirectX::XMStoreFloat4(reinterpret_cast<DirectX::XMFLOAT4*>(&m_v4TBBox[i]), vCorner);
+
+		vMin = DirectX::XMVectorMin(vMin, vCorner);
+		vMax = DirectX::XMVectorMax(vMax, vCorner);
+	}
+
+	MathSIMD::Store3(&m_v3TBBoxMin.x, vMin);
+	MathSIMD::Store3(&m_v3TBBoxMax.x, vMax);
+}
+
+bool CSpeedTreeWrapper::TestFrustumCulling(const DirectX::XMVECTOR* planes, size_t planeCount) const
+{
+	D3DXVECTOR3 v3Center;
+	float fRadius = 0.0f;
+	const_cast<CSpeedTreeWrapper*>(this)->GetBoundingSphere(v3Center, fRadius);
+
+	const DirectX::XMVECTOR vCenter = MathSIMD::Load3(&v3Center.x);
+	return MathSIMD::FrustumContainsSphere(planes, planeCount, vCenter, fRadius);
+}
+
+bool CSpeedTreeWrapper::TestFrustumCulling() const
+{
+	// Ekstrakcja 6 plaszczyzn frustuma kamery z iloczynu View * Projection
+	D3DXMATRIX matViewProj;
+	D3DXMatrixMultiply(&matViewProj, &ms_matView, &ms_matProj);
+
+	static D3DXMATRIX s_lastViewProj = {};
+	static DirectX::XMVECTOR s_cachedPlanes[6];
+
+	if (memcmp(&matViewProj, &s_lastViewProj, sizeof(D3DXMATRIX)) != 0)
+	{
+		s_lastViewProj = matViewProj;
+
+		// Near plane
+		s_cachedPlanes[0] = DirectX::XMVectorSet(matViewProj._13, matViewProj._23, matViewProj._33, matViewProj._43);
+		// Far plane
+		s_cachedPlanes[1] = DirectX::XMVectorSet(matViewProj._14 - matViewProj._13, matViewProj._24 - matViewProj._23, matViewProj._34 - matViewProj._33, matViewProj._44 - matViewProj._43);
+		// Left plane
+		s_cachedPlanes[2] = DirectX::XMVectorSet(matViewProj._14 + matViewProj._11, matViewProj._24 + matViewProj._21, matViewProj._34 + matViewProj._31, matViewProj._44 + matViewProj._41);
+		// Right plane
+		s_cachedPlanes[3] = DirectX::XMVectorSet(matViewProj._14 - matViewProj._11, matViewProj._24 - matViewProj._21, matViewProj._34 - matViewProj._31, matViewProj._44 - matViewProj._41);
+		// Bottom plane
+		s_cachedPlanes[4] = DirectX::XMVectorSet(matViewProj._14 + matViewProj._12, matViewProj._24 + matViewProj._22, matViewProj._34 + matViewProj._32, matViewProj._44 + matViewProj._42);
+		// Top plane
+		s_cachedPlanes[5] = DirectX::XMVectorSet(matViewProj._14 - matViewProj._12, matViewProj._24 - matViewProj._22, matViewProj._34 - matViewProj._32, matViewProj._44 - matViewProj._42);
+
+		for (int i = 0; i < 6; ++i)
 		{
-			m_v3TBBoxMin.x = m_v4TBBox[i].x;
-			m_v3TBBoxMin.y = m_v4TBBox[i].y;
-			m_v3TBBoxMin.z = m_v4TBBox[i].z;
-			m_v3TBBoxMax.x = m_v4TBBox[i].x;
-			m_v3TBBoxMax.y = m_v4TBBox[i].y;
-			m_v3TBBoxMax.z = m_v4TBBox[i].z;
+			const DirectX::XMVECTOR len = DirectX::XMVector3Length(s_cachedPlanes[i]);
+			if (DirectX::XMVectorGetX(len) > 1e-6f)
+			{
+				s_cachedPlanes[i] = DirectX::XMVectorDivide(s_cachedPlanes[i], len);
+			}
 		}
-		else
-		{
-			if (m_v3TBBoxMin.x > m_v4TBBox[i].x)
-				m_v3TBBoxMin.x = m_v4TBBox[i].x;
-			if (m_v3TBBoxMax.x < m_v4TBBox[i].x)
-				m_v3TBBoxMax.x = m_v4TBBox[i].x;
-			if (m_v3TBBoxMin.y > m_v4TBBox[i].y)
-				m_v3TBBoxMin.y = m_v4TBBox[i].y;
-			if (m_v3TBBoxMax.y < m_v4TBBox[i].y)
-				m_v3TBBoxMax.y = m_v4TBBox[i].y;
-			if (m_v3TBBoxMin.z > m_v4TBBox[i].z)
-				m_v3TBBoxMin.z = m_v4TBBox[i].z;
-			if (m_v3TBBoxMax.z < m_v4TBBox[i].z)
-				m_v3TBBoxMax.z = m_v4TBBox[i].z;
-		}
-	}	
+	}
+
+	return TestFrustumCulling(s_cachedPlanes, 6);
 }
 
 // collision detection routines

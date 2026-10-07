@@ -5,6 +5,7 @@
 #include "GrpMath.h"
 #include "lineintersect_utils.h"
 #include "StateManager.h"
+#include "EterBase/MathSIMD.h"
 const float gc_fReduceMove = 0.5f;
 
 //const float gc_fSlideMoveSpeed = 5.0f;
@@ -228,11 +229,14 @@ void CSphereCollisionInstance::OnDestroy()
 
 bool CSphereCollisionInstance::OnMovementCollisionDynamicSphere(const CDynamicSphereInstance & s) const 
 {
+	const auto vPos = MathSIMD::Load3(&s.v3Position.x);
+	const auto vLastPos = MathSIMD::Load3(&s.v3LastPosition.x);
+	const auto vCenter = MathSIMD::Load3(&m_attribute.v3Position.x);
+
 	if (square_distance_between_linesegment_and_point(s.v3LastPosition,s.v3Position,m_attribute.v3Position) < (m_attribute.fRadius+s.fRadius)*(m_attribute.fRadius+s.fRadius))
 	{
-		// NOTE : 거리가 가까워 졌을때만.. - [levites]
-		if (GetVector3Distance(s.v3Position, m_attribute.v3Position) <
-			GetVector3Distance(s.v3LastPosition, m_attribute.v3Position))
+		// Weryfikacja zblizania sie za pomoca MathSIMD::DistanceSq
+		if (MathSIMD::DistanceSq(vPos, vCenter) < MathSIMD::DistanceSq(vLastPos, vCenter))
 			return true;
 	}
 
@@ -241,8 +245,17 @@ bool CSphereCollisionInstance::OnMovementCollisionDynamicSphere(const CDynamicSp
 
 bool CSphereCollisionInstance::OnCollisionDynamicSphere(const CDynamicSphereInstance & s) const 
 {
-	//Tracef("OnCollisionDynamicSphere\n");
-	
+	const auto vPos = MathSIMD::Load3(&s.v3Position.x);
+	const auto vCenter = MathSIMD::Load3(&m_attribute.v3Position.x);
+
+	// Szybka weryfikacja przeciecia sfera-sfera w punkcie biezacym i poprzednim
+	if (MathSIMD::IntersectSphereSphere(vPos, s.fRadius, vCenter, m_attribute.fRadius))
+		return true;
+
+	const auto vLastPos = MathSIMD::Load3(&s.v3LastPosition.x);
+	if (MathSIMD::IntersectSphereSphere(vLastPos, s.fRadius, vCenter, m_attribute.fRadius))
+		return true;
+
 	if (square_distance_between_linesegment_and_point(s.v3LastPosition,s.v3Position,m_attribute.v3Position)<(m_attribute.fRadius+s.fRadius)*(m_attribute.fRadius+s.fRadius))
 	{
 		return true;
@@ -253,16 +266,22 @@ bool CSphereCollisionInstance::OnCollisionDynamicSphere(const CDynamicSphereInst
 
 D3DXVECTOR3 CSphereCollisionInstance::OnGetCollisionMovementAdjust(const CDynamicSphereInstance & s) const
 {
-	const auto _vv__ = (s.v3Position - m_attribute.v3Position);
-	if (D3DXVec3LengthSq(&_vv__)>=(s.fRadius+m_attribute.fRadius)*(m_attribute.fRadius+s.fRadius))
+	const auto vPos = MathSIMD::Load3(&s.v3Position.x);
+	const auto vCenter = MathSIMD::Load3(&m_attribute.v3Position.x);
+	const float totalRadius = s.fRadius + m_attribute.fRadius;
+	const float totalRadiusSq = totalRadius * totalRadius;
+	const float distSq = MathSIMD::DistanceSq(vPos, vCenter);
+
+	if (distSq >= totalRadiusSq)
 		return D3DXVECTOR3(0.0f,0.0f,0.0f);
 	D3DXVECTOR3 c;
 	const auto _vv__2 = (s.v3Position - s.v3LastPosition);
 	const auto _vv_s_2 = D3DXVECTOR3(0.0f, 0.0f, 1.0f);
 	D3DXVec3Cross(&c, &_vv__2, &_vv_s_2);
 	
+	const auto _vv__ = (s.v3Position - m_attribute.v3Position);
 	float sum = - D3DXVec3Dot(&c,&_vv__);
-	float mul = (s.fRadius+m_attribute.fRadius)*(s.fRadius+m_attribute.fRadius)-D3DXVec3LengthSq(&_vv__);
+	float mul = totalRadiusSq - distSq;
 
 	if (sum*sum-4*mul<=0)
 		return D3DXVECTOR3(0.0f,0.0f,0.0f);
@@ -417,17 +436,20 @@ bool CCylinderCollisionInstance::CollideCylinderVSDynamicSphere(const TCylinderD
 
 	D3DXVECTOR3 oa, ob;
 	IntersectLineSegments(c_rattribute.v3Position, D3DXVECTOR3(c_rattribute.v3Position.x,c_rattribute.v3Position.y,c_rattribute.v3Position.z+c_rattribute.fHeight), s.v3LastPosition, s.v3Position, oa, ob);
-	const auto vv = (oa - ob);
-	return (D3DXVec3LengthSq(&vv)<=(c_rattribute.fRadius+s.fRadius)*(c_rattribute.fRadius+s.fRadius));
+	const auto vOA = MathSIMD::Load3(&oa.x);
+	const auto vOB = MathSIMD::Load3(&ob.x);
+	return MathSIMD::IntersectSphereSphere(vOA, c_rattribute.fRadius, vOB, s.fRadius);
 }
 
 bool CCylinderCollisionInstance::OnMovementCollisionDynamicSphere(const CDynamicSphereInstance & s) const
 {
 	if (CollideCylinderVSDynamicSphere(m_attribute, s))
 	{
-		// NOTE : 거리가 가까워 졌을때만.. - [levites]
-		if (GetVector3Distance(s.v3Position, m_attribute.v3Position) <
-			GetVector3Distance(s.v3LastPosition, m_attribute.v3Position))
+		// Weryfikacja zblizania sie za pomoca MathSIMD::DistanceSq
+		const auto vPos = MathSIMD::Load3(&s.v3Position.x);
+		const auto vLastPos = MathSIMD::Load3(&s.v3LastPosition.x);
+		const auto vCenter = MathSIMD::Load3(&m_attribute.v3Position.x);
+		if (MathSIMD::DistanceSq(vPos, vCenter) < MathSIMD::DistanceSq(vLastPos, vCenter))
 			return true;
 	}
 
@@ -469,8 +491,14 @@ D3DXVECTOR3 CCylinderCollisionInstance::OnGetCollisionMovementAdjust(const CDyna
 {
 	D3DXVECTOR3 v3Position = m_attribute.v3Position;
 	v3Position.z = s.v3Position.z;
-	const auto vv = (s.v3Position - v3Position);
-	if (D3DXVec3LengthSq(&vv)>=(s.fRadius+m_attribute.fRadius)*(m_attribute.fRadius+s.fRadius))
+
+	const auto vPos = MathSIMD::Load3(&s.v3Position.x);
+	const auto vCylPos = MathSIMD::Load3(&v3Position.x);
+	const float totalRadius = s.fRadius + m_attribute.fRadius;
+	const float totalRadiusSq = totalRadius * totalRadius;
+	const float distSq = MathSIMD::DistanceSq(vPos, vCylPos);
+
+	if (distSq >= totalRadiusSq)
 		return D3DXVECTOR3(0.0f,0.0f,0.0f);
 	D3DXVECTOR3 c;
 	D3DXVECTOR3 advance = s.v3Position - s.v3LastPosition;
@@ -480,7 +508,7 @@ D3DXVECTOR3 CCylinderCollisionInstance::OnGetCollisionMovementAdjust(const CDyna
 	
 	const auto svsvs = (s.v3Position - v3Position);
 	float sum = - D3DXVec3Dot(&c,&svsvs);
-	float mul = (s.fRadius+m_attribute.fRadius)*(s.fRadius+m_attribute.fRadius)-D3DXVec3LengthSq(&svsvs);
+	float mul = totalRadiusSq - distSq;
 
 	if (sum*sum-4*mul<=0)
 		return D3DXVECTOR3(0.0f,0.0f,0.0f);
@@ -537,38 +565,34 @@ const TAABBData & CAABBCollisionInstance::GetAttribute() const
 
 bool CAABBCollisionInstance::OnMovementCollisionDynamicSphere(const CDynamicSphereInstance & s) const
 {
-	D3DXVECTOR3 v;
-	D3DXVECTOR3 v3center = (m_attribute.v3Min + m_attribute.v3Max) * 0.5f;
+	const auto vBoxMin = MathSIMD::Load3(&m_attribute.v3Min.x);
+	const auto vBoxMax = MathSIMD::Load3(&m_attribute.v3Max.x);
+	const auto vPos = MathSIMD::Load3(&s.v3Position.x);
+	const auto vLastPos = MathSIMD::Load3(&s.v3LastPosition.x);
+	const float fRadiusSq = s.fRadius * s.fRadius;
 
-	memcpy(&v, &s.v3Position, sizeof(D3DXVECTOR3));
-
-	if(v.x < m_attribute.v3Min.x) v.x = m_attribute.v3Min.x;
-	if(v.x > m_attribute.v3Max.x) v.x = m_attribute.v3Max.x;
-	if(v.y < m_attribute.v3Min.y) v.x = m_attribute.v3Min.y;
-	if(v.y > m_attribute.v3Max.y) v.x = m_attribute.v3Max.y;
-	if(v.z < m_attribute.v3Min.z) v.z = m_attribute.v3Min.z;
-	if(v.z > m_attribute.v3Max.z) v.z = m_attribute.v3Max.z;
-
-	if(GetVector3Distance(v, s.v3Position) <= s.fRadius * s.fRadius)
-	{
-		
+	// 1. Test biezacej pozycji wzgledem AABB (SIMD clamp + DistanceSq)
+	const auto vClosestCurrent = DirectX::XMVectorClamp(vPos, vBoxMin, vBoxMax);
+	if (MathSIMD::DistanceSq(vClosestCurrent, vPos) <= fRadiusSq)
 		return true;
-	}
 
-
-	memcpy(&v, &s.v3LastPosition, sizeof(D3DXVECTOR3));
-
-	if(v.x < m_attribute.v3Min.x) v.x = m_attribute.v3Min.x;
-	if(v.x > m_attribute.v3Max.x) v.x = m_attribute.v3Max.x;
-	if(v.y < m_attribute.v3Min.y) v.x = m_attribute.v3Min.y;
-	if(v.y > m_attribute.v3Max.y) v.x = m_attribute.v3Max.y;
-	if(v.z < m_attribute.v3Min.z) v.z = m_attribute.v3Min.z;
-	if(v.z > m_attribute.v3Max.z) v.z = m_attribute.v3Max.z;
-
-	if(GetVector3Distance(v, s.v3LastPosition) <= s.fRadius * s.fRadius)
-	{
-		
+	// 2. Test poprzedniej pozycji wzgledem AABB (SIMD clamp + DistanceSq)
+	const auto vClosestLast = DirectX::XMVectorClamp(vLastPos, vBoxMin, vBoxMax);
+	if (MathSIMD::DistanceSq(vClosestLast, vLastPos) <= fRadiusSq)
 		return true;
+
+	// 3. Wektorowy test przeciecia promienia trajektorii z rozszerzonym AABB (MathSIMD::IntersectRayAABB)
+	const auto vRayOrigin = vLastPos;
+	const auto vRayDir = DirectX::XMVectorSubtract(vPos, vLastPos);
+	const auto vRadius = DirectX::XMVectorReplicate(s.fRadius);
+	const auto vExpMin = DirectX::XMVectorSubtract(vBoxMin, vRadius);
+	const auto vExpMax = DirectX::XMVectorAdd(vBoxMax, vRadius);
+
+	float tMin = 0.0f, tMax = 0.0f;
+	if (MathSIMD::IntersectRayAABB(vRayOrigin, vRayDir, vExpMin, vExpMax, tMin, tMax))
+	{
+		if (tMin <= 1.0f && tMax >= 0.0f)
+			return true;
 	}
 
 	return false;
@@ -576,48 +600,41 @@ bool CAABBCollisionInstance::OnMovementCollisionDynamicSphere(const CDynamicSphe
 
 bool CAABBCollisionInstance::OnCollisionDynamicSphere(const CDynamicSphereInstance & s) const
 {
-	D3DXVECTOR3 v;
-	memcpy(&v, &s.v3Position, sizeof(D3DXVECTOR3));
+	const auto vBoxMin = MathSIMD::Load3(&m_attribute.v3Min.x);
+	const auto vBoxMax = MathSIMD::Load3(&m_attribute.v3Max.x);
+	const auto vPos = MathSIMD::Load3(&s.v3Position.x);
+	const auto vLastPos = MathSIMD::Load3(&s.v3LastPosition.x);
+	const float fRadiusSq = s.fRadius * s.fRadius;
 
-	if(v.x < m_attribute.v3Min.x) v.x = m_attribute.v3Min.x;
-	if(v.x > m_attribute.v3Max.x) v.x = m_attribute.v3Max.x;
-	if(v.y < m_attribute.v3Min.y) v.x = m_attribute.v3Min.y;
-	if(v.y > m_attribute.v3Max.y) v.x = m_attribute.v3Max.y;
-	if(v.z < m_attribute.v3Min.z) v.z = m_attribute.v3Min.z;
-	if(v.z > m_attribute.v3Max.z) v.z = m_attribute.v3Max.z;
+	// 1. Test biezacej pozycji wzgledem AABB
+	const auto vClosestCurrent = DirectX::XMVectorClamp(vPos, vBoxMin, vBoxMax);
+	if (MathSIMD::DistanceSq(vClosestCurrent, vPos) <= fRadiusSq)
+		return true;
 
-	if(v.x > m_attribute.v3Min.x && v.x < m_attribute.v3Max.x &&
-		v.y > m_attribute.v3Min.y && v.y < m_attribute.v3Max.y &&
-		v.z > m_attribute.v3Min.z && v.z < m_attribute.v3Max.z) { return true; }
+	// 2. Test poprzedniej pozycji wzgledem AABB
+	const auto vClosestLast = DirectX::XMVectorClamp(vLastPos, vBoxMin, vBoxMax);
+	if (MathSIMD::DistanceSq(vClosestLast, vLastPos) <= fRadiusSq)
+		return true;
 
-	if(GetVector3Distance(v, s.v3Position) <= s.fRadius * s.fRadius) { return true; }
+	// 3. Wektorowy test przeciecia promienia ruchu z rozszerzonym AABB
+	const auto vRayOrigin = vLastPos;
+	const auto vRayDir = DirectX::XMVectorSubtract(vPos, vLastPos);
+	const auto vRadius = DirectX::XMVectorReplicate(s.fRadius);
+	const auto vExpMin = DirectX::XMVectorSubtract(vBoxMin, vRadius);
+	const auto vExpMax = DirectX::XMVectorAdd(vBoxMax, vRadius);
 
-
-	memcpy(&v, &s.v3LastPosition, sizeof(D3DXVECTOR3));
-
-	if(v.x < m_attribute.v3Min.x) v.x = m_attribute.v3Min.x;
-	if(v.x > m_attribute.v3Max.x) v.x = m_attribute.v3Max.x;
-	if(v.y < m_attribute.v3Min.y) v.x = m_attribute.v3Min.y;
-	if(v.y > m_attribute.v3Max.y) v.x = m_attribute.v3Max.y;
-	if(v.z < m_attribute.v3Min.z) v.z = m_attribute.v3Min.z;
-	if(v.z > m_attribute.v3Max.z) v.z = m_attribute.v3Max.z;
-	
-
-
-	if(v.x > m_attribute.v3Min.x && v.x < m_attribute.v3Max.x &&
-		v.y > m_attribute.v3Min.y && v.y < m_attribute.v3Max.y &&
-		v.z > m_attribute.v3Min.z && v.z < m_attribute.v3Max.z) { return true; }
-
-	if(GetVector3Distance(v, s.v3LastPosition) <= s.fRadius * s.fRadius) { return true; }
-
-	
+	float tMin = 0.0f, tMax = 0.0f;
+	if (MathSIMD::IntersectRayAABB(vRayOrigin, vRayDir, vExpMin, vExpMax, tMin, tMax))
+	{
+		if (tMin <= 1.0f && tMax >= 0.0f)
+			return true;
+	}
 
 	return false;
 }
 
 D3DXVECTOR3 CAABBCollisionInstance::OnGetCollisionMovementAdjust(const CDynamicSphereInstance & s) const
 {
-	
 	D3DXVECTOR3 v3Temp;
 	if(s.v3Position.x + s.fRadius <= m_attribute.v3Min.x)		{ v3Temp.x = m_attribute.v3Min.x; }
 	else if(s.v3Position.x - s.fRadius >= m_attribute.v3Max.x)	{ v3Temp.x = m_attribute.v3Max.x; }
@@ -634,13 +651,12 @@ D3DXVECTOR3 CAABBCollisionInstance::OnGetCollisionMovementAdjust(const CDynamicS
 	else if(s.v3Position.z + s.fRadius >= m_attribute.v3Min.z && s.v3Position.z + s.fRadius <= m_attribute.v3Max.z) { v3Temp.z = s.v3Position.z + s.fRadius; }
 	else																											{ v3Temp.z = s.v3Position.z - s.fRadius; }
 
+	const auto vTemp = MathSIMD::Load3(&v3Temp.x);
+	const auto vPos = MathSIMD::Load3(&s.v3Position.x);
+	if(MathSIMD::DistanceSq(vTemp, vPos) < s.fRadius * s.fRadius)
+		return D3DXVECTOR3(0.0f, 0.0f, 0.0f);
 	
-	const auto vv = (v3Temp - s.v3Position);
-	if(D3DXVec3LengthSq(&vv) < s.fRadius * s.fRadius)
-		return D3DXVECTOR3(.0f, .0f, .0f);
-	
-	return D3DXVECTOR3(.0f, .0f, .0f);
-	
+	return D3DXVECTOR3(0.0f, 0.0f, 0.0f);
 }
 
 void CAABBCollisionInstance::Render(D3DFILLMODE d3dFillMode)
@@ -677,65 +693,47 @@ bool COBBCollisionInstance::OnMovementCollisionDynamicSphere(const CDynamicSpher
 	D3DXVec3TransformCoord(&v3Sphere, &v3Sphere, &m_attribute.matRot);
 	v3Sphere = v3Sphere + v3Center;
 	
-	D3DXVECTOR3 v3Point = v3Sphere;
-	if(v3Point.x < m_attribute.v3Min.x) { v3Point.x = m_attribute.v3Min.x; }
-	if(v3Point.x > m_attribute.v3Max.x) { v3Point.x = m_attribute.v3Max.x; }
-	if(v3Point.y < m_attribute.v3Min.y) { v3Point.y = m_attribute.v3Min.y; }
-	if(v3Point.y > m_attribute.v3Max.y) { v3Point.y = m_attribute.v3Max.y; }
-	if(v3Point.z < m_attribute.v3Min.z) { v3Point.z = m_attribute.v3Min.z; }
-	if(v3Point.z > m_attribute.v3Max.z) { v3Point.z = m_attribute.v3Max.z; }
-	
-	if(GetVector3Distance(v3Point, v3Sphere) <= s.fRadius * s.fRadius) { return true; }
+	const auto vBoxMin = MathSIMD::Load3(&m_attribute.v3Min.x);
+	const auto vBoxMax = MathSIMD::Load3(&m_attribute.v3Max.x);
+	const float fRadiusSq = s.fRadius * s.fRadius;
+
+	const auto vSph1 = MathSIMD::Load3(&v3Sphere.x);
+	const auto vPt1 = DirectX::XMVectorClamp(vSph1, vBoxMin, vBoxMax);
+	if (MathSIMD::DistanceSq(vPt1, vSph1) <= fRadiusSq) { return true; }
 
 	v3Sphere = s.v3LastPosition - v3Center;
 	D3DXVec3TransformCoord(&v3Sphere, &v3Sphere, &m_attribute.matRot);
 	v3Sphere = v3Sphere + v3Center;
 	
-	v3Point = v3Sphere;
-	if(v3Point.x < m_attribute.v3Min.x) { v3Point.x = m_attribute.v3Min.x; }
-	if(v3Point.x > m_attribute.v3Max.x) { v3Point.x = m_attribute.v3Max.x; }
-	if(v3Point.y < m_attribute.v3Min.y) { v3Point.y = m_attribute.v3Min.y; }
-	if(v3Point.y > m_attribute.v3Max.y) { v3Point.y = m_attribute.v3Max.y; }
-	if(v3Point.z < m_attribute.v3Min.z) { v3Point.z = m_attribute.v3Min.z; }
-	if(v3Point.z > m_attribute.v3Max.z) { v3Point.z = m_attribute.v3Max.z; }
-	
-	if(GetVector3Distance(v3Point, v3Sphere) <= s.fRadius * s.fRadius) { return true; }
+	const auto vSph2 = MathSIMD::Load3(&v3Sphere.x);
+	const auto vPt2 = DirectX::XMVectorClamp(vSph2, vBoxMin, vBoxMax);
+	if (MathSIMD::DistanceSq(vPt2, vSph2) <= fRadiusSq) { return true; }
 
 	return false;
 }
 
 bool COBBCollisionInstance::OnCollisionDynamicSphere(const CDynamicSphereInstance & s) const
 {
-	
 	D3DXVECTOR3 v3Center = 0.5f * (m_attribute.v3Min + m_attribute.v3Max);
 	D3DXVECTOR3 v3Sphere = s.v3Position - v3Center;
 	D3DXVec3TransformCoord(&v3Sphere, &v3Sphere, &m_attribute.matRot);
 	v3Sphere = v3Sphere + v3Center;
 
-	D3DXVECTOR3 v3Point = v3Sphere;
-	if(v3Point.x < m_attribute.v3Min.x) { v3Point.x = m_attribute.v3Min.x; }
-	if(v3Point.x > m_attribute.v3Max.x) { v3Point.x = m_attribute.v3Max.x; }
-	if(v3Point.y < m_attribute.v3Min.y) { v3Point.y = m_attribute.v3Min.y; }
-	if(v3Point.y > m_attribute.v3Max.y) { v3Point.y = m_attribute.v3Max.y; }
-	if(v3Point.z < m_attribute.v3Min.z) { v3Point.z = m_attribute.v3Min.z; }
-	if(v3Point.z > m_attribute.v3Max.z) { v3Point.z = m_attribute.v3Max.z; }
-	
-	if(GetVector3Distance(v3Point, v3Sphere) <= s.fRadius * s.fRadius) { return true; }
+	const auto vBoxMin = MathSIMD::Load3(&m_attribute.v3Min.x);
+	const auto vBoxMax = MathSIMD::Load3(&m_attribute.v3Max.x);
+	const float fRadiusSq = s.fRadius * s.fRadius;
+
+	const auto vSph1 = MathSIMD::Load3(&v3Sphere.x);
+	const auto vPt1 = DirectX::XMVectorClamp(vSph1, vBoxMin, vBoxMax);
+	if (MathSIMD::DistanceSq(vPt1, vSph1) <= fRadiusSq) { return true; }
 
 	v3Sphere = s.v3LastPosition - v3Center;
 	D3DXVec3TransformCoord(&v3Sphere, &v3Sphere, &m_attribute.matRot);
 	v3Sphere = v3Sphere + v3Center;
 	
-	v3Point = v3Sphere;
-	if(v3Point.x < m_attribute.v3Min.x) { v3Point.x = m_attribute.v3Min.x; }
-	if(v3Point.x > m_attribute.v3Max.x) { v3Point.x = m_attribute.v3Max.x; }
-	if(v3Point.y < m_attribute.v3Min.y) { v3Point.y = m_attribute.v3Min.y; }
-	if(v3Point.y > m_attribute.v3Max.y) { v3Point.y = m_attribute.v3Max.y; }
-	if(v3Point.z < m_attribute.v3Min.z) { v3Point.z = m_attribute.v3Min.z; }
-	if(v3Point.z > m_attribute.v3Max.z) { v3Point.z = m_attribute.v3Max.z; }
-	
-	if(GetVector3Distance(v3Point, v3Sphere) <= s.fRadius * s.fRadius) { return true; }
-
+	const auto vSph2 = MathSIMD::Load3(&v3Sphere.x);
+	const auto vPt2 = DirectX::XMVectorClamp(vSph2, vBoxMin, vBoxMax);
+	if (MathSIMD::DistanceSq(vPt2, vSph2) <= fRadiusSq) { return true; }
 
 	return false;
 }

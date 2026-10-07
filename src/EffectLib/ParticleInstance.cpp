@@ -3,6 +3,7 @@
 #include "ParticleProperty.h"
 
 #include "EterBase/Random.h"
+#include "EterBase/MathSIMD.h"
 #include "EterLib/Camera.h"
 #include "EterLib/StateManager.h"
 
@@ -48,8 +49,14 @@ BOOL CParticleInstance::Update(float fElapsedTime, float fAngle)
 	UpdateGravity(fLifePercentage, fElapsedTime);
 	UpdateAirResistance(fLifePercentage, fElapsedTime);
 
-	m_v3LastPosition = m_v3Position;
-	m_v3Position += m_v3Velocity * fElapsedTime;
+	// Wektorowa aktualizacja pozycji czasteczek za pomoca MathSIMD (rejestry CPU / FMA)
+	const DirectX::XMVECTOR vPos = MathSIMD::Load3(&m_v3Position.x);
+	const DirectX::XMVECTOR vVel = MathSIMD::Load3(&m_v3Velocity.x);
+	const DirectX::XMVECTOR vDt = DirectX::XMVectorReplicate(fElapsedTime);
+
+	MathSIMD::Store3(&m_v3LastPosition.x, vPos);
+	const DirectX::XMVECTOR vNewPos = DirectX::XMVectorMultiplyAdd(vVel, vDt, vPos);
+	MathSIMD::Store3(&m_v3Position.x, vNewPos);
 
 	if (fAngle)
 	{
@@ -174,7 +181,10 @@ void CParticleInstance::UpdateAirResistance(float time, float elapsedTime)
 	if (m_pParticleProperty->m_TimeEventAirResistance.empty())
 		return;
 
-	m_v3Velocity *= 1.0f - GetTimeEventBlendValue(time, m_pParticleProperty->m_TimeEventAirResistance);
+	const float fFactor = 1.0f - GetTimeEventBlendValue(time, m_pParticleProperty->m_TimeEventAirResistance);
+	const DirectX::XMVECTOR vVel = MathSIMD::Load3(&m_v3Velocity.x);
+	const DirectX::XMVECTOR vScale = DirectX::XMVectorReplicate(fFactor);
+	MathSIMD::Store3(&m_v3Velocity.x, DirectX::XMVectorMultiply(vVel, vScale));
 }
 
 void CParticleInstance::Transform(const D3DXMATRIX * c_matLocal)

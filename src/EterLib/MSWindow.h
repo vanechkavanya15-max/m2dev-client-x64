@@ -24,6 +24,7 @@ class CMSWindow
 
 		void AdjustSize(int width, int height);
 		void SetSize(int width, int height);
+		void SetBorderlessFullscreen();
 
 		bool IsVisible();
 		bool IsActive();

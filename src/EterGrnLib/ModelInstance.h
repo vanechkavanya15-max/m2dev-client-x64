@@ -1,11 +1,49 @@
 #pragma once
 
 //#define CACHE_DEFORMED_VERTEX
+#include <atomic>
+#include <cstdint>
 #include "Eterlib/GrpImage.h"
 #include "Eterlib/GrpCollisionObject.h"
 
 #include "Model.h"
 #include "Motion.h"
+
+class CGrannyLocalPose
+{
+	public:
+		CGrannyLocalPose() : m_pgrnLocalPose(NULL), m_boneCount(0) {}
+		~CGrannyLocalPose() { Reset(); }
+
+		void Reset()
+		{
+			if (m_pgrnLocalPose)
+			{
+				GrannyFreeLocalPose(m_pgrnLocalPose);
+				m_pgrnLocalPose = NULL;
+			}
+			m_boneCount = 0;
+		}
+
+		granny_local_pose * Get(int boneCount)
+		{
+			if (m_pgrnLocalPose)
+			{
+				if (m_boneCount >= boneCount)
+					return m_pgrnLocalPose;
+
+				GrannyFreeLocalPose(m_pgrnLocalPose);
+			}
+
+			m_boneCount = boneCount;
+			m_pgrnLocalPose = GrannyNewLocalPose(m_boneCount);
+			return m_pgrnLocalPose;
+		}
+
+	private:
+		granny_local_pose *	m_pgrnLocalPose;
+		int					m_boneCount;
+};
 
 class CGrannyModelInstance : public CGraphicCollisionObject
 {
@@ -99,10 +137,13 @@ class CGrannyModelInstance : public CGraphicCollisionObject
 		// Bone & Attaching
 		const float *	GetBoneMatrixPointer(int iBone) const;
 		const float *	GetCompositeBoneMatrixPointer(int iBone) const;
+		const D3DXMATRIX * GetActiveMeshMatrices() const;
 		bool			GetMeshMatrixPointer(int iMesh, const D3DXMATRIX ** c_ppMatrix) const;
 		bool			GetBoneIndexByName(const char * c_szBoneName, int * pBoneIndex) const;
 		void			SetParentModelInstance(const CGrannyModelInstance* c_pParentModelInstance, const char * c_szBoneName);
 		void			SetParentModelInstance(const CGrannyModelInstance* c_pParentModelInstance, int iBone);
+
+		void			DeformPNTVerticesDirect3D();
 
 		// Collision Detection
 		bool	Intersect(const D3DXMATRIX * c_pMatrix, float * pu, float * pv, float * pt);
@@ -165,8 +206,13 @@ class CGrannyModelInstance : public CGraphicCollisionObject
 		granny_control *				m_pgrnCtrl;
 		granny_animation *				m_pgrnAni;
 
-		// Meshes' Transform Data
-		D3DXMATRIX *					m_meshMatrices;
+		// Meshes' Transform Data (CPU Double-Buffering)
+		enum { TRANSFORM_BUFFER_COUNT = 2 };
+		D3DXMATRIX *					m_meshMatrices[TRANSFORM_BUFFER_COUNT];
+		std::atomic<uint8_t>			m_activeTransformBuffer;
+
+		// Bone Evaluation Data (Izolowany bufor local_pose per-instancja)
+		CGrannyLocalPose				m_localPose;
 
 		
 		// Attaching Data

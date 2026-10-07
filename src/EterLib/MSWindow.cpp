@@ -215,6 +215,17 @@ void CMSWindow::SetSize(int width, int height)
 	SetWindowPos(m_hWnd, NULL, 0, 0, width, height, SWP_NOZORDER|SWP_NOMOVE);
 }
 
+void CMSWindow::SetBorderlessFullscreen()
+{
+	if (!m_hWnd)
+		return;
+
+	SetWindowLongPtr(m_hWnd, GWL_STYLE, WS_POPUP | WS_VISIBLE);
+	int screenW = GetSystemMetrics(SM_CXSCREEN);
+	int screenH = GetSystemMetrics(SM_CYSCREEN);
+	SetWindowPos(m_hWnd, HWND_TOP, 0, 0, screenW, screenH, SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+}
+
 const wchar_t* CMSWindow::RegisterWindowClass(DWORD style, int brush, WNDPROC pfnWndProc, HICON hIcon, int iCursorResource)
 {
 	wchar_t szClassName[1024];

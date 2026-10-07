@@ -2,6 +2,7 @@
 #include "eterBase/Error.h"
 #include "eterlib/Camera.h"
 #include "eterlib/AttributeInstance.h"
+#include "EterLib/FrameTimer.h"
 #include "gamelib/AreaTerrain.h"
 #include "EterGrnLib/Material.h"
 
@@ -285,146 +286,52 @@ bool CPythonApplication::Process()
 
 	// Update Time
 	static BOOL s_bFrameSkip = false;
-	static UINT s_uiNextFrameTime = ELTimer_GetMSec();
 
-#ifdef __PERFORMANCE_CHECK__
-	DWORD dwUpdateTime1=ELTimer_GetMSec();
-#endif
-	CTimer& rkTimer=CTimer::Instance();
-	rkTimer.Advance();
-
-	m_fGlobalTime = rkTimer.GetCurrentSecond();
-	m_fGlobalElapsedTime = rkTimer.GetElapsedSecond();
-
-	UINT uiFrameTime = rkTimer.GetElapsedMilliecond();
-	s_uiNextFrameTime += uiFrameTime;	//17 - 1ÃÊ´ç 60fps±âÁØ.
-
-	DWORD updatestart = ELTimer_GetMSec();
-#ifdef __PERFORMANCE_CHECK__
-	DWORD dwUpdateTime2=ELTimer_GetMSec();
-#endif
-	// Network I/O	
-	m_pyNetworkStream.Process();	
-	//m_pyNetworkDatagram.Process();
-
-	m_kGuildMarkUploader.Process();
-
-	m_kGuildMarkDownloader.Process();
-	m_kAccountConnector.Process();
-
-#ifdef __PERFORMANCE_CHECK__		
-	DWORD dwUpdateTime3=ELTimer_GetMSec();
-#endif
 	//////////////////////
-	// Input Process
+	// Input Process (odswiezane przy kazdej klatce renderingu dla natychmiastowej responsywnosci 144Hz+)
 	// Keyboard
 	UpdateKeyboard();
-#ifdef __PERFORMANCE_CHECK__
-	DWORD dwUpdateTime4=ELTimer_GetMSec();
-#endif
+
 	// Mouse
 	POINT Point;
 	if (GetCursorPos(&Point)) [[likely]] {
 		ScreenToClient(m_hWnd, &Point);
 		OnMouseMove(Point.x, Point.y);		
 	}
-	//////////////////////
-#ifdef __PERFORMANCE_CHECK__
-	DWORD dwUpdateTime5=ELTimer_GetMSec();
-#endif
-	//!@# Alt+Tab Áß SetTransfor ¿¡¼­ Æ¨±è Çö»ó ÇØ°áÀ» À§ÇØ - [levites]
-	//if (m_isActivateWnd)
+
 	__UpdateCamera();
-#ifdef __PERFORMANCE_CHECK__
-	DWORD dwUpdateTime6=ELTimer_GetMSec();
-#endif
-	// Update Game Playing
-	CResourceManager::Instance().Update();
-#ifdef __PERFORMANCE_CHECK__
-	DWORD dwUpdateTime7=ELTimer_GetMSec();
-#endif
-	OnCameraUpdate();
-#ifdef __PERFORMANCE_CHECK__
-	DWORD dwUpdateTime8=ELTimer_GetMSec();
-#endif
-	OnMouseUpdate();
-#ifdef __PERFORMANCE_CHECK__
-	DWORD dwUpdateTime9=ELTimer_GetMSec();
-#endif
-	OnUIUpdate();
 
-#ifdef __PERFORMANCE_CHECK__		
-	DWORD dwUpdateTime10=ELTimer_GetMSec();
+	// Taktowanie logiki gry sztywnym krokiem czasowym (60Hz) przez FrameTimer
+	DWORD updatestart = ELTimer_GetMSec();
+	FrameTimer::Instance().Tick([&](float fixedDelta) {
+		CTimer& rkTimer = CTimer::Instance();
+		rkTimer.Advance();
 
-	if (dwUpdateTime10-dwUpdateTime1>10)
-	{			
-		static FILE* fp=fopen("perf_app_update.txt", "w");
+		m_fGlobalTime = rkTimer.GetCurrentSecond();
+		m_fGlobalElapsedTime = rkTimer.GetElapsedSecond();
 
-		fprintf(fp, "AU.Total %d (Time %d)\n", dwUpdateTime9-dwUpdateTime1, ELTimer_GetMSec());
-		fprintf(fp, "AU.TU %d\n", dwUpdateTime2-dwUpdateTime1);
-		fprintf(fp, "AU.NU %d\n", dwUpdateTime3-dwUpdateTime2);
-		fprintf(fp, "AU.KU %d\n", dwUpdateTime4-dwUpdateTime3);
-		fprintf(fp, "AU.MP %d\n", dwUpdateTime5-dwUpdateTime4);
-		fprintf(fp, "AU.CP %d\n", dwUpdateTime6-dwUpdateTime5);
-		fprintf(fp, "AU.RU %d\n", dwUpdateTime7-dwUpdateTime6);
-		fprintf(fp, "AU.CU %d\n", dwUpdateTime8-dwUpdateTime7);
-		fprintf(fp, "AU.MU %d\n", dwUpdateTime9-dwUpdateTime8);
-		fprintf(fp, "AU.UU %d\n", dwUpdateTime10-dwUpdateTime9);			
-		fprintf(fp, "----------------------------------\n");
-		fflush(fp);
-	}		
-#endif
+		// Network I/O	
+		m_pyNetworkStream.Process();	
+		//m_pyNetworkDatagram.Process();
 
-	//UpdateÇÏ´Âµ¥ °É¸°½Ã°£.delta°ª
+		m_kGuildMarkUploader.Process();
+		m_kGuildMarkDownloader.Process();
+		m_kAccountConnector.Process();
+
+		// Update Game Playing
+		CResourceManager::Instance().Update();
+		OnCameraUpdate();
+		OnMouseUpdate();
+		OnUIUpdate();
+
+		++s_dwUpdateFrameCount;
+	});
+
 	m_dwCurUpdateTime = ELTimer_GetMSec() - updatestart;
 
-	DWORD dwCurrentTime = ELTimer_GetMSec();
-	BOOL  bCurrentLateUpdate = FALSE;
-
+	// Stary mechanizm dlawiacy s_bFrameSkip wylaczony - taktowanie klatek logiki prowadzi FrameTimer (144Hz+)
 	s_bFrameSkip = false;
 
-	if (dwCurrentTime > s_uiNextFrameTime)
-	{
-		int dt = dwCurrentTime - s_uiNextFrameTime;
-		int nAdjustTime = ((float)dt / (float)uiFrameTime) * uiFrameTime; 
-
-		if ( dt >= 500 )
-		{
-			s_uiNextFrameTime += nAdjustTime; 
-			printf("FrameSkip º¸Á¤ %d\n",nAdjustTime);
-			CTimer::Instance().Adjust(nAdjustTime);
-		}
-
-		s_bFrameSkip = true;
-		bCurrentLateUpdate = TRUE;
-	}
-
-	//s_bFrameSkip = false;
-
-	//if (dwCurrentTime > s_uiNextFrameTime)
-	//{
-	//	int dt = dwCurrentTime - s_uiNextFrameTime;
-
-	//	//³Ê¹« ´Ê¾úÀ» °æ¿ì µû¶óÀâ´Â´Ù.
-	//	//±×¸®°í m_dwCurUpdateTime´Â deltaÀÎµ¥ delta¶û absolute timeÀÌ¶û ºñ±³ÇÏ¸é ¾îÂ¼ÀÚ´Â°Ü?
-	//	//if (dt >= 500 || m_dwCurUpdateTime > s_uiNextFrameTime)
-
-	//	//±âÁ¸ÄÚµå´ë·Î ÇÏ¸é 0.5ÃÊ ÀÌÇÏ Â÷ÀÌ³­ »óÅÂ·Î update°¡ Áö¼ÓµÇ¸é °è¼Ó rendering frame skip¹ß»ý
-	//	if (dt >= 500 || m_dwCurUpdateTime > s_uiNextFrameTime)
-	//	{
-	//		s_uiNextFrameTime += dt / uiFrameTime * uiFrameTime; 
-	//		printf("FrameSkip º¸Á¤ %d\n", dt / uiFrameTime * uiFrameTime);
-	//		CTimer::Instance().Adjust((dt / uiFrameTime) * uiFrameTime);
-	//		s_bFrameSkip = true;
-	//	}
-	//}
-
-	if (m_isFrameSkipDisable)
-		s_bFrameSkip = false;
-
-#ifdef __VTUNE__
-	s_bFrameSkip = false;
-#endif
 	if (!s_bFrameSkip)
 	{
 		//		static double pos=0.0f;
@@ -540,15 +447,12 @@ bool CPythonApplication::Process()
 		}
 	}
 
-	int rest = s_uiNextFrameTime - ELTimer_GetMSec();
-
-	if (rest > 0 && !bCurrentLateUpdate )
+	// Stary dlawik Sleep(rest) usuniety dla pelnego wsparcia wysokiego odswiezania 144Hz+.
+	// W przypadku zminimalizowanego okna oddajemy czas procesora systemowi.
+	if (m_isMinimizedWnd)
 	{
-		s_uiLoad -= rest;	// ½® ½Ã°£Àº ·Îµå¿¡¼­ »«´Ù..
-		Sleep(rest);
-	}	
-
-	++s_dwUpdateFrameCount;
+		Sleep(10);
+	}
 
 	s_uiLoad += ELTimer_GetMSec() - dwStart;
 	//m_Profiler.ProfileByScreen();	

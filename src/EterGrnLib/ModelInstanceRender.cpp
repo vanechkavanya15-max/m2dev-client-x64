@@ -198,6 +198,10 @@ void CGrannyModelInstance::RenderMeshNodeListWithOneTexture(CGrannyMesh::EType e
 	LPDIRECT3DINDEXBUFFER9 lpd3dIdxBuf = m_pModel->GetD3DIndexBuffer();
 	assert(lpd3dIdxBuf != NULL);
 
+	const D3DXMATRIX * pActiveMatrices = GetActiveMeshMatrices();
+	if (!pActiveMatrices)
+		return;
+
 	const CGrannyModel::TMeshNode * pMeshNode = m_pModel->GetMeshNodeList(eMeshType, eMtrlType);
 
 	while (pMeshNode)
@@ -206,7 +210,7 @@ void CGrannyModelInstance::RenderMeshNodeListWithOneTexture(CGrannyMesh::EType e
 		int vtxMeshBasePos = pMesh->GetVertexBasePosition();
 
 		STATEMANAGER.SetIndices(lpd3dIdxBuf, vtxMeshBasePos);
-		STATEMANAGER.SetTransform(D3DTS_WORLD, &m_meshMatrices[pMeshNode->iMesh]);
+		STATEMANAGER.SetTransform(D3DTS_WORLD, &pActiveMatrices[pMeshNode->iMesh]);
 
 		/////
 		const CGrannyMesh::TTriGroupNode* pTriGroupNode = pMesh->GetTriGroupNodeList(eMtrlType);
@@ -246,6 +250,10 @@ void CGrannyModelInstance::RenderMeshNodeListWithTwoTexture(CGrannyMesh::EType e
 	LPDIRECT3DINDEXBUFFER9 lpd3dIdxBuf = m_pModel->GetD3DIndexBuffer();
 	assert(lpd3dIdxBuf != NULL);
 
+	const D3DXMATRIX * pActiveMatrices = GetActiveMeshMatrices();
+	if (!pActiveMatrices)
+		return;
+
 	const CGrannyModel::TMeshNode * pMeshNode = m_pModel->GetMeshNodeList(eMeshType, eMtrlType);
 
 	while (pMeshNode)
@@ -254,7 +262,7 @@ void CGrannyModelInstance::RenderMeshNodeListWithTwoTexture(CGrannyMesh::EType e
 		int vtxMeshBasePos = pMesh->GetVertexBasePosition();
 
 		STATEMANAGER.SetIndices(lpd3dIdxBuf, vtxMeshBasePos);
-		STATEMANAGER.SetTransform(D3DTS_WORLD, &m_meshMatrices[pMeshNode->iMesh]);
+		STATEMANAGER.SetTransform(D3DTS_WORLD, &pActiveMatrices[pMeshNode->iMesh]);
 
 		/////
 		const CGrannyMesh::TTriGroupNode* pTriGroupNode = pMesh->GetTriGroupNodeList(eMtrlType);
@@ -283,6 +291,10 @@ void CGrannyModelInstance::RenderMeshNodeListWithoutTexture(CGrannyMesh::EType e
 	LPDIRECT3DINDEXBUFFER9 lpd3dIdxBuf = m_pModel->GetD3DIndexBuffer();
 	assert(lpd3dIdxBuf != NULL);
 
+	const D3DXMATRIX * pActiveMatrices = GetActiveMeshMatrices();
+	if (!pActiveMatrices)
+		return;
+
 	const CGrannyModel::TMeshNode * pMeshNode = m_pModel->GetMeshNodeList(eMeshType, eMtrlType);
 
 	while (pMeshNode)
@@ -291,7 +303,7 @@ void CGrannyModelInstance::RenderMeshNodeListWithoutTexture(CGrannyMesh::EType e
 		int vtxMeshBasePos = pMesh->GetVertexBasePosition();
 
 		STATEMANAGER.SetIndices(lpd3dIdxBuf, vtxMeshBasePos);
-		STATEMANAGER.SetTransform(D3DTS_WORLD, &m_meshMatrices[pMeshNode->iMesh]);
+		STATEMANAGER.SetTransform(D3DTS_WORLD, &pActiveMatrices[pMeshNode->iMesh]);
 
 		/////
 		const CGrannyMesh::TTriGroupNode* pTriGroupNode = pMesh->GetTriGroupNodeList(eMtrlType);

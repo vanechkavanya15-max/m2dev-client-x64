@@ -132,6 +132,8 @@ void CGrannyModelInstance::__CreateWorldPose(CGrannyModelInstance* pkSkeletonIns
 
 void CGrannyModelInstance::__DestroyWorldPose()
 {
+	m_localPose.Reset();
+
 	if (!m_pgrnWorldPoseReal)
 		return;
 
@@ -165,16 +167,25 @@ void CGrannyModelInstance::__CreateMeshMatrices()
 		return;
 	
 	int meshCount = m_pModel->GetMeshCount();	
-	m_meshMatrices = new D3DXMATRIX[meshCount];
+	for (int b = 0; b < TRANSFORM_BUFFER_COUNT; ++b)
+	{
+		m_meshMatrices[b] = new D3DXMATRIX[meshCount];
+		memset(m_meshMatrices[b], 0, sizeof(D3DXMATRIX) * meshCount);
+	}
+	m_activeTransformBuffer.store(0, std::memory_order_relaxed);
 }
 
 void CGrannyModelInstance::__DestroyMeshMatrices()
 {
-	if (!m_meshMatrices)
-		return;
-
-	delete [] m_meshMatrices;
-	m_meshMatrices = NULL;
+	for (int b = 0; b < TRANSFORM_BUFFER_COUNT; ++b)
+	{
+		if (m_meshMatrices[b])
+		{
+			delete [] m_meshMatrices[b];
+			m_meshMatrices[b] = NULL;
+		}
+	}
+	m_activeTransformBuffer.store(0, std::memory_order_relaxed);
 }
 
 DWORD CGrannyModelInstance::GetDeformableVertexCount()

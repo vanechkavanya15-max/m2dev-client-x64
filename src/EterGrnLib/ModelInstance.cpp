@@ -57,12 +57,18 @@ void CGrannyModelInstance::SetParentModelInstance(const CGrannyModelInstance* c_
 	m_iParentBoneIndex = iBone;
 }
 
+const D3DXMATRIX * CGrannyModelInstance::GetActiveMeshMatrices() const
+{
+	uint8_t frontIndex = m_activeTransformBuffer.load(std::memory_order_acquire);
+	return m_meshMatrices[frontIndex];
+}
+
 bool CGrannyModelInstance::IsEmpty()
 {
 	if (m_pModel)
 	{
 		// NO_MESH_BUG_FIX
-		if (!m_meshMatrices)
+		if (!m_meshMatrices[0] && !m_meshMatrices[1])
 			return true;
 		// END_OF_NO_MESH_BUG_FIX
 		return false;
@@ -105,7 +111,11 @@ void CGrannyModelInstance::__Initialize()
 	m_ppkSkeletonInst = NULL;
 	// END_OF_TEST
 
-	m_meshMatrices = NULL;
+	for (int b = 0; b < TRANSFORM_BUFFER_COUNT; ++b)
+		m_meshMatrices[b] = NULL;
+	m_activeTransformBuffer.store(0, std::memory_order_relaxed);
+	m_localPose.Reset();
+
 	m_pgrnCtrl = NULL;
 	m_pgrnAni = NULL;
 

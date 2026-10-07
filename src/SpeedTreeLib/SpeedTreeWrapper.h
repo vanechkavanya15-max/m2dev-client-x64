@@ -1,4 +1,4 @@
-﻿///////////////////////////////////////////////////////////////////////  
+///////////////////////////////////////////////////////////////////////  
 //	SpeedTreeRTExample Class
 //
 //	(c) 2003 IDV, Inc.
@@ -47,6 +47,7 @@
 
 #include "EterLib/GrpObjectInstance.h"
 #include "EterLib/GrpImageInstance.h"
+#include "EterBase/MathSIMD.h"
 
 #ifndef SAFE_DELETE
 #define SAFE_DELETE(p)       { if (p) { delete (p);     (p) = NULL; } }
@@ -148,6 +149,10 @@ public:
 	// utility
 	LPDIRECT3DTEXTURE9			GetBranchTexture(void) const;
 	void						CleanUpMemory(void);
+
+	// frustum culling
+	bool						TestFrustumCulling(const DirectX::XMVECTOR* planes, size_t planeCount) const;
+	bool						TestFrustumCulling() const;
 	
 private:
 	void						SetupBuffers(void);

@@ -54,72 +54,37 @@ void CGrannyModelInstance::UpdateTransform(D3DXMATRIX * pMatrix, float fSecondsE
 	
 }
 
+void CGrannyModelInstance::DeformPNTVerticesDirect3D()
+{
+	if (IsEmpty() || !m_pModel || !m_pModel->CanDeformPNTVertices())
+		return;
+
+	// WORK - Operacje Direct3D Lock/Unlock wywolywane wylacznie na watku glownym renderujacym
+	CGraphicVertexBuffer& rkDeformableVertexBuffer = __GetDeformableVertexBufferRef();
+	TPNTVertex* pntVertices;
+	if (rkDeformableVertexBuffer.LockRange(m_pModel->GetDeformVertexCount(), (void **)&pntVertices))
+	{
+		DeformPNTVertices(pntVertices);
+		rkDeformableVertexBuffer.Unlock();
+	}
+	else
+	{
+		TraceError("GRANNY DEFORM DYNAMIC BUFFER LOCK ERROR");
+	}
+	// END_OF_WORK
+}
+
 void CGrannyModelInstance::Deform(const D3DXMATRIX * c_pWorldMatrix)
 {
 	if (IsEmpty())
 		return;
 
-	// DELETED
-	//m_pgrnWorldPose = m_pgrnWorldPoseReal;
-	/////////////////////////////////////////////
-	
-	UpdateWorldPose();
-	UpdateWorldMatrices(c_pWorldMatrix);
+	// 1. Obliczenia transformacji macierzy na CPU w pamieci RAM (bezpieczne dla watkow roboczych)
+	DeformNoSkin(c_pWorldMatrix);
 
-	if (m_pModel->CanDeformPNTVertices())
-	{
-		// WORK
-		CGraphicVertexBuffer& rkDeformableVertexBuffer = __GetDeformableVertexBufferRef();
-		TPNTVertex* pntVertices;
-		if (rkDeformableVertexBuffer.LockRange(m_pModel->GetDeformVertexCount(), (void **)&pntVertices))
-		{
-			DeformPNTVertices(pntVertices);
-			rkDeformableVertexBuffer.Unlock();
-		}
-		else
-		{
-			TraceError("GRANNY DEFORM DYNAMIC BUFFER LOCK ERROR");
-		}
-		// END_OF_WORK
-	}	
+	// 2. Direct3D Lock/Unlock na watku renderujacym
+	DeformPNTVerticesDirect3D();
 }
-
-//////////////////////////////////////////////////////
-class CGrannyLocalPose
-{
-	public:
-		CGrannyLocalPose()
-		{
-			m_pgrnLocalPose = NULL;
-			m_boneCount = 0;
-		}
-
-		virtual ~CGrannyLocalPose()
-		{
-			if (m_pgrnLocalPose)
-				GrannyFreeLocalPose(m_pgrnLocalPose);
-		}
-
-		granny_local_pose * Get(int boneCount)
-		{
-			if (m_pgrnLocalPose)
-			{
-				if (m_boneCount >= boneCount)
-					return m_pgrnLocalPose;
-
-				GrannyFreeLocalPose(m_pgrnLocalPose);
-			}
-
-			m_boneCount = boneCount;
-			m_pgrnLocalPose = GrannyNewLocalPose(m_boneCount);
-			return m_pgrnLocalPose;
-		}
-
-	private:
-		granny_local_pose *	m_pgrnLocalPose;
-		int					m_boneCount;
-};
-//////////////////////////////////////////////////////
 
 void CGrannyModelInstance::UpdateSkeleton(const D3DXMATRIX * c_pWorldMatrix, float /*fLocalTime*/)
 {	
@@ -139,11 +104,13 @@ void CGrannyModelInstance::UpdateWorldPose()
 	if (m_ppkSkeletonInst)
 		if (*m_ppkSkeletonInst!=this)
 			return;
-	
-	static CGrannyLocalPose s_SharedLocalPose;
 
 	granny_skeleton * pgrnSkeleton = GrannyGetSourceSkeleton(m_pgrnModelInstance);
-	granny_local_pose * pgrnLocalPose = s_SharedLocalPose.Get(pgrnSkeleton->BoneCount);	
+	if (!pgrnSkeleton)
+		return;
+
+	// Izolowany bufor local_pose per-instancja (brak wspoldzielonego s_SharedLocalPose)
+	granny_local_pose * pgrnLocalPose = m_localPose.Get(pgrnSkeleton->BoneCount);	
 
 	const float * pAttachBoneMatrix = (mc_pParentInstance) ? mc_pParentInstance->GetBoneMatrixPointer(m_iParentBoneIndex) : NULL;
 
@@ -153,13 +120,12 @@ void CGrannyModelInstance::UpdateWorldPose()
 	GrannyBuildWorldPose(pgrnSkeleton, 0, pgrnSkeleton->BoneCount, pgrnLocalPose, pAttachBoneMatrix, m_pgrnWorldPose);
 	*/
 	GrannyFreeCompletedModelControls(m_pgrnModelInstance);	
-
 }
 
 void CGrannyModelInstance::UpdateWorldMatrices(const D3DXMATRIX* c_pWorldMatrix)
 {
 	// NO_MESH_BUG_FIX
-	if (!m_meshMatrices)
+	if (!m_meshMatrices[0] || !m_meshMatrices[1])
 		return;
 	// END_OF_NO_MESH_BUG_FIX
 	
@@ -171,9 +137,14 @@ void CGrannyModelInstance::UpdateWorldMatrices(const D3DXMATRIX* c_pWorldMatrix)
 	granny_matrix_4x4 * pgrnMatCompositeBuffer = GrannyGetWorldPoseComposite4x4Array(__GetWorldPosePtr());
 	D3DXMATRIX * boneMatrices = (D3DXMATRIX *) pgrnMatCompositeBuffer;
 
+	// CPU Double-Buffering: Watki robocze zapisuja transformacje do izolowanego bufora RAM (back-buffer)
+	uint8_t currentFront = m_activeTransformBuffer.load(std::memory_order_relaxed);
+	uint8_t backIndex = 1 - currentFront;
+	D3DXMATRIX* pWorkMatrices = m_meshMatrices[backIndex];
+
 	for (int i = 0; i < meshCount; ++i)
 	{
-		D3DXMATRIX & rWorldMatrix = m_meshMatrices[i];
+		D3DXMATRIX & rWorldMatrix = pWorkMatrices[i];
 
 		const CGrannyMesh * pMesh = m_pModel->GetMeshPointer(i);
 
@@ -191,6 +162,9 @@ void CGrannyModelInstance::UpdateWorldMatrices(const D3DXMATRIX* c_pWorldMatrix)
 			D3DXMatrixMultiply(&rWorldMatrix, &boneMatrices[iBone], c_pWorldMatrix);
 		}
 	}
+
+	// Atomowa zamiana bufora (Flip) - nowy bufor staje sie front-bufferem
+	m_activeTransformBuffer.store(backIndex, std::memory_order_release);
 
 #ifdef _TEST
 	TEST_matWorld = *c_pWorldMatrix;
