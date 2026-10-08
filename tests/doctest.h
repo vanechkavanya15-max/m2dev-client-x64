@@ -42,11 +42,6 @@
 #ifndef DOCTEST_LIBRARY_INCLUDED
 #define DOCTEST_LIBRARY_INCLUDED
 
-#ifndef DOCTEST_SINGLE_MAIN_ALLOWED
-#undef DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-#undef DOCTEST_CONFIG_IMPLEMENT
-#endif
-
 // =================================================================================================
 // == VERSION ======================================================================================
 // =================================================================================================
