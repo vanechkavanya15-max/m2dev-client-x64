@@ -13,6 +13,7 @@
 #include "Services/InventoryService.h"
 #include "Services/PlayerStatsService.h"
 #include "Services/SkillService.h"
+#include "Client/Bridge/StranglerFacade.h"
 
 enum
 {
@@ -27,16 +28,15 @@ enum
 	MAIN_RACE_MAX_NUM,
 };
 
-const DWORD POINT_MAGIC_NUMBER = 0xe73ac1da;
-
 void CPythonPlayer::SPlayerStatus::SetPoint(UINT ePoint, long lPoint)
 {
-	m_alPoint[ePoint]=lPoint ^ POINT_MAGIC_NUMBER;
+	Client::Bridge::StranglerFacade::Instance().GetWorldContext().SetPoint(ePoint, lPoint);
+	UserInterface::Services::PlayerStatsService::Instance().SetPoint(ePoint, lPoint);
 }
 
 long CPythonPlayer::SPlayerStatus::GetPoint(UINT ePoint)
 {
-	return m_alPoint[ePoint] ^ POINT_MAGIC_NUMBER;
+	return static_cast<long>(Client::Bridge::StranglerFacade::Instance().GetWorldContext().GetPoint(ePoint));
 }
 
 bool CPythonPlayer::AffectIndexToSkillIndex(DWORD dwAffectIndex, DWORD * pdwSkillIndex)
@@ -1748,6 +1748,8 @@ void CPythonPlayer::ClearSkillDict()
 void CPythonPlayer::Clear()
 {
 	memset(&m_playerStatus, 0, sizeof(m_playerStatus));
+	Client::Bridge::StranglerFacade::Instance().GetWorldContext().Reset();
+	UserInterface::Services::PlayerStatsService::Instance().Clear();
 	NEW_ClearSkillData(true);
 	ClearDictionary();
 

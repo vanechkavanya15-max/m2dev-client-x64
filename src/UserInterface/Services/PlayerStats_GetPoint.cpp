@@ -1,13 +1,12 @@
 #include "../StdAfx.h"
 #include "PlayerStatsService.h"
+#include "Client/Bridge/StranglerFacade.h"
 
 namespace UserInterface::Services
 {
     int64_t PlayerStatsService::GetPoint(uint32_t type) const
     {
-        if (type >= m_points.size())
-            return 0;
-        return m_points[type];
+        return Client::Bridge::StranglerFacade::Instance().GetWorldContext().GetPoint(type);
     }
 
     const PlayerPointsView& PlayerStatsService::GetPoints() const

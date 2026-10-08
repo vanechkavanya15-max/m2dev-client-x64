@@ -27,6 +27,7 @@ endif()
 
 add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/MP>")
+add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/FS>")
 
 if(MSVC)
 	add_compile_definitions(UNICODE _UNICODE)

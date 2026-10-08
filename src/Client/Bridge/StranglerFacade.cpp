@@ -11,20 +11,25 @@ StranglerFacade& StranglerFacade::Instance() noexcept {
 
 void StranglerFacade::Initialize(CNetworkStream* networkStream) {
     m_port = std::make_shared<NetworkStreamPort>(networkStream);
-    m_session = std::make_shared<Client::Core::GameSession>(m_port);
+    if (!m_session) {
+        m_session = std::make_shared<Client::Core::GameSession>(m_port);
+    } else {
+        m_session->SetNetworkPort(m_port);
+    }
 }
 
 void StranglerFacade::Shutdown() {
-    m_session.reset();
+    if (m_session) {
+        m_session->SetNetworkPort(nullptr);
+    }
     m_port.reset();
 }
 
 Client::Core::WorldContext& StranglerFacade::GetWorldContext() noexcept {
-    static Client::Core::WorldContext s_dummyContext;
-    if (m_session) {
-        return m_session->GetWorldContext();
+    if (!m_session) {
+        m_session = std::make_shared<Client::Core::GameSession>();
     }
-    return s_dummyContext;
+    return m_session->GetWorldContext();
 }
 
 bool StranglerFacade::ExecuteAttack(uint32_t victimVid, uint8_t attackType) {

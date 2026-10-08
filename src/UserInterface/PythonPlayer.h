@@ -128,7 +128,6 @@ class CPythonPlayer : public CSingleton<CPythonPlayer>, public IAbstractPlayer
 			TItemData			aDSItem[c_DragonSoul_Inventory_Count];
 			TQuickSlot			aQuickSlot[QUICKSLOT_MAX_NUM];
 			TSkillInstance		aSkill[SKILL_MAX_NUM];
-			long				m_alPoint[POINT_MAX_NUM];
 			long				lQuickPageIndex;
 
 			void SetPoint(UINT ePoint, long lPoint);

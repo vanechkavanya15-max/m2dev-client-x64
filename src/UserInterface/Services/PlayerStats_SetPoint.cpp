@@ -2,6 +2,7 @@
 #include "PlayerStatsService.h"
 #include "../Packet.h"
 #include "../../EterBase/LogModern.h"
+#include "Client/Bridge/StranglerFacade.h"
 
 namespace UserInterface::Services
 {
@@ -28,6 +29,8 @@ namespace UserInterface::Services
             case POINT_SKILL: m_view.skillPoints = static_cast<uint16_t>(value); break;
             default: break;
         }
+
+        Client::Bridge::StranglerFacade::Instance().GetWorldContext().SetPoint(type, value);
 
         EterBase::ModernLogger::Debug("PlayerStatsService::SetPoint: type {} value {}", type, value);
     }

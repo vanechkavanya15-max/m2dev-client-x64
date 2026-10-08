@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <vector>
+#include <array>
 #include "StrongTypes.h"
 
 namespace Client::Core {
@@ -43,6 +44,40 @@ struct WorldContext {
 
     std::vector<WorldEntity> entities;
 
+    std::array<int64_t, 255> points{};
+
+    [[nodiscard]] int64_t GetPoint(uint32_t pointType) const noexcept {
+        if (pointType >= points.size()) return 0;
+        return points[pointType];
+    }
+
+    void SetPoint(uint32_t pointType, int64_t value) noexcept {
+        if (pointType >= points.size()) return;
+        points[pointType] = value;
+        switch (pointType) {
+            case 5:  // POINT_HP
+                currentHp = static_cast<uint32_t>(value);
+                break;
+            case 6:  // POINT_MAX_HP
+                maxHp = static_cast<uint32_t>(value);
+                break;
+            case 7:  // POINT_SP
+                currentSp = static_cast<uint32_t>(value);
+                break;
+            case 8:  // POINT_MAX_SP
+                maxSp = static_cast<uint32_t>(value);
+                break;
+            case 3:  // POINT_EXP
+                currentExp = static_cast<uint64_t>(value);
+                break;
+            case 11: // POINT_GOLD
+                currentGold = value;
+                break;
+            default:
+                break;
+        }
+    }
+
     void Reset() noexcept {
         currentHp = 0;
         maxHp = 0;
@@ -63,6 +98,7 @@ struct WorldContext {
         posZ = 0.0f;
         inventory.clear();
         entities.clear();
+        points.fill(0);
     }
 };
 
