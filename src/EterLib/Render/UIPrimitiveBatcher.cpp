@@ -3,6 +3,8 @@
 #include "RenderQueue.h"
 #include "DrawUserPrimitiveCommand.h"
 
+#include "SortKeyBuilder.h"
+
 namespace EterLib::Render
 {
     void UIPrimitiveBatcher::AddRect(float x, float y, float w, float h, uint32_t color)
@@ -25,8 +27,25 @@ namespace EterLib::Render
         m_lines.push_back({x2, y2, 0.0f, color, 0.0f, 0.0f});
     }
 
+    void UIPrimitiveBatcher::DrawBox(float x, float y, float w, float h, uint32_t color)
+    {
+        // 4 boundary lines: top, bottom, left, right
+        AddLine(x, y, x + w, y, color);
+        AddLine(x, y + h, x + w, y + h, color);
+        AddLine(x, y, x, y + h, color);
+        AddLine(x + w, y, x + w, y + h, color);
+    }
+
+    void UIPrimitiveBatcher::Clear() noexcept
+    {
+        m_rects.clear();
+        m_lines.clear();
+    }
+
     void UIPrimitiveBatcher::Submit(RenderQueue& queue, LinearFrameAllocator& alloc)
     {
+        RenderSortKey key = SortKeyBuilder().WithPass(static_cast<uint8_t>(Pass::UI)).Build();
+
         if (!m_rects.empty())
         {
             UINT primitiveCount = static_cast<UINT>(m_rects.size() / 3);
@@ -40,7 +59,6 @@ namespace EterLib::Render
 
             if (cmd)
             {
-                RenderSortKey key{0}; // Set UI sort key to 0 or similar
                 queue.Submit(key, cmd, CommandType::Draw);
             }
             m_rects.clear();
@@ -59,7 +77,6 @@ namespace EterLib::Render
 
             if (cmd)
             {
-                RenderSortKey key{0};
                 queue.Submit(key, cmd, CommandType::Draw);
             }
             m_lines.clear();

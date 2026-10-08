@@ -28,6 +28,7 @@ namespace EterLib::Render
         FontGlyphBatcher& operator=(FontGlyphBatcher&&) = default;
 
         void AddGlyph(float screenX, float screenY, float u0, float v0, float u1, float v1, uint32_t color);
+        void AddGlyphRect(float screenX, float screenY, float width, float height, float u0, float v0, float u1, float v1, uint32_t color);
         void Submit(RenderQueue& queue, LinearFrameAllocator& alloc, LPDIRECT3DTEXTURE9 fontTexture);
         void Clear() noexcept;
 

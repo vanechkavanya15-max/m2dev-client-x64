@@ -4,16 +4,17 @@
 #include "../StdAfx.h"
 #endif
 
-// Prevent RenderQueue redefinition conflict between RenderQueue.h and RenderPipelineExecutor.h
-#define RenderQueue ExecutorRenderQueue
-#include "RenderPipelineExecutor.h"
-#undef RenderQueue
-
 #include "LinearFrameAllocator.h"
 #include "RenderQueue.h"
 #include "FrameStatisticsTracker.h"
-
 #include "DynamicRingVertexBuffer.h"
+
+#include "OpaquePassDispatcher.h"
+#include "AlphaTestPassDispatcher.h"
+#include "AlphaBlendPassDispatcher.h"
+#include "AdditivePassDispatcher.h"
+#include "DepthPrepassDispatcher.h"
+#include "UIPassDispatcher.h"
 
 namespace EterLib::Render
 {
@@ -67,7 +68,13 @@ namespace EterLib::Render
         DynamicRingVertexBuffer m_ringBuffer;
         RenderQueue m_renderQueue;
         FrameStatisticsTracker m_statsTracker;
-        RenderPipelineExecutor m_executor;
+
+        OpaquePassDispatcher m_opaquePass;
+        AlphaTestPassDispatcher m_alphaTestPass;
+        AlphaBlendPassDispatcher m_alphaBlendPass;
+        AdditivePassDispatcher m_additivePass;
+        DepthPrepassDispatcher m_depthPrepass;
+        UIPassDispatcher m_uiPass;
     };
 } // namespace EterLib::Render
 

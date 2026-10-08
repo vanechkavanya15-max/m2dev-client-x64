@@ -3,32 +3,26 @@
 #include <algorithm>
 #include <utility>
 
+#include "../StateManager.h"
+
 namespace EterLib::Render {
 
 void AlphaBlendPassDispatcher::BeginPass(LPDIRECT3DDEVICE9 dev) noexcept {
     if (!dev) return;
 
-    // Save previous states
-    dev->GetRenderState(D3DRS_ALPHABLENDENABLE, &m_savedAlphaBlendEnable);
-    dev->GetRenderState(D3DRS_SRCBLEND, &m_savedSrcBlend);
-    dev->GetRenderState(D3DRS_DESTBLEND, &m_savedDestBlend);
-    dev->GetRenderState(D3DRS_ZWRITEENABLE, &m_savedZWriteEnable);
-
-    // Set new states for alpha blending pass
-    dev->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-    dev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-    dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-    dev->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
+    STATEMANAGER.SaveRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+    STATEMANAGER.SaveRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+    STATEMANAGER.SaveRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+    STATEMANAGER.SaveRenderState(D3DRS_ZWRITEENABLE, FALSE);
 }
 
 void AlphaBlendPassDispatcher::EndPass(LPDIRECT3DDEVICE9 dev) noexcept {
     if (!dev) return;
 
-    // Restore previous states
-    dev->SetRenderState(D3DRS_ALPHABLENDENABLE, m_savedAlphaBlendEnable);
-    dev->SetRenderState(D3DRS_SRCBLEND, m_savedSrcBlend);
-    dev->SetRenderState(D3DRS_DESTBLEND, m_savedDestBlend);
-    dev->SetRenderState(D3DRS_ZWRITEENABLE, m_savedZWriteEnable);
+    STATEMANAGER.RestoreRenderState(D3DRS_ZWRITEENABLE);
+    STATEMANAGER.RestoreRenderState(D3DRS_DESTBLEND);
+    STATEMANAGER.RestoreRenderState(D3DRS_SRCBLEND);
+    STATEMANAGER.RestoreRenderState(D3DRS_ALPHABLENDENABLE);
 }
 
 void AlphaBlendPassDispatcher::Dispatch(float depth, std::function<void()> renderCommand) {

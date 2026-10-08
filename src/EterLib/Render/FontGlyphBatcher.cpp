@@ -21,7 +21,11 @@ namespace EterLib::Render
     {
         float w = u1 - u0;
         float h = v1 - v0;
+        AddGlyphRect(screenX, screenY, w, h, u0, v0, u1, v1, color);
+    }
 
+    void FontGlyphBatcher::AddGlyphRect(float screenX, float screenY, float width, float height, float u0, float v0, float u1, float v1, uint32_t color)
+    {
         TVertex v[6];
         
         // Triangle 1
@@ -33,13 +37,13 @@ namespace EterLib::Render
         v[0].v = v0;
 
         v[1].x = screenX;
-        v[1].y = screenY + h;
+        v[1].y = screenY + height;
         v[1].z = 0.0f;
         v[1].color = color;
         v[1].u = u0;
         v[1].v = v1;
 
-        v[2].x = screenX + w;
+        v[2].x = screenX + width;
         v[2].y = screenY;
         v[2].z = 0.0f;
         v[2].color = color;
@@ -47,7 +51,7 @@ namespace EterLib::Render
         v[2].v = v0;
 
         // Triangle 2
-        v[3].x = screenX + w;
+        v[3].x = screenX + width;
         v[3].y = screenY;
         v[3].z = 0.0f;
         v[3].color = color;
@@ -55,14 +59,14 @@ namespace EterLib::Render
         v[3].v = v0;
 
         v[4].x = screenX;
-        v[4].y = screenY + h;
+        v[4].y = screenY + height;
         v[4].z = 0.0f;
         v[4].color = color;
         v[4].u = u0;
         v[4].v = v1;
 
-        v[5].x = screenX + w;
-        v[5].y = screenY + h;
+        v[5].x = screenX + width;
+        v[5].y = screenY + height;
         v[5].z = 0.0f;
         v[5].color = color;
         v[5].u = u1;

@@ -2,19 +2,10 @@
 
 #include <cstdint>
 
+#include "UIPrimitiveBatcher.h"
+#include "FontGlyphBatcher.h"
+
 namespace EterLib::Render {
-
-class UIPrimitiveBatcher {
-public:
-    virtual ~UIPrimitiveBatcher() = default;
-    virtual void DrawBox(float x, float y, float w, float h, uint32_t color) = 0;
-    virtual void DrawBar(float x, float y, float w, float h, uint32_t color) = 0;
-};
-
-class FontGlyphBatcher {
-public:
-    virtual ~FontGlyphBatcher() = default;
-};
 
 class PythonGraphicModernBridge {
 public:
