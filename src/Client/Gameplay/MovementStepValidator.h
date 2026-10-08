@@ -1,5 +1,5 @@
-#include "../../StdAfx.h"
 #pragma once
+#include "EterBase/StdAfx.h"
 
 #include "../../EterBase/Result.h"
 #include "../Core/DomainCommands.h"

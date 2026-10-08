@@ -1,6 +1,6 @@
 #include "StdAfx.h"
 #include "StunHandler.h"
-#include "src/UserInterface/Packet.h"
+#include "UserInterface/Packet.h"
 #include "EterBase/LogModern.h"
 
 namespace Client::Network::Handlers {

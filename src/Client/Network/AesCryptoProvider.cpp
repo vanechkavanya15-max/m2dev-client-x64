@@ -1,3 +1,4 @@
+#include "StdAfx.h"
 #include "AesCryptoProvider.h"
 #include "../../UserInterface/BeaviumProtocol.h"
 #include <algorithm>
@@ -140,8 +141,8 @@ void EncryptBlock(const uint8_t* in, uint8_t* out, const uint8_t* w) {
 
 AesCryptoProvider::AesCryptoProvider() {
     // Copy key and IV from BeaviumProtocol constants
-    std::memcpy(m_key.data(), UserInterface::BeaviumProtocol::AesKey, m_key.size());
-    std::memcpy(m_counter.data(), UserInterface::BeaviumProtocol::AesIv, m_counter.size());
+    std::memcpy(m_key.data(), Beavium::AesKey, m_key.size());
+    std::memcpy(m_counter.data(), Beavium::AesIv, m_counter.size());
     m_blockOffset = 0;
 
     // Compute round keys once in the constructor

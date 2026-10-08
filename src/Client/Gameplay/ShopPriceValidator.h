@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../StdAfx.h"
+#include "EterBase/StdAfx.h"
 #include <cstdint>
 #include <expected>
 #include "../Core/WorldContext.h"

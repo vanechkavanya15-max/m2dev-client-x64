@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "EterBase/StdAfx.h"
 #include "ServerProfile.h"
 
 namespace Client::Network {

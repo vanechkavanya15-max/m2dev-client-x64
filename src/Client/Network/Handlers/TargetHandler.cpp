@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "EterBase/StdAfx.h"
 #include "../../../UserInterface/Packet.h"
 #include "TargetHandler.h"
 #include "../../Gameplay/CombatDomain.h"

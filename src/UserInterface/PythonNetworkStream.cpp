@@ -11,6 +11,7 @@
 #include "ProcessCRC.h"
 #include "Network/PacketDispatcher.h"
 #include "Network/Dispatchers/NetworkStreamPhaseGameBridge.h"
+#include "Client/Bridge/StranglerFacade.h"
 
 // MARK_BUG_FIX
 static DWORD gs_nextDownloadMarkTime = 0;
@@ -735,10 +736,14 @@ CPythonNetworkStream::CPythonNetworkStream()
 	RegisterLoadingHandlers();
 
 	SetOffLinePhase();
+
+	// Inicjalizacja Fasady Dusiciela C++23 (Strangler Pattern)
+	Client::Bridge::StranglerFacade::Instance().Initialize(this);
 }
 
 CPythonNetworkStream::~CPythonNetworkStream()
 {
+	Client::Bridge::StranglerFacade::Instance().Shutdown();
 	Tracen("PythonNetworkMainStream Clear");
 }
 

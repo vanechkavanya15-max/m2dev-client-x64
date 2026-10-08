@@ -1,0 +1,52 @@
+{
+  "name": "PandoraMT2",
+  "version": "1.0.0",
+  "auth": {
+    "ip": "127.0.0.1",
+    "port": 11002
+  },
+  "channels": [
+    {
+      "id": 1,
+      "name": "CH1",
+      "ip": "127.0.0.1",
+      "port": 13000
+    },
+    {
+      "id": 2,
+      "name": "CH2",
+      "ip": "127.0.0.1",
+      "port": 13001
+    }
+  ],
+  "protocol": {
+    "framing": "Ymir1B",
+    "headerSizeBytes": 1,
+    "crypto": "AES",
+    "keySize": 32,
+    "requireCrcPiece": true,
+    "magicByte": 165
+  },
+  "timing": {
+    "moveIntervalMs": 250,
+    "attackIntervalMs": 380,
+    "pickupIntervalMs": 200,
+    "pingIntervalMs": 5000,
+    "jitterStdDevMs": 15
+  },
+  "opcodes": {
+    "HANDSHAKE": 255,
+    "TIME_SYNC": 252,
+    "PONG": 254,
+    "ATTACK": 1,
+    "MOVE": 2,
+    "USE_ITEM": 3,
+    "DROP_ITEM": 4,
+    "PICKUP_ITEM": 5,
+    "CHAT": 6,
+    "WHISPER": 7,
+    "EXCHANGE": 8,
+    "SHOP": 9,
+    "QUEST_INPUT": 10
+  }
+}

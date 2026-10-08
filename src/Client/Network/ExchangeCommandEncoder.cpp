@@ -1,3 +1,4 @@
+#include "StdAfx.h"
 #include "ExchangeCommandEncoder.h"
 #include "UserInterface/Packet.h"
 

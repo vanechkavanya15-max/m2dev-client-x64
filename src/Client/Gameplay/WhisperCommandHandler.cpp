@@ -1,26 +1,15 @@
+#include "EterBase/StdAfx.h"
 #include "WhisperCommandHandler.h"
-#include <span>
-#include <vector>
-
-// Sandbox mock for Network::Senders::SendWhisperPacket to bypass d3d9.h dependency for C++ syntax verification.
-// In real env, the build system links against SendWhisperPacket.cpp.
-#ifndef _WIN32
-namespace Network::Senders {
-    extern EterBase::PacketResult<void> SendWhisperPacket(
-        std::string_view targetName,
-        std::string_view message,
-        const std::function<bool(std::span<const uint8_t>)>& sendCallback);
-}
-#endif
+#include "../Network/SocialCommandEncoder.h"
 
 namespace Client::Gameplay {
 
-[[nodiscard]] EterBase::Result<void, Core::CommandError> WhisperCommandHandler::Execute(
+EterBase::Result<void, Core::CommandError> WhisperCommandHandler::Execute(
     const Core::WhisperCommand& cmd, 
     std::shared_ptr<Core::INetworkPort> networkPort, 
     ChronoTimer& timer)
 {
-    if (!networkPort) {
+    if (!networkPort || !networkPort->IsConnected()) {
         return std::unexpected(Core::CommandError::Disconnected);
     }
 
@@ -41,21 +30,21 @@ namespace Client::Gameplay {
         }
     }
 
-    auto sendCallback = [port = networkPort.get()](std::span<const uint8_t> payload) -> bool {
-        // We use 0x02 as a fallback mapped opcode for CG_WHISPER since uint8_t max is 255
-        // Actual CG_WHISPER is 0x0602, so it likely truncated in old systems or handled via dynamic mappings.
-        // We cast 0x0602 down to uint8_t to match INetworkPort::SendRaw signature (which takes uint8_t).
-        return port->SendRaw(static_cast<uint8_t>(0x0602), payload).has_value();
+    Client::Network::WhisperCommand whisperCmd{
+        .targetName = cmd.recipientName,
+        .message = cmd.message
     };
-
-    auto result = Network::Senders::SendWhisperPacket(cmd.recipientName, cmd.message, sendCallback);
-
-    if (!result.has_value()) {
+    auto encodeRes = Client::Network::SocialCommandEncoder::EncodeWhisper(whisperCmd);
+    if (!encodeRes) {
         return std::unexpected(Core::CommandError::InvalidParameter);
     }
 
-    m_lastWhisperTimes[cmd.recipientName] = currentMs;
+    auto sendRes = networkPort->SendRaw(static_cast<uint8_t>(0x02), encodeRes.value());
+    if (!sendRes) {
+        return std::unexpected(Core::CommandError::Disconnected);
+    }
 
+    m_lastWhisperTimes[cmd.recipientName] = currentMs;
     return {};
 }
 

@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "EterBase/StdAfx.h"
 #include "InventoryItemValidator.h"
 #include "../../GameLib/ItemData.h"
 #include "../../UserInterface/GameType.h"

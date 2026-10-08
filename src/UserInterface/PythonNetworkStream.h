@@ -321,6 +321,7 @@ class CPythonNetworkStream : public CNetworkStream, public CSingleton<CPythonNet
 		bool SendMessengerAddByVIDPacket(DWORD vid);
 		bool SendMessengerAddByNamePacket(const char * c_szName);
 		bool SendMessengerRemovePacket(const char * c_szKey, const char * c_szName);
+		void OnScriptEventStart(int iSkin, int iIndex);
 
 	protected:
 		bool OnProcess();	// State들을 실제로 실행한다.
@@ -602,7 +603,6 @@ class CPythonNetworkStream : public CNetworkStream, public CSingleton<CPythonNet
 
 		// 파이썬으로 보내는 콜들
 		void OnConnectFailure();
-		void OnScriptEventStart(int iSkin, int iIndex);
 		
 		void OnRemoteDisconnect();
 		void OnDisconnect();

@@ -16,7 +16,7 @@ namespace Client::Network {
 
         TPacketCGAttack packet{};
         packet.bType = cmd.attackType;
-        packet.dwVictimVID = cmd.targetVid.Get();
+        packet.dwVictimVID = cmd.targetVid.get();
         packet.bCRCMagicCubeProcPiece = 0; // Default or handled by separate system
         packet.bCRCMagicCubeFilePiece = 0; // Default
 

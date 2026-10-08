@@ -14,7 +14,7 @@ Core::Result<void, Core::CommandError> GuildCommandHandler::Handle(const GuildDe
     }
 
     TPacketCGGuild packet{};
-    packet.header = HEADER_CG_GUILD;
+    packet.header = CG::GUILD;
     packet.bySubHeader = GuildSub::CG::OFFER;
     packet.length = sizeof(TPacketCGGuild) + sizeof(uint32_t);
 
@@ -39,7 +39,7 @@ Core::Result<void, Core::CommandError> GuildCommandHandler::Handle(const GuildDe
     constexpr uint8_t GUILD_SUB_CG_DECLARE_WAR = 15;
     
     TPacketCGGuild packet{};
-    packet.header = HEADER_CG_GUILD;
+    packet.header = CG::GUILD;
     packet.bySubHeader = GUILD_SUB_CG_DECLARE_WAR;
     
     uint32_t targetId = cmd.targetGuildId.get();
@@ -66,7 +66,7 @@ Core::Result<void, Core::CommandError> GuildCommandHandler::Handle(const GuildUs
     }
 
     TPacketCGGuild packet{};
-    packet.header = HEADER_CG_GUILD;
+    packet.header = CG::GUILD;
     packet.bySubHeader = GuildSub::CG::USE_SKILL;
     
     uint32_t targetVid = cmd.targetVid.get();

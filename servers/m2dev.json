@@ -1,0 +1,46 @@
+{
+  "name": "M2DevLocal",
+  "version": "1.0.0",
+  "auth": {
+    "ip": "127.0.0.1",
+    "port": 11002
+  },
+  "channels": [
+    {
+      "id": 1,
+      "name": "CH1",
+      "ip": "127.0.0.1",
+      "port": 13000
+    }
+  ],
+  "protocol": {
+    "framing": "M2Dev4B",
+    "headerSizeBytes": 4,
+    "crypto": "None",
+    "keySize": 0,
+    "requireCrcPiece": false,
+    "magicByte": 0
+  },
+  "timing": {
+    "moveIntervalMs": 200,
+    "attackIntervalMs": 200,
+    "pickupIntervalMs": 100,
+    "pingIntervalMs": 10000,
+    "jitterStdDevMs": 0
+  },
+  "opcodes": {
+    "HANDSHAKE": 255,
+    "TIME_SYNC": 252,
+    "PONG": 254,
+    "ATTACK": 1,
+    "MOVE": 2,
+    "USE_ITEM": 3,
+    "DROP_ITEM": 4,
+    "PICKUP_ITEM": 5,
+    "CHAT": 6,
+    "WHISPER": 7,
+    "EXCHANGE": 8,
+    "SHOP": 9,
+    "QUEST_INPUT": 10
+  }
+}

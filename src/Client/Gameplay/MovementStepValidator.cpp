@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "EterBase/StdAfx.h"
 #include "MovementStepValidator.h"
 
 namespace Client::Gameplay {

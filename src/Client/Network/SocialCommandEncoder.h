@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../StdAfx.h"
 #include "../../UserInterface/Packet.h"
 #include <cstdint>
 #include <vector>

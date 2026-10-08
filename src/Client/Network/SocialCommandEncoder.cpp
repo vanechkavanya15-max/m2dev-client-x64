@@ -1,4 +1,4 @@
-#include "../StdAfx.h"
+#include "EterBase/StdAfx.h"
 #include "SocialCommandEncoder.h"
 #include <cstring>
 

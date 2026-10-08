@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
-#include <windows.h>
+#include "EterBase/StdAfx.h"
 #include <bcrypt.h>
 #include <sodium.h>
 

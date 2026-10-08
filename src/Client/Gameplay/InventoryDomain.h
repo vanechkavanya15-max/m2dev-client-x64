@@ -11,22 +11,7 @@
 #include "../../EterBase/LogModern.h"
 #include "../../UserInterface/Core/EventBus.h"
 
-#ifdef __INTELLISENSE__
 #include "../../UserInterface/GameType.h"
-#else
-enum EWindows
-{
-    RESERVED_WINDOW,
-    INVENTORY,
-    EQUIPMENT,
-    SAFEBOX,
-    MALL,
-    DRAGON_SOUL_INVENTORY,
-    GROUND,
-    BELT_INVENTORY,
-    WINDOW_TYPE_MAX,
-};
-#endif
 
 namespace Client::Gameplay {
 

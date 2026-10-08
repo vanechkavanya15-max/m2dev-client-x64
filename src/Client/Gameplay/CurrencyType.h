@@ -1,5 +1,4 @@
 #pragma once
-#include "../../StdAfx.h"
 #include <cstdint>
 
 namespace Client::Gameplay {
