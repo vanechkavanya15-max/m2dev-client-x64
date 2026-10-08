@@ -75,6 +75,9 @@ bool CNetworkStream::__SendInternalBuffer()
 	if (bytesSent < 0)
 	{
 		int err = WSAGetLastError();
+		if (err == WSAEWOULDBLOCK)
+			return true;
+
 		TraceError("__SendInternalBuffer: send() failed, sock=%llu, dataSize=%d, error=%d",
 			(unsigned long long)m_sock, dataSize, err);
 		return false;
