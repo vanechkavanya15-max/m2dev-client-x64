@@ -615,6 +615,20 @@ const TItemData * CPythonPlayer::GetItemData(TItemPos Cell) const
 	switch (Cell.window_type)
 	{
 	case INVENTORY:
+#if defined(_DEBUG)
+		{
+			auto optItem = UserInterface::Services::InventoryService::Instance().GetItem(EterBase::ItemSlot(Cell.cell));
+			if (optItem.has_value())
+			{
+				assert(m_playerStatus.aItem[Cell.cell].vnum == optItem->vnum.value() && "Shadow Execution: Rozbieznosc VNUM inwentarza!");
+			}
+			else
+			{
+				assert(m_playerStatus.aItem[Cell.cell].vnum == 0 && "Shadow Execution: Rozbieznosc pustego slotu inwentarza!");
+			}
+		}
+#endif
+		return &m_playerStatus.aItem[Cell.cell];
 	case EQUIPMENT:
 		return &m_playerStatus.aItem[Cell.cell];
 	case DRAGON_SOUL_INVENTORY:
