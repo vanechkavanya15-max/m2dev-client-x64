@@ -70,6 +70,7 @@ include_directories("${CMAKE_SOURCE_DIR}/src")
 include_directories("${CMAKE_SOURCE_DIR}/extern/include")
 include_directories("${CMAKE_SOURCE_DIR}/vendor/libsodium/src/libsodium/include")
 include_directories("${CMAKE_SOURCE_DIR}/vendor/freetype-2.13.3/include")
+include_directories("${CMAKE_SOURCE_DIR}/vendor/zstd-1.5.7/lib")
 
 # Add subdirectories for libraries and executables
 add_subdirectory(vendor)

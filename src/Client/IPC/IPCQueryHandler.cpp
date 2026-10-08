@@ -7,7 +7,7 @@ namespace Client::IPC {
 
 std::string IPCQueryHandler::HandleQueryPlayerState(Client::Core::WorldContext& ctx) {
     return std::format(
-        R"({{"hp":{},"max_hp":{},"sp":{},"max_sp":{},"exp":{},"position":{{"x":{},"y":{},"z":{}}},"is_dead":{}}})",
+        "{{\"hp\":{},\"max_hp\":{},\"sp\":{},\"max_sp\":{},\"exp\":{},\"position\":{{\"x\":{},\"y\":{},\"z\":{}}},\"is_dead\":{}}}",
         ctx.currentHp, ctx.maxHp, ctx.currentSp, ctx.maxSp, ctx.currentExp,
         ctx.posX, ctx.posY, ctx.posZ, ctx.isDead ? "true" : "false"
     );
@@ -17,16 +17,16 @@ std::string IPCQueryHandler::HandleQueryInventory(Client::Core::WorldContext& ct
     std::string itemsJson = "[";
     for (size_t i = 0; i < ctx.inventory.size(); ++i) {
         const auto& item = ctx.inventory[i];
-        itemsJson += std::format(
-            R"({{"slot":{},"vnum":{},"count":{}}})",
-            item.slot, item.vnum, item.count
-        );
-        if (i + 1 < ctx.inventory.size()) {
+        if (i > 0) {
             itemsJson += ",";
         }
+        itemsJson += std::format(
+            "{{\"slot\":{},\"vnum\":{},\"count\":{}}}",
+            item.slot, item.vnum, item.count
+        );
     }
     itemsJson += "]";
-    return std::format(R"({{"inventory":{}}})", itemsJson);
+    return "{\"inventory\":" + itemsJson + "}";
 }
 
 std::string IPCQueryHandler::HandleQuerySurroundings(Client::Core::WorldContext& ctx, float radius) {
@@ -43,14 +43,14 @@ std::string IPCQueryHandler::HandleQuerySurroundings(Client::Core::WorldContext&
                 entitiesJson += ",";
             }
             entitiesJson += std::format(
-                R"({{"vid":{},"x":{},"y":{},"z":{},"is_hostile":{}}})",
+                "{{\"vid\":{},\"x\":{},\"y\":{},\"z\":{},\"is_hostile\":{}}}",
                 entity.vid, entity.x, entity.y, entity.z, entity.isHostile ? "true" : "false"
             );
             first = false;
         }
     }
     entitiesJson += "]";
-    return std::format(R"({{"surroundings":{}}})", entitiesJson);
+    return "{\"surroundings\":" + entitiesJson + "}";
 }
 
 } // namespace Client::IPC

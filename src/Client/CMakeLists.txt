@@ -6,6 +6,7 @@ target_link_libraries(Client2026
 	DirectX
 	Python
 	EterBase
+	libzstd_static
 )
 
 target_include_directories(Client2026 PUBLIC
@@ -22,6 +23,7 @@ target_include_directories(Client2026 PUBLIC
 	${CMAKE_SOURCE_DIR}/src/EterLib
 	${CMAKE_SOURCE_DIR}/src/EterBase
 	${CMAKE_SOURCE_DIR}/extern/include
+	${CMAKE_SOURCE_DIR}/vendor/zstd-1.5.7/lib
 )
 
 GroupSourcesByFolder(Client2026)
