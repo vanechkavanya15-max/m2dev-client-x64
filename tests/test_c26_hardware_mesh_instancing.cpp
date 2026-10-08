@@ -303,3 +303,35 @@ TEST_CASE("HardwareMeshInstancer - Test 4: Stress test na 10 000 instancji z red
     CHECK(ring.GetDiscardWraps() == 0); // 800 KB miesci sie bezposrednio w buforze 8 MB
     CHECK(ring.GetStallFreeRatio() == 100.0);
 }
+
+TEST_CASE("HardwareMeshInstancer - Test 5: Poprawnosc wywolywania MeshDrawCallback przy Flush")
+{
+    HardwareMeshInstancer instancer;
+    REQUIRE(instancer.Initialize(nullptr) == true);
+
+    InstanceData data{};
+    instancer.AddInstance(10, 0, 0, data);
+    instancer.AddInstance(10, 0, 0, data);
+    instancer.AddInstance(20, 1, 0, data);
+
+    uint32_t callbackInvocations = 0;
+    uint32_t totalInstancesInCallback = 0;
+
+    const uint32_t dispatched = instancer.Flush(nullptr, [&](const BucketKey& key, uint32_t count) {
+        ++callbackInvocations;
+        totalInstancesInCallback += count;
+        if (key.meshId == 10)
+        {
+            CHECK(count == 2);
+        }
+        else if (key.meshId == 20)
+        {
+            CHECK(count == 1);
+        }
+    });
+
+    CHECK(dispatched == 2);
+    CHECK(callbackInvocations == 2);
+    CHECK(totalInstancesInCallback == 3);
+}
+

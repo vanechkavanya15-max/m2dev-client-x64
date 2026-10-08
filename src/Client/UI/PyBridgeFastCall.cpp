@@ -1,4 +1,3 @@
-#include "../../UserInterface/StdAfx.h"
 #include "PyBridgeFastCall.h"
 
 namespace Client::UI::PyFastCall

@@ -61,6 +61,12 @@ void MSDFTextBatcher::AddText(
 
         if (glyph->width > 0.0f && glyph->height > 0.0f)
         {
+            // Ochrona przed przekroczeniem zakresu 16-bitowego bufora indeksow (uint16_t max 65535)
+            if (m_vertices.size() + 4 > 65532)
+            {
+                break;
+            }
+
             const float x0 = curX + glyph->offsetX * scale;
             const float y0 = curY + glyph->offsetY * scale;
             const float x1 = x0 + glyph->width * scale;

@@ -213,6 +213,8 @@ public:
      */
     void BeginFrame() noexcept;
 
+    using MeshDrawCallback = std::function<void(const BucketKey& key, uint32_t instanceCount)>;
+
     /**
      * @brief Przesyla wszystkie zgromadzone partie do bufora instancji i wysyla wywolania strumieniowania D3D9.
      *
@@ -225,9 +227,10 @@ public:
      * 6. Resetuje SetStreamSourceFreq(0, 1) i SetStreamSourceFreq(1, 1).
      *
      * @param pDevice Wskaznik do urzadzenia Direct3D 9 (nullptr uzywa trybu emulacji / audytu headless).
+     * @param drawCallback Opcjonalny callback wywolywany po skonfigurowaniu strumieni do faktycznego narysowania mesha.
      * @return Liczba wyslanych partii (draw calli).
      */
-    uint32_t Flush(IDirect3DDevice9* pDevice = nullptr);
+    uint32_t Flush(IDirect3DDevice9* pDevice = nullptr, const MeshDrawCallback& drawCallback = nullptr);
 
     // Gettery stanu i kolekcji
     [[nodiscard]] size_t GetBucketCount() const noexcept { return m_buckets.size(); }

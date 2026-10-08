@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../../UserInterface/StdAfx.h"
 #include <expected>
 #include <string_view>
 #include <unordered_map>

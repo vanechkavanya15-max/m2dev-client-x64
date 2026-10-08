@@ -1,8 +1,9 @@
 #pragma once
 
 #include "EterBase/EventBus.h"
+#include "DomainEvents.h"
 
-namespace UserInterface::Core {
+namespace Client::Core {
 
 using IEvent = ::EterBase::IEvent;
 using IEventHandler = ::EterBase::IEventHandler;
@@ -12,6 +13,7 @@ using EventHandler = ::EterBase::EventHandler<EventType>;
 
 using EventBus = ::EterBase::EventBus;
 
+// Eksport zdarzen bazowych
 using TargetBoardRefreshEvent = ::EterBase::TargetBoardRefreshEvent;
 using NetworkPacketReceivedEvent = ::EterBase::NetworkPacketReceivedEvent;
 using MountStateChangedEvent = ::EterBase::MountStateChangedEvent;
@@ -21,12 +23,5 @@ using ItemTooltipCachedEvent = ::EterBase::ItemTooltipCachedEvent;
 using AnimHitFrameEvent = ::EterBase::AnimHitFrameEvent;
 using AnimFinishedEvent = ::EterBase::AnimFinishedEvent;
 using CustomTitleChangedEvent = ::EterBase::CustomTitleChangedEvent;
-using ActorDeadEvent = ::EterBase::ActorDeadEvent;
 
-} // namespace UserInterface::Core
-
-namespace Core {
-    using EventBus = ::EterBase::EventBus;
-    using IEvent = ::EterBase::IEvent;
-    using ActorDeadEvent = ::EterBase::ActorDeadEvent;
-}
+} // namespace Client::Core

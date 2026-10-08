@@ -1,4 +1,3 @@
-#include "../../UserInterface/StdAfx.h"
 #include "VirtualPacketGenerator.h"
 
 #include <cstring>
@@ -15,6 +14,7 @@ namespace Client::Simulation
         constexpr uint16_t HEADER_GC_ITEM_GROUND_ADD = 26;
         constexpr uint16_t HEADER_GC_ITEM_GROUND_DEL = 27;
         constexpr uint16_t HEADER_GC_DAMAGE_INFO = 135;
+        constexpr uint32_t POINT_MAX_NUM = 255;
 
 #pragma pack(push, 1)
 

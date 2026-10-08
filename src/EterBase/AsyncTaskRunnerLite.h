@@ -15,16 +15,15 @@
 #include "Result.h"
 #include "LogModern.h"
 
-// ============================================================================
-// Core::EventBus Forward Declaration
-// ============================================================================
+#include "EventBus.h"
+
 namespace UserInterface::Core {
-    class EventBus;
-    struct IEvent;
+    using EventBus = EterBase::EventBus;
+    using IEvent = EterBase::IEvent;
 }
 namespace Core {
-    using EventBus = UserInterface::Core::EventBus;
-    using IEvent = UserInterface::Core::IEvent;
+    using EventBus = EterBase::EventBus;
+    using IEvent = EterBase::IEvent;
     
     /**
      * @struct AsyncTaskCompletedEvent

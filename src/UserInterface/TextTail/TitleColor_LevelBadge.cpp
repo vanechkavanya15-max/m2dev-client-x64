@@ -2,7 +2,7 @@
 #include "ITitleNameColorizer.h"
 #include "EterBase/LogModern.h"
 #include "EterBase/StrongTypes.h"
-#include "Core/EventBus.h"
+#include "EterBase/EventBus.h"
 
 #include <expected>
 #include <format>

@@ -5,13 +5,6 @@
 #include <cmath>
 #include <optional>
 
-#ifdef _WIN32
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#include <windows.h>
-#endif
-
 // Forward declaration for D3D StateManager (to avoid full inclusion)
 class CStateManager;
 

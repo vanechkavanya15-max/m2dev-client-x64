@@ -3,7 +3,7 @@
 #include "EterBase/StrongTypes.h"
 #include "EterBase/LogModern.h"
 #include "EterBase/Result.h"
-#include "Core/EventBus.h"
+#include "EterBase/EventBus.h"
 
 namespace UserInterface::TextTail
 {

@@ -2,9 +2,12 @@
 #include "ActorMoveHandler.h"
 
 #include "../../EterBase/ModernLogger.h"
-#include "../../UserInterface/InstanceBase.h"
 
 namespace Client::Network {
+
+// Wartosci funkcji ruchu (CInstanceBase::FUNC_WAIT / FUNC_MOVE)
+constexpr uint8_t FUNC_WAIT = 0;
+constexpr uint8_t FUNC_MOVE = 1;
 
 EterBase::PacketResult<void> ActorMoveHandler::Handle(const TPacketGCMove* packet, Client::World::SpatialHashGrid& grid) {
     if (!packet) {
@@ -12,8 +15,8 @@ EterBase::PacketResult<void> ActorMoveHandler::Handle(const TPacketGCMove* packe
         return EterBase::MakeError(EterBase::PacketError::MalformedPayload);
     }
 
-    // Walidacja bFunc (Walk, Run z InstanceBase.h)
-    if (packet->bFunc != CInstanceBase::FUNC_MOVE && packet->bFunc != CInstanceBase::FUNC_WAIT) {
+    // Walidacja bFunc (Walk, Run)
+    if (packet->bFunc != FUNC_MOVE && packet->bFunc != FUNC_WAIT) {
         EterBase::ModernLogger::Error("ActorMoveHandler: invalid bFunc value {}", packet->bFunc);
         return EterBase::MakeError(EterBase::PacketError::MalformedPayload);
     }

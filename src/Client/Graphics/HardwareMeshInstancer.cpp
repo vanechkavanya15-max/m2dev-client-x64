@@ -99,7 +99,7 @@ void HardwareMeshInstancer::ResetTelemetry() noexcept
     m_ringBuffer.ResetTelemetry();
 }
 
-uint32_t HardwareMeshInstancer::Flush(IDirect3DDevice9* pDevice)
+uint32_t HardwareMeshInstancer::Flush(IDirect3DDevice9* pDevice, const MeshDrawCallback& drawCallback)
 {
     if (m_buckets.empty())
     {
@@ -175,10 +175,21 @@ uint32_t HardwareMeshInstancer::Flush(IDirect3DDevice9* pDevice)
             // Strumien 1: Bufor instancji (D3DSTREAMSOURCE_INSTANCEDATA | 1)
             pDevice->SetStreamSourceFreq(1, freq1);
 
-            // Krok 4: Reset dzielnikow strumieni po zakonczeniu partii
+            // Krok 4: Wywolanie rysowania mesha przez callback (jesli dostarczony)
+            if (drawCallback)
+            {
+                drawCallback(key, count);
+            }
+
+            // Krok 5: Reset dzielnikow strumieni po zakonczeniu partii
             pDevice->SetStreamSourceFreq(0, CalculateStreamResetFrequency());
             pDevice->SetStreamSourceFreq(1, CalculateStreamResetFrequency());
             pDevice->SetStreamSource(1, nullptr, 0, 0);
+        }
+        else if (drawCallback)
+        {
+            // Tryb symulacji headless z podanym callbackiem
+            drawCallback(key, count);
         }
 
         // Zapisz zresetowany stan strumieniowania do historii audytu
