@@ -10,10 +10,12 @@
 #include "../../UserInterface/Packet.h"
 #endif
 
+#include "EterBase/Result.h"
+
 namespace Client::Network
 {
-    template <typename T, typename E = uint32_t>
-    using PacketResult = std::expected<T, E>;
+    using EterBase::PacketError;
+    using EterBase::PacketResult;
 
     class PartyPacketCodec
     {

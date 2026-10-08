@@ -6,7 +6,7 @@ namespace Client::Network {
 
     PacketResult<TPacketGCExchange> ExchangePacketCodec::DecodeExchangePacket(std::span<const uint8_t> buffer) {
         if (buffer.size() < sizeof(TPacketGCExchange)) {
-            return std::unexpected(PacketError::BufferTooSmall);
+            return std::unexpected(PacketError::BufferUnderflow);
         }
 
         TPacketGCExchange packet;

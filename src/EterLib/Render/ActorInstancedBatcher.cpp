@@ -1,4 +1,5 @@
 #include "ActorInstancedBatcher.h"
+#include "SortKeyBuilder.h"
 #include <span>
 #include <cstring>
 
@@ -70,12 +71,13 @@ namespace EterLib::Render
             std::memcpy(copiedData, instances.data(), dataSize);
             const ActorInstanceData* typedCopiedData = static_cast<const ActorInstanceData*>(copiedData);
 
-            // Allocate the command object from the linear allocator
             ActorBatchCommand* cmd = allocator.AllocateObject<ActorBatchCommand>(modelId, typedCopiedData, instances.size());
             if (cmd)
             {
-                RenderSortKey key;
-                key.value = static_cast<uint64_t>(modelId); // For instance rendering, sort by model ID
+                RenderSortKey key = SortKeyBuilder()
+                                        .WithPass(static_cast<uint8_t>(Pass::Opaque))
+                                        .WithShader(modelId)
+                                        .Build();
                 
                 queue.Submit(key, cmd, CommandType::Draw);
             }

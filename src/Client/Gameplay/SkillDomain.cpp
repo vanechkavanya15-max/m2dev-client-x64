@@ -1,13 +1,16 @@
 #include "SkillDomain.h"
 #include <algorithm>
+#include <mutex>
 
 namespace Client::Gameplay {
 
     void SkillDomain::DefineSkill(SkillId id, const SkillData& data) {
+        std::unique_lock lock(m_mutex);
         m_skillDefinitions[id] = data;
     }
 
     void SkillDomain::RegisterSkill(SkillId skillId, SkillLevel initialLevel) {
+        std::unique_lock lock(m_mutex);
         if (!m_skills.contains(skillId)) {
             SkillState newState;
             newState.level = initialLevel;
@@ -19,10 +22,12 @@ namespace Client::Gameplay {
     }
 
     bool SkillDomain::HasSkill(SkillId skillId) const {
+        std::shared_lock lock(m_mutex);
         return m_skills.contains(skillId);
     }
 
     SkillLevel SkillDomain::GetSkillLevel(SkillId skillId) const {
+        std::shared_lock lock(m_mutex);
         auto it = m_skills.find(skillId);
         if (it != m_skills.end()) {
             return it->second.level;
@@ -31,6 +36,7 @@ namespace Client::Gameplay {
     }
 
     void SkillDomain::SetSkillLevel(SkillId skillId, SkillLevel level) {
+        std::unique_lock lock(m_mutex);
         auto it = m_skills.find(skillId);
         if (it != m_skills.end()) {
             it->second.level = level;
@@ -44,6 +50,7 @@ namespace Client::Gameplay {
     }
 
     void SkillDomain::StartCooldown(SkillId skillId, std::chrono::milliseconds duration) {
+        std::unique_lock lock(m_mutex);
         auto it = m_skills.find(skillId);
         if (it != m_skills.end()) {
             it->second.isCoolingDown = true;
@@ -53,6 +60,7 @@ namespace Client::Gameplay {
     }
 
     bool SkillDomain::IsSkillReady(SkillId skillId) const {
+        std::shared_lock lock(m_mutex);
         auto it = m_skills.find(skillId);
         if (it != m_skills.end()) {
             // Jeżeli nie ma flagi odnawiania, od razu gotowe
@@ -64,6 +72,7 @@ namespace Client::Gameplay {
     }
 
     void SkillDomain::UpdateCooldowns() {
+        std::unique_lock lock(m_mutex);
         auto now = std::chrono::steady_clock::now();
         // Sprawdzamy każdy aktywny zegar i flagę, resetując jeśli czas upłynął
         for (auto& [id, state] : m_skills) {
@@ -74,6 +83,7 @@ namespace Client::Gameplay {
     }
 
     std::chrono::milliseconds SkillDomain::GetRemainingCooldown(SkillId skillId) const {
+        std::shared_lock lock(m_mutex);
         auto it = m_skills.find(skillId);
         if (it != m_skills.end() && it->second.isCoolingDown) {
             auto now = std::chrono::steady_clock::now();
@@ -85,50 +95,51 @@ namespace Client::Gameplay {
     }
 
     void SkillDomain::ResetCooldown(SkillId skillId) {
+        std::unique_lock lock(m_mutex);
         auto it = m_skills.find(skillId);
         if (it != m_skills.end()) {
             it->second.isCoolingDown = false;
-            // Opcjonalnie nadpisanie końca cooldownu, jednak flaga ma najwyższy priorytet
             it->second.cooldownEndTime = std::chrono::steady_clock::now();
         }
     }
 
     uint32_t SkillDomain::CalculateSPCost(SkillId skillId) const {
+        std::shared_lock lock(m_mutex);
         auto dataIt = m_skillDefinitions.find(skillId);
         if (dataIt == m_skillDefinitions.end()) {
             return 0; // Brak danych definicji oznacza, że umiejętność technicznie nie istnieje jako obiekt zużywający punkty.
         }
         
         const auto& data = dataIt->second;
-        auto level = GetSkillLevel(skillId);
+        auto it = m_skills.find(skillId);
+        auto level = (it != m_skills.end()) ? it->second.level : 0;
         
         if (level == 0) {
             return 0; // Brak umiejętności to również brak kosztu Many.
         }
         
-        // Modyfikator skali, implementacja zgodna z podziałem progów ewolucyjnych postaci.
-        // Typowy podział w silniku to:
-        // Poziom Normal: 1-20 (MasteryMultiplier = 1.0f)
-        // Poziom Master (M): 21-30 (MasteryMultiplier = 1.5f)
-        // Poziom GrandMaster (G): 31-40 (MasteryMultiplier = 2.0f)
-        // Poziom PerfectMaster (P): 41+ (MasteryMultiplier = 2.5f)
+        // Modyfikator skali, implementacja zgodna z podziałem progów ewolucyjnych postaci:
+        // Poziom Normal: 1-19 (MasteryMultiplier = 1.0f)
+        // Poziom Master (M): 20-29 (MasteryMultiplier = 1.5f)
+        // Poziom GrandMaster (G): 30-39 (MasteryMultiplier = 2.0f)
+        // Poziom PerfectMaster (P): 40+ (MasteryMultiplier = 2.5f)
         float masteryMultiplier = 1.0f;
         
-        if (level > 40) {
+        if (level >= 40) {
             masteryMultiplier = 2.5f;
-        } else if (level > 30) {
+        } else if (level >= 30) {
             masteryMultiplier = 2.0f;
-        } else if (level > 20) {
+        } else if (level >= 20) {
             masteryMultiplier = 1.5f;
         }
 
-        // Równanie docelowe do przeliczenia wartości kosztu umiejętności (dla pojedyńczego rzutu albo pojedynczego tiknięcia Toggle).
         float computedCost = data.baseSPCost + (level * data.spMultiplier * masteryMultiplier);
         
         return static_cast<uint32_t>(computedCost);
     }
 
     void SkillDomain::ToggleSkill(SkillId skillId, bool state) {
+        std::unique_lock lock(m_mutex);
         auto it = m_skills.find(skillId);
         if (it != m_skills.end()) {
             auto dataIt = m_skillDefinitions.find(skillId);
@@ -146,6 +157,7 @@ namespace Client::Gameplay {
     }
 
     bool SkillDomain::IsSkillToggledOn(SkillId skillId) const {
+        std::shared_lock lock(m_mutex);
         auto it = m_skills.find(skillId);
         if (it != m_skills.end()) {
             return it->second.isToggledOn;
@@ -154,6 +166,7 @@ namespace Client::Gameplay {
     }
 
     const SkillData* SkillDomain::GetSkillData(SkillId skillId) const {
+        std::shared_lock lock(m_mutex);
         auto it = m_skillDefinitions.find(skillId);
         if (it != m_skillDefinitions.end()) {
             return &it->second;

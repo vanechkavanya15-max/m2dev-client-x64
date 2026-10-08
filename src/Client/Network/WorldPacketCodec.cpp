@@ -11,7 +11,7 @@ namespace Client::Network {
 
     PacketResult<TPacketGCTime> WorldPacketCodec::DecodeTime(std::span<const uint8_t> buffer) {
         if (buffer.size() < sizeof(TPacketGCTime)) {
-            return std::unexpected(PacketError::BufferTooSmall);
+            return std::unexpected(PacketError::BufferUnderflow);
         }
         TPacketGCTime packet;
         std::memcpy(&packet, buffer.data(), sizeof(TPacketGCTime));
@@ -20,7 +20,7 @@ namespace Client::Network {
 
     PacketResult<TPacketGCDungeon> WorldPacketCodec::DecodeDungeon(std::span<const uint8_t> buffer) {
         if (buffer.size() < sizeof(TPacketGCDungeon)) {
-            return std::unexpected(PacketError::BufferTooSmall);
+            return std::unexpected(PacketError::BufferUnderflow);
         }
         TPacketGCDungeon packet;
         std::memcpy(&packet, buffer.data(), sizeof(TPacketGCDungeon));
@@ -29,7 +29,7 @@ namespace Client::Network {
 
     PacketResult<TPacketGCFishing> WorldPacketCodec::DecodeFishing(std::span<const uint8_t> buffer) {
         if (buffer.size() < sizeof(TPacketGCFishing)) {
-            return std::unexpected(PacketError::BufferTooSmall);
+            return std::unexpected(PacketError::BufferUnderflow);
         }
         TPacketGCFishing packet;
         std::memcpy(&packet, buffer.data(), sizeof(TPacketGCFishing));
@@ -38,7 +38,7 @@ namespace Client::Network {
 
     PacketResult<TPacketGCChannel> WorldPacketCodec::DecodeChannel(std::span<const uint8_t> buffer) {
         if (buffer.size() < sizeof(TPacketGCChannel)) {
-            return std::unexpected(PacketError::BufferTooSmall);
+            return std::unexpected(PacketError::BufferUnderflow);
         }
         TPacketGCChannel packet;
         std::memcpy(&packet, buffer.data(), sizeof(TPacketGCChannel));

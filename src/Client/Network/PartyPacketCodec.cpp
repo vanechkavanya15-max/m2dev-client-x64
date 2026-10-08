@@ -6,7 +6,7 @@ namespace Client::Network
     PacketResult<TPacketGCPartyInvite> PartyPacketCodec::DecodePartyInvite(std::span<const uint8_t> buffer)
     {
         if (buffer.size() < sizeof(TPacketGCPartyInvite))
-            return std::unexpected(1);
+            return std::unexpected(PacketError::BufferUnderflow);
 
         TPacketGCPartyInvite packet;
         std::memcpy(&packet, buffer.data(), sizeof(TPacketGCPartyInvite));
@@ -16,7 +16,7 @@ namespace Client::Network
     PacketResult<TPacketGCPartyAdd> PartyPacketCodec::DecodePartyAdd(std::span<const uint8_t> buffer)
     {
         if (buffer.size() < sizeof(TPacketGCPartyAdd))
-            return std::unexpected(1);
+            return std::unexpected(PacketError::BufferUnderflow);
 
         TPacketGCPartyAdd packet;
         std::memcpy(&packet, buffer.data(), sizeof(TPacketGCPartyAdd));
@@ -26,7 +26,7 @@ namespace Client::Network
     PacketResult<TPacketGCPartyUpdate> PartyPacketCodec::DecodePartyUpdate(std::span<const uint8_t> buffer)
     {
         if (buffer.size() < sizeof(TPacketGCPartyUpdate))
-            return std::unexpected(1);
+            return std::unexpected(PacketError::BufferUnderflow);
 
         TPacketGCPartyUpdate packet;
         std::memcpy(&packet, buffer.data(), sizeof(TPacketGCPartyUpdate));
@@ -36,7 +36,7 @@ namespace Client::Network
     PacketResult<TPacketGCPartyRemove> PartyPacketCodec::DecodePartyRemove(std::span<const uint8_t> buffer)
     {
         if (buffer.size() < sizeof(TPacketGCPartyRemove))
-            return std::unexpected(1);
+            return std::unexpected(PacketError::BufferUnderflow);
 
         TPacketGCPartyRemove packet;
         std::memcpy(&packet, buffer.data(), sizeof(TPacketGCPartyRemove));
@@ -46,7 +46,7 @@ namespace Client::Network
     PacketResult<TPacketGCPartyParameter> PartyPacketCodec::DecodePartyParameter(std::span<const uint8_t> buffer)
     {
         if (buffer.size() < sizeof(TPacketGCPartyParameter))
-            return std::unexpected(1);
+            return std::unexpected(PacketError::BufferUnderflow);
 
         TPacketGCPartyParameter packet;
         std::memcpy(&packet, buffer.data(), sizeof(TPacketGCPartyParameter));

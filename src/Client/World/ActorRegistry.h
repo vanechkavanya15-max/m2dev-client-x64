@@ -7,32 +7,8 @@
 #include <compare>
 #include <functional>
 
-namespace EterBase {
-    // Basic StrongType implementation based on requirements
-    template <typename T, typename Tag>
-    struct StrongType {
-        T value;
-        
-        explicit constexpr StrongType(T v) : value(v) {}
-        constexpr StrongType() : value{} {}
-        
-        constexpr T Get() const { return value; }
-        
-        auto operator<=>(const StrongType&) const = default;
-    };
-    
-    struct EntityIdTag {};
-    using EntityId = StrongType<uint32_t, EntityIdTag>;
-}
-
-namespace std {
-    template <typename Tag>
-    struct hash<EterBase::StrongType<uint32_t, Tag>> {
-        size_t operator()(const EterBase::StrongType<uint32_t, Tag>& id) const {
-            return hash<uint32_t>{}(id.Get());
-        }
-    };
-}
+#include "../../EterBase/StrongTypes.h"
+#include <shared_mutex>
 
 using EntityVid = EterBase::EntityId;
 
@@ -72,6 +48,7 @@ public:
     void Clear();
 
 private:
+    mutable std::shared_mutex m_mutex;
     std::unordered_map<EntityVid, ActorRecord> m_actors;
 };
 

@@ -9,16 +9,12 @@
 #include "../../UserInterface/Packet.h"
 #endif
 
+#include "EterBase/Result.h"
+
 namespace Client::Network
 {
-    enum class PacketError
-    {
-        BufferUnderflow,
-        InvalidHeader,
-    };
-
-    template <typename T>
-    using PacketResult = std::expected<T, PacketError>;
+    using EterBase::PacketError;
+    using EterBase::PacketResult;
 
     class RefinePacketCodec
     {

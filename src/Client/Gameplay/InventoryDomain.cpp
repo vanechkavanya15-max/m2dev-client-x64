@@ -67,7 +67,7 @@ bool InventoryDomain::IsValidCell(uint8_t windowType, EterBase::ItemSlot slot, I
                      return false; // Wrapped around row
                 }
                 
-                if (windowType == INVENTORY)
+                if (windowType == INVENTORY || windowType == SAFEBOX)
                 {
                      uint16_t currentPage = slot.get() / INVENTORY_PAGE_SIZE;
                      uint16_t checkPage = checkSlot / INVENTORY_PAGE_SIZE;

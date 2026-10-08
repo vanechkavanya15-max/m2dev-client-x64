@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <chrono>
 #include <string>
+#include <shared_mutex>
 
 namespace Client::Gameplay {
 
@@ -217,6 +218,7 @@ namespace Client::Gameplay {
         const SkillData* GetSkillData(SkillId skillId) const;
 
     private:
+        mutable std::shared_mutex m_mutex;
         /**
          * @brief Globalne metadane definiujące parametry brzegowe poszczególnych skilli.
          */

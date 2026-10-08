@@ -7,16 +7,12 @@
 
 #include "../../UserInterface/Packet.h"
 
+#include "EterBase/Result.h"
+
 namespace Client::Network {
 
-    enum class PacketError {
-        BufferTooSmall,
-        InvalidHeader,
-        InvalidSubheader,
-    };
-
-    template <typename T>
-    using PacketResult = std::expected<T, PacketError>;
+    using EterBase::PacketError;
+    using EterBase::PacketResult;
 
     class ExchangePacketCodec {
     public:

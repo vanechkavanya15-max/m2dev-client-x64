@@ -1,4 +1,3 @@
-#include "../../EterBase/StdAfx.h"
 #pragma once
 
 #include <vector>
@@ -6,6 +5,7 @@
 #include <unordered_set>
 #include <cstdint>
 #include <cmath>
+#include <shared_mutex>
 
 #include "../../EterBase/StrongTypes.h"
 
@@ -19,6 +19,8 @@ public:
     void Insert(EterBase::EntityId id, float x, float y);
     void Update(EterBase::EntityId id, float x, float y);
     void Remove(EterBase::EntityId id);
+    void Clear();
+    [[nodiscard]] size_t Count() const;
 
     [[nodiscard]] std::vector<EterBase::EntityId> QueryRadius(float center_x, float center_y, float radius) const;
 
@@ -46,6 +48,7 @@ private:
         }
     };
 
+    mutable std::shared_mutex m_mutex;
     float m_cellSize;
     std::unordered_map<EterBase::EntityId, Position> m_entityPositions;
     std::unordered_map<CellCoords, std::vector<EterBase::EntityId>, CellCoordsHash> m_cells;

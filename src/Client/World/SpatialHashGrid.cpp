@@ -1,8 +1,8 @@
-#include "../../EterBase/StdAfx.h"
 #include "SpatialHashGrid.h"
 
 #include <algorithm>
 #include <cmath>
+#include <mutex>
 
 namespace Client::World {
 
@@ -17,7 +17,9 @@ SpatialHashGrid::CellCoords SpatialHashGrid::GetCellCoords(float x, float y) con
 }
 
 void SpatialHashGrid::Insert(EterBase::EntityId id, float x, float y) {
+    std::unique_lock lock(m_mutex);
     if (m_entityPositions.contains(id)) {
+        lock.unlock();
         Update(id, x, y);
         return;
     }
@@ -28,9 +30,12 @@ void SpatialHashGrid::Insert(EterBase::EntityId id, float x, float y) {
 }
 
 void SpatialHashGrid::Update(EterBase::EntityId id, float x, float y) {
+    std::unique_lock lock(m_mutex);
     auto it = m_entityPositions.find(id);
     if (it == m_entityPositions.end()) {
-        Insert(id, x, y);
+        m_entityPositions[id] = {x, y};
+        CellCoords coords = GetCellCoords(x, y);
+        m_cells[coords].push_back(id);
         return;
     }
 
@@ -44,14 +49,20 @@ void SpatialHashGrid::Update(EterBase::EntityId id, float x, float y) {
     }
 
     // Remove from old cell
-    auto& oldCell = m_cells[oldCoords];
-    auto oldIt = std::find(oldCell.begin(), oldCell.end(), id);
-    if (oldIt != oldCell.end()) {
-        // Swap and pop for O(1) removal
-        if (oldIt != oldCell.end() - 1) {
-            std::iter_swap(oldIt, oldCell.end() - 1);
+    auto oldCellIt = m_cells.find(oldCoords);
+    if (oldCellIt != m_cells.end()) {
+        auto& oldCell = oldCellIt->second;
+        auto oldIt = std::find(oldCell.begin(), oldCell.end(), id);
+        if (oldIt != oldCell.end()) {
+            // Swap and pop for O(1) removal
+            if (oldIt != oldCell.end() - 1) {
+                std::iter_swap(oldIt, oldCell.end() - 1);
+            }
+            oldCell.pop_back();
         }
-        oldCell.pop_back();
+        if (oldCell.empty()) {
+            m_cells.erase(oldCellIt);
+        }
     }
 
     // Add to new cell
@@ -59,41 +70,58 @@ void SpatialHashGrid::Update(EterBase::EntityId id, float x, float y) {
 }
 
 void SpatialHashGrid::Remove(EterBase::EntityId id) {
+    std::unique_lock lock(m_mutex);
     auto it = m_entityPositions.find(id);
     if (it == m_entityPositions.end()) {
         return;
     }
 
     CellCoords coords = GetCellCoords(it->second.x, it->second.y);
-    auto& cell = m_cells[coords];
-
-    auto cellIt = std::find(cell.begin(), cell.end(), id);
-    if (cellIt != cell.end()) {
-        if (cellIt != cell.end() - 1) {
-            std::iter_swap(cellIt, cell.end() - 1);
+    auto cellItMap = m_cells.find(coords);
+    if (cellItMap != m_cells.end()) {
+        auto& cell = cellItMap->second;
+        auto cellIt = std::find(cell.begin(), cell.end(), id);
+        if (cellIt != cell.end()) {
+            if (cellIt != cell.end() - 1) {
+                std::iter_swap(cellIt, cell.end() - 1);
+            }
+            cell.pop_back();
         }
-        cell.pop_back();
-    }
 
-    // Clean up empty cells if desired (optional optimization)
-    if (cell.empty()) {
-        m_cells.erase(coords);
+        if (cell.empty()) {
+            m_cells.erase(cellItMap);
+        }
     }
 
     m_entityPositions.erase(it);
 }
 
+void SpatialHashGrid::Clear() {
+    std::unique_lock lock(m_mutex);
+    m_entityPositions.clear();
+    m_cells.clear();
+}
+
+size_t SpatialHashGrid::Count() const {
+    std::shared_lock lock(m_mutex);
+    return m_entityPositions.size();
+}
+
 std::vector<EterBase::EntityId> SpatialHashGrid::QueryRadius(float center_x, float center_y, float radius) const {
+    std::shared_lock lock(m_mutex);
     std::vector<EterBase::EntityId> result;
     if (radius <= 0.0f) {
         return result;
     }
+    result.reserve(32);
 
     float sqRadius = radius * radius;
-    float minX = center_x - radius;
-    float minY = center_y - radius;
-    float maxX = center_x + radius;
-    float maxY = center_y + radius;
+    // Apply small epsilon margin to avoid missing boundary cells due to float precision
+    constexpr float eps = 0.001f;
+    float minX = center_x - radius - eps;
+    float minY = center_y - radius - eps;
+    float maxX = center_x + radius + eps;
+    float maxY = center_y + radius + eps;
 
     CellCoords minCoords = GetCellCoords(minX, minY);
     CellCoords maxCoords = GetCellCoords(maxX, maxY);

@@ -1,5 +1,6 @@
 #include "SkillCooldownTracker.h"
 #include <algorithm>
+#include <mutex>
 
 namespace Client::Gameplay {
 
@@ -8,28 +9,34 @@ void SkillCooldownTracker::StartCooldown(uint32_t skillVnum, uint32_t durationMs
 }
 
 void SkillCooldownTracker::StartCooldownWithTimestamp(uint32_t skillVnum, uint32_t durationMs, uint64_t startTimestampMs) {
+    std::unique_lock lock(m_mutex);
     if (durationMs == 0) {
-        ResetCooldown(skillVnum);
+        m_cooldowns.erase(skillVnum);
         return;
     }
     m_cooldowns[skillVnum] = CooldownEntry{startTimestampMs, durationMs};
 }
 
 bool SkillCooldownTracker::IsOnCooldown(uint32_t skillVnum, uint64_t currentTimestampMs) const {
+    std::shared_lock lock(m_mutex);
     auto it = m_cooldowns.find(skillVnum);
     if (it == m_cooldowns.end()) {
         return false;
     }
     const auto& entry = it->second;
-    return (currentTimestampMs < entry.startTimestampMs + entry.durationMs);
+    return (currentTimestampMs >= entry.startTimestampMs && currentTimestampMs < entry.startTimestampMs + entry.durationMs);
 }
 
 uint32_t SkillCooldownTracker::GetRemainingCooldownMs(uint32_t skillVnum, uint64_t currentTimestampMs) const {
+    std::shared_lock lock(m_mutex);
     auto it = m_cooldowns.find(skillVnum);
     if (it == m_cooldowns.end()) {
         return 0;
     }
     const auto& entry = it->second;
+    if (currentTimestampMs < entry.startTimestampMs) {
+        return entry.durationMs;
+    }
     uint64_t endTime = entry.startTimestampMs + entry.durationMs;
     if (currentTimestampMs >= endTime) {
         return 0;
@@ -38,6 +45,7 @@ uint32_t SkillCooldownTracker::GetRemainingCooldownMs(uint32_t skillVnum, uint64
 }
 
 float SkillCooldownTracker::GetCooldownProgress(uint32_t skillVnum, uint64_t currentTimestampMs) const {
+    std::shared_lock lock(m_mutex);
     auto it = m_cooldowns.find(skillVnum);
     if (it == m_cooldowns.end()) {
         return 1.0f; // 100% complete
@@ -57,10 +65,12 @@ float SkillCooldownTracker::GetCooldownProgress(uint32_t skillVnum, uint64_t cur
 }
 
 void SkillCooldownTracker::ResetCooldown(uint32_t skillVnum) {
+    std::unique_lock lock(m_mutex);
     m_cooldowns.erase(skillVnum);
 }
 
 void SkillCooldownTracker::ResetAll() {
+    std::unique_lock lock(m_mutex);
     m_cooldowns.clear();
 }
 

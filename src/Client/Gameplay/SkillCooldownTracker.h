@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <unordered_map>
 #include <chrono>
+#include <shared_mutex>
 
 namespace Client::Gameplay {
 
@@ -30,6 +31,7 @@ public:
     }
 
 private:
+    mutable std::shared_mutex m_mutex;
     std::unordered_map<uint32_t, CooldownEntry> m_cooldowns;
 };
 

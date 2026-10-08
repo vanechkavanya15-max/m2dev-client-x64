@@ -7,15 +7,12 @@
 
 #include "UserInterface/Packet.h"
 
+#include "EterBase/Result.h"
+
 namespace Client::Network
 {
-    enum class PacketError
-    {
-        BufferUnderflow
-    };
-
-    template<typename T>
-    using PacketResult = std::expected<T, PacketError>;
+    using EterBase::PacketError;
+    using EterBase::PacketResult;
 
     class ShopPacketCodec
     {

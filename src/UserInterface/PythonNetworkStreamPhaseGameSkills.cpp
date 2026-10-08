@@ -26,7 +26,7 @@ bool PhaseGameSkillsBridge::HandleSkillLevel(class CPythonNetworkStream* pStream
 	for (int i = 0; i < SKILL_MAX_NUM; ++i)
 	{
 		if (rkPlayer.GetSkillSlotIndex(i, &dwSlotIndex))
-			rkPlayer.SetSkillLevel(dwSlotIndex, decodedPack.abSkillLevels[i]);
+			rkPlayer.SetSkillLevel_(i, 0, decodedPack.abSkillLevels[i]);
 	}
 
 	pStream->__RefreshSkillWindow();

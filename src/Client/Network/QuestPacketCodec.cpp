@@ -24,21 +24,21 @@ namespace Client::Network {
     }
 
     EterBase::PacketResult<std::string> QuestPacketCodec::DecodeScript(std::span<const uint8_t> buffer) {
-        if (buffer.size() < sizeof(TDynamicSizePacketHeader)) {
+        if (buffer.size() < sizeof(TPacketGCScript)) {
             return std::unexpected(EterBase::PacketError::BufferUnderflow);
         }
 
-        TDynamicSizePacketHeader header;
-        std::memcpy(&header, buffer.data(), sizeof(TDynamicSizePacketHeader));
+        TPacketGCScript header;
+        std::memcpy(&header, buffer.data(), sizeof(TPacketGCScript));
 
-        if (buffer.size() < header.length) {
+        if (header.length < sizeof(TPacketGCScript) || buffer.size() < header.length) {
             return std::unexpected(EterBase::PacketError::BufferUnderflow);
         }
 
-        size_t scriptLength = header.length - sizeof(TDynamicSizePacketHeader);
+        size_t scriptLength = header.length - sizeof(TPacketGCScript);
         std::string script;
         script.resize(scriptLength);
-        std::memcpy(script.data(), buffer.data() + sizeof(TDynamicSizePacketHeader), scriptLength);
+        std::memcpy(script.data(), buffer.data() + sizeof(TPacketGCScript), scriptLength);
         
         // Remove trailing null bytes if any
         while (!script.empty() && script.back() == '\0') {

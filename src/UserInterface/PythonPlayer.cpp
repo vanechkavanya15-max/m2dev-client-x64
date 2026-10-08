@@ -616,6 +616,7 @@ const TItemData * CPythonPlayer::GetItemData(TItemPos Cell) const
 	{
 	case INVENTORY:
 #if defined(_DEBUG)
+		if (Cell.cell < c_ItemSlot_Count)
 		{
 			auto optItem = UserInterface::Services::InventoryService::Instance().GetItem(EterBase::ItemSlot(Cell.cell));
 			if (optItem.has_value())
@@ -1096,7 +1097,6 @@ float CPythonPlayer::GetSkillNextEfficientPercentage(DWORD dwSlotIndex)
 
 void CPythonPlayer::SetSkillLevel(DWORD dwSlotIndex, DWORD dwSkillLevel)
 {
-	assert(!"CPythonPlayer::SetSkillLevel - 사용하지 않는 함수");
 	if (dwSlotIndex >= SKILL_MAX_NUM)
 		return;
 

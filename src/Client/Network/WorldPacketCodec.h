@@ -9,15 +9,12 @@
 #include <vector>
 #include <expected>
 
+#include "EterBase/Result.h"
+
 namespace Client::Network {
 
-    enum class PacketError {
-        BufferTooSmall,
-        InvalidHeader
-    };
-
-    template <typename T>
-    using PacketResult = std::expected<T, PacketError>;
+    using EterBase::PacketError;
+    using EterBase::PacketResult;
 
     class WorldPacketCodec {
     public:

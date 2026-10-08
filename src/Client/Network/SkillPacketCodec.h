@@ -7,12 +7,10 @@
 
 #include "../../UserInterface/Packet.h"
 
-// Define a simple PacketResult template
-template <typename T>
-using PacketResult = std::expected<T, std::string>;
-
 namespace Client::Network
 {
+    template <typename T>
+    using PacketResult = std::expected<T, std::string>;
     class SkillPacketCodec
     {
     public:
