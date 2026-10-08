@@ -110,6 +110,7 @@ namespace CG
     constexpr uint16_t SAFEBOX_CHECKIN    = 0x0820;
     constexpr uint16_t SAFEBOX_CHECKOUT   = 0x0821;
     constexpr uint16_t SAFEBOX_ITEM_MOVE  = 0x0822;
+    constexpr uint16_t SAFEBOX_MONEY      = 0x0823;
     constexpr uint16_t MALL_CHECKOUT      = 0x0840;
 
     // Quest

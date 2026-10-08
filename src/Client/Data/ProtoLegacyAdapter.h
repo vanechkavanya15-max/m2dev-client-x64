@@ -5,6 +5,7 @@
 
 namespace metin2::gamelib {
 
+using TItemTable = CItemData::TItemTable;
 using ItemProtoRecord = metin2::gamelib::ItemDataEntry;
 
 class ProtoLegacyAdapter {

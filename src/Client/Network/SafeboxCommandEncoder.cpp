@@ -45,13 +45,54 @@ namespace Client::Network {
         }
 
         TPacketCGSafeboxMoney packet{};
-        packet.header = CG::SAFEBOX_MONEY_CHANGE; // Wait, wait. Client sends `SAFEBOX_MONEY` or something?
-        // Wait! The enum says CG::SAFEBOX_MONEY? Let's check Packet.h again.
-        // Wait, the client doesn't send SAFEBOX_MONEY_CHANGE, it sends what? Wait, there is NO CG::SAFEBOX_MONEY in Packet.h?
-        // Ah, let's fix it later. I will use a dummy header to compile first if needed, but I should use the correct one.
-        // Let's check `UserInterface/Packet.h`. Oh I didn't see `CG::SAFEBOX_MONEY`. Wait, let me check `CG::SAFEBOX_...`
-        return std::vector<uint8_t>{};
+        packet.header = CG::SAFEBOX_MONEY;
+        packet.length = sizeof(TPacketCGSafeboxMoney);
+        packet.bState = state;
+        packet.lMoney = money;
+
+        std::vector<uint8_t> buffer(sizeof(packet));
+        std::memcpy(buffer.data(), &packet, sizeof(packet));
+        return buffer;
     }
 
-    // other methods...
+    [[nodiscard]] EterBase::PacketResult<std::vector<uint8_t>> SafeboxCommandEncoder::EncodeCheckin(EterBase::ItemSlot inventorySlot, uint8_t safeboxSlot)
+    {
+        TPacketCGSafeboxCheckin packet{};
+        packet.header = CG::SAFEBOX_CHECKIN;
+        packet.length = sizeof(TPacketCGSafeboxCheckin);
+        packet.bSafePos = safeboxSlot;
+        packet.ItemPos = TItemPos(INVENTORY, inventorySlot.Value());
+
+        std::vector<uint8_t> buffer(sizeof(packet));
+        std::memcpy(buffer.data(), &packet, sizeof(packet));
+        return buffer;
+    }
+
+    [[nodiscard]] EterBase::PacketResult<std::vector<uint8_t>> SafeboxCommandEncoder::EncodeCheckout(uint8_t safeboxSlot, EterBase::ItemSlot inventorySlot)
+    {
+        TPacketCGSafeboxCheckout packet{};
+        packet.header = CG::SAFEBOX_CHECKOUT;
+        packet.length = sizeof(TPacketCGSafeboxCheckout);
+        packet.bSafePos = safeboxSlot;
+        packet.ItemPos = TItemPos(INVENTORY, inventorySlot.Value());
+
+        std::vector<uint8_t> buffer(sizeof(packet));
+        std::memcpy(buffer.data(), &packet, sizeof(packet));
+        return buffer;
+    }
+
+    [[nodiscard]] EterBase::PacketResult<std::vector<uint8_t>> SafeboxCommandEncoder::EncodeItemMove(uint8_t sourceSlot, uint8_t targetSlot, uint8_t count)
+    {
+        TPacketCGItemMove packet{};
+        packet.header = CG::SAFEBOX_ITEM_MOVE;
+        packet.length = sizeof(TPacketCGItemMove);
+        packet.pos = TItemPos(SAFEBOX, sourceSlot);
+        packet.change_pos = TItemPos(SAFEBOX, targetSlot);
+        packet.num = count;
+
+        std::vector<uint8_t> buffer(sizeof(packet));
+        std::memcpy(buffer.data(), &packet, sizeof(packet));
+        return buffer;
+    }
 }
+
