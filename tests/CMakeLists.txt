@@ -247,6 +247,69 @@ target_link_libraries(test_c26_instance_components PRIVATE
     EterBase
 )
 
+add_executable(test_c26_zero_overhead_state_cache 
+    test_c26_zero_overhead_state_cache.cpp
+    ${CMAKE_SOURCE_DIR}/src/Client/Graphics/ZeroOverheadStateCache.cpp
+)
+target_include_directories(test_c26_zero_overhead_state_cache PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/Client
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/extern/include
+)
+
+add_executable(test_c26_dynamic_geometry_ring_buffer test_c26_dynamic_geometry_ring_buffer.cpp)
+target_include_directories(test_c26_dynamic_geometry_ring_buffer PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/Client
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}
+)
+target_link_libraries(test_c26_dynamic_geometry_ring_buffer PRIVATE
+    Client2026
+    EterBase
+)
+
+add_executable(test_c26_instance_physics_engine test_c26_instance_physics_engine.cpp)
+target_include_directories(test_c26_instance_physics_engine PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/Client
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/vendor
+)
+target_link_libraries(test_c26_instance_physics_engine PRIVATE
+    Client2026
+    EterBase
+)
+
+add_executable(test_c26_instance_combat_engine test_c26_instance_combat_engine.cpp)
+target_include_directories(test_c26_instance_combat_engine PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/Client
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/vendor
+)
+target_link_libraries(test_c26_instance_combat_engine PRIVATE
+    Client2026
+    EterBase
+)
+
+add_executable(test_c26_type_sanitization test_c26_type_sanitization.cpp)
+target_include_directories(test_c26_type_sanitization PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/Client
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/vendor
+)
+target_link_libraries(test_c26_type_sanitization PRIVATE
+    Client2026
+    EterBase
+)
+
 enable_testing()
 add_test(NAME StranglerFacadeTest COMMAND test_c26_strangler_facade)
 add_test(NAME PandoraSimulationTest COMMAND test_c26_e2e_pandora_simulation)
@@ -266,5 +329,12 @@ add_test(NAME SimdCullingTest COMMAND test_c26_simd_culling)
 add_test(NAME WorldContextTest COMMAND test_c26_world_context)
 add_test(NAME DomainErrorsEventsTest COMMAND test_c26_domain_errors_events)
 add_test(NAME InstanceComponentsTest COMMAND test_c26_instance_components)
+add_test(NAME ZeroOverheadStateCacheTest COMMAND test_c26_zero_overhead_state_cache)
+add_test(NAME DynamicGeometryRingBufferTest COMMAND test_c26_dynamic_geometry_ring_buffer)
+add_test(NAME InstancePhysicsEngineTest COMMAND test_c26_instance_physics_engine)
+add_test(NAME InstanceCombatEngineTest COMMAND test_c26_instance_combat_engine)
+add_test(NAME TypeSanitizationTest COMMAND test_c26_type_sanitization)
+
+
 
 
