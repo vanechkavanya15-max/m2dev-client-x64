@@ -8,6 +8,10 @@
 #include "Client/Gameplay/InventoryDomain.h"
 #include "Client/Gameplay/SkillDomain.h"
 #include "UserInterface/Core/EventBus.h"
+#include "Client/Gameplay/CombatError.h"
+#include "UserInterface/ExchangeErrors.h"
+#include "UserInterface/GuildErrors.h"
+#include "EterBase/Result.h"
 
 using namespace Client::Core;
 using namespace Client::Gameplay;
@@ -43,6 +47,14 @@ void TestDomainErrorsEnumAndToString() {
     assert(!s2.empty());
     std::string s3 = std::format("{}", ActorError::AlreadyDead);
     assert(!s3.empty());
+ 
+    // Filar 4: Testy nowych bledow domenowych
+    assert(Client::Gameplay::ToString(Client::Gameplay::CombatError::TargetDead) == "Target is dead");
+    assert(Client::Gameplay::ToString(Client::Gameplay::CombatError::CharacterStunned) == "Character is stunned");
+    assert(UserInterface::Exchange::to_string(UserInterface::Exchange::ExchangeError::InvalidPosition) == "ExchangeError::InvalidPosition");
+    assert(to_string(GuildError::NotAuthorized).find("Not authorized") != std::string_view::npos);
+    assert(EterBase::ToString(EterBase::PacketDispatchError::Disconnected) == "Disconnected");
+    assert(std::format("{}", EterBase::PacketDispatchError::QueueFull) == "QueueFull");
 
     std::cout << "[PASS] TestDomainErrorsEnumAndToString\n";
 }
