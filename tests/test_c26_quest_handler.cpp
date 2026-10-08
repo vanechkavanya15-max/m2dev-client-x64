@@ -104,7 +104,7 @@ void testHandleScript() {
 
 void testHandleQuestInfo() {
     Network::Handlers::QuestHandler handler;
-    std::vector<uint8_t> buffer(sizeof(TPacketGCQuestInfo) + sizeof(uint8_t) + 30);
+    std::vector<uint8_t> buffer(sizeof(TPacketGCQuestInfo) + sizeof(uint8_t) + 31);
     
     TPacketGCQuestInfo qi;
     qi.flag = QUEST_SEND_IS_BEGIN | QUEST_SEND_TITLE;

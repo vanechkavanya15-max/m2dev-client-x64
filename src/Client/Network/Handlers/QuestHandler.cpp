@@ -54,11 +54,11 @@ namespace Network::Handlers
             offset += sizeof(T);
             return true;
         };
-        auto SafeReadString = [&](char* out, size_t maxLength) -> bool {
-            if (offset + maxLength > buffer.size()) return false;
-            std::memcpy(out, buffer.data() + offset, maxLength);
-            out[maxLength] = '\0';
-            offset += maxLength;
+        auto SafeReadString = [&](char* out, size_t wireSize) -> bool {
+            if (offset + wireSize > buffer.size()) return false;
+            std::memcpy(out, buffer.data() + offset, wireSize);
+            out[wireSize - 1] = '\0';
+            offset += wireSize;
             return true;
         };
 
@@ -79,12 +79,12 @@ namespace Network::Handlers
         char title[31] = {0}; char clockName[17] = {0}; int32_t clockValue = 0;
         char counterName[17] = {0}; int32_t counterValue = 0; char iconFileName[25] = {0};
 
-        if ((flag & QUEST_SEND_TITLE) != 0 && !SafeReadString(title, 30)) return EterBase::MakeError(EterBase::PacketError::BufferUnderflow);
-        if ((flag & QUEST_SEND_CLOCK_NAME) != 0 && !SafeReadString(clockName, 16)) return EterBase::MakeError(EterBase::PacketError::BufferUnderflow);
+        if ((flag & QUEST_SEND_TITLE) != 0 && !SafeReadString(title, 31)) return EterBase::MakeError(EterBase::PacketError::BufferUnderflow);
+        if ((flag & QUEST_SEND_CLOCK_NAME) != 0 && !SafeReadString(clockName, 17)) return EterBase::MakeError(EterBase::PacketError::BufferUnderflow);
         if ((flag & QUEST_SEND_CLOCK_VALUE) != 0 && !SafeRead(clockValue)) return EterBase::MakeError(EterBase::PacketError::BufferUnderflow);
-        if ((flag & QUEST_SEND_COUNTER_NAME) != 0 && !SafeReadString(counterName, 16)) return EterBase::MakeError(EterBase::PacketError::BufferUnderflow);
+        if ((flag & QUEST_SEND_COUNTER_NAME) != 0 && !SafeReadString(counterName, 17)) return EterBase::MakeError(EterBase::PacketError::BufferUnderflow);
         if ((flag & QUEST_SEND_COUNTER_VALUE) != 0 && !SafeRead(counterValue)) return EterBase::MakeError(EterBase::PacketError::BufferUnderflow);
-        if ((flag & QUEST_SEND_ICON_FILE) != 0 && !SafeReadString(iconFileName, 24)) return EterBase::MakeError(EterBase::PacketError::BufferUnderflow);
+        if ((flag & QUEST_SEND_ICON_FILE) != 0 && !SafeReadString(iconFileName, 25)) return EterBase::MakeError(EterBase::PacketError::BufferUnderflow);
 
         Client::Core::EventBus::GetInstance().Publish(Events::QuestUpdatedEvent{
             questInfo.index, packetType, title, clockName, clockValue, counterName, counterValue, iconFileName
