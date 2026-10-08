@@ -1998,7 +1998,7 @@ typedef struct SPlayerSkill
 {
 	uint8_t bMasterType;
 	uint8_t bLevel;
-	uint32_t tNextRead;
+	time_t tNextRead;
 } TPlayerSkill;
 
 typedef struct packet_skill_level_new
@@ -2007,6 +2007,7 @@ typedef struct packet_skill_level_new
 	uint16_t	length;
 	TPlayerSkill skills[SKILL_MAX_NUM];
 } TPacketGCSkillLevelNew;
+static_assert(sizeof(TPacketGCSkillLevelNew) == 2554, "TPacketGCSkillLevelNew must be 2554 bytes on x64");
 
 // fly
 typedef struct packet_fly
@@ -2250,7 +2251,7 @@ typedef struct SPacketGCTime
 {
     uint16_t	header;
     uint16_t	length;
-    uint32_t    time;
+    time_t      time;
 } TPacketGCTime;
 
 enum
