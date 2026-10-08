@@ -1,0 +1,43 @@
+# ============================================================
+# project.yaml — Profil Projektu: SourceCodeClient
+# Klient Metin2 x64 C++20/C++23 z silnikiem Client2026
+# ============================================================
+
+name: "SourceCodeClient"
+description: "Klient Metin2 x64 C++20/C++23 z silnikiem Client2026 i modulami sieciowymi"
+repo: "vanechkavanya15-max/SourceCodeClient"
+local_path: "E:/m2dev-client-src-mainOryginalx64"
+git_branch: "m2dev-x64-2026"
+
+language: "cpp"
+language_version: "23"
+
+source_dirs:
+  - "src/Client/"
+  - "src/UserInterface/"
+
+test_dirs:
+  - "tests/"
+
+test_commands:
+  check: "cmake --build build --config Release --target Client2026"
+  test: "build\\tests\\Release\\test_c26_strangler_facade.exe"
+  timeout: 180
+
+conventions:
+  naming: "PascalCase"
+  comments_language: "ascii_polish"
+  typing: "strict"
+  no_placeholders: true
+  isolation: true
+
+patch_exclude:
+  - "build/"
+  - "bin/"
+  - "*.exe"
+  - "*.lib"
+  - "*.obj"
+  - "*.pdb"
+  - ".vs/"
+  - "solution.patch"
+  - "patch.diff"
