@@ -3154,6 +3154,9 @@ void CInstanceBase::__Initialize()
 }
 
 CInstanceBase::CInstanceBase()
+	: m_visualComponent(m_GraphicThingInstance)
+	, m_physicsComponent(m_GraphicThingInstance)
+	, m_combatComponent()
 {
 	__Initialize();
 }

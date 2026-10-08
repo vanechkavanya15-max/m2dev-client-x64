@@ -7,6 +7,9 @@
 #include "AffectFlagContainer.h"
 #include "InstanceControllers/IInstanceMountHorseController.h"
 #include "InstanceControllers/IInstanceAnimationController.h"
+#include "InstanceComponents/InstanceVisualComponent.h"
+#include "InstanceComponents/InstancePhysicsComponent.h"
+#include "InstanceComponents/InstanceCombatComponent.h"
 
 class CInstanceBase
 {	
@@ -1009,6 +1012,21 @@ class CInstanceBase
 
 		// Graphic Instance
 		CActorInstance m_GraphicThingInstance;
+
+		// Decoupled C++23 Components
+		UserInterface::InstanceComponents::InstanceVisualComponent m_visualComponent;
+		UserInterface::InstanceComponents::InstancePhysicsComponent m_physicsComponent;
+		UserInterface::InstanceComponents::InstanceCombatComponent m_combatComponent;
+
+	public:
+		[[nodiscard]] UserInterface::InstanceComponents::InstanceVisualComponent& GetVisualComponent() noexcept { return m_visualComponent; }
+		[[nodiscard]] const UserInterface::InstanceComponents::InstanceVisualComponent& GetVisualComponent() const noexcept { return m_visualComponent; }
+
+		[[nodiscard]] UserInterface::InstanceComponents::InstancePhysicsComponent& GetPhysicsComponent() noexcept { return m_physicsComponent; }
+		[[nodiscard]] const UserInterface::InstanceComponents::InstancePhysicsComponent& GetPhysicsComponent() const noexcept { return m_physicsComponent; }
+
+		[[nodiscard]] UserInterface::InstanceComponents::InstanceCombatComponent& GetCombatComponent() noexcept { return m_combatComponent; }
+		[[nodiscard]] const UserInterface::InstanceComponents::InstanceCombatComponent& GetCombatComponent() const noexcept { return m_combatComponent; }
 
 
 	protected:
