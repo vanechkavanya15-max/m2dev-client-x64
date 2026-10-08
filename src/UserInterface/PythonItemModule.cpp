@@ -501,7 +501,8 @@ PyObject * itemCreateItem(PyObject * poSelf, PyObject * poArgs)
 	bool bDrop = true;
 	PyTuple_GetBoolean(poArgs, 5, &bDrop);
 
-	CPythonItem::Instance().CreateItem(iVirtualID, iVirtualNumber, x, y, z, bDrop);
+	TPixelPosition groundCoords(x, y, z);
+	CPythonItem::Instance().CreateItem(iVirtualID, iVirtualNumber, groundCoords, bDrop);
 
 	return Py_BuildNone();
 }

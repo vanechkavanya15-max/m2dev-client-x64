@@ -186,7 +186,7 @@ void CPythonPlayer::SetTarget(DWORD dwVID, BOOL bForceChange)
 bool CPythonPlayer::__ChangeTargetToPickedInstance()
 {
 	DWORD dwVID;
-	if (!CPythonCharacterManager::Instance().OLD_GetPickedInstanceVID(&dwVID))
+	if (!CPythonCharacterManager::Instance().GetPickedActorID(&dwVID))
 		return false;
 
 	SetTarget(dwVID);

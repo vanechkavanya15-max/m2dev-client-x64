@@ -291,7 +291,7 @@ PyObject * chrUnselect(PyObject* poSelf, PyObject* poArgs)
 PyObject * chrPick(PyObject* poSelf, PyObject* poArgs)
 {
 	DWORD VirtualID = 0;
-	if (CPythonCharacterManager::Instance().OLD_GetPickedInstanceVID(&VirtualID))
+	if (CPythonCharacterManager::Instance().GetPickedActorID(&VirtualID))
 		return Py_BuildValue("i", VirtualID);
 	else
 		return Py_BuildValue("i", -1);
@@ -1143,7 +1143,7 @@ PyObject * chrWeaponTraceSetTexture(PyObject* poSelf, PyObject* poArgs)
 	if (!PyTuple_GetString(poArgs, 0, &szPathName))
 		return Py_BadArgument();
 
-	CInstanceBase * pInstance = CPythonCharacterManager::Instance().GetMainInstancePtr();
+	CInstanceBase * pInstance = CPythonCharacterManager::Instance().GetMainActorPtr();
 	if (pInstance)
 	{
 		pInstance->GetGraphicThingInstanceRef().SetWeaponTraceTexture(szPathName);
@@ -1153,7 +1153,7 @@ PyObject * chrWeaponTraceSetTexture(PyObject* poSelf, PyObject* poArgs)
 
 PyObject * chrWeaponTraceUseTexture(PyObject* poSelf, PyObject* poArgs)
 {
-	CInstanceBase * pInstance = CPythonCharacterManager::Instance().GetMainInstancePtr();
+	CInstanceBase * pInstance = CPythonCharacterManager::Instance().GetMainActorPtr();
 	if (pInstance)
 	{
 		pInstance->GetGraphicThingInstanceRef().UseTextureWeaponTrace();
@@ -1163,7 +1163,7 @@ PyObject * chrWeaponTraceUseTexture(PyObject* poSelf, PyObject* poArgs)
 
 PyObject * chrWeaponTraceUseAlpha(PyObject* poSelf, PyObject* poArgs)
 {
-	CInstanceBase * pInstance = CPythonCharacterManager::Instance().GetMainInstancePtr();
+	CInstanceBase * pInstance = CPythonCharacterManager::Instance().GetMainActorPtr();
 	if (pInstance)
 	{
 		pInstance->GetGraphicThingInstanceRef().UseAlphaWeaponTrace();

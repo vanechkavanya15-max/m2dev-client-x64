@@ -8,6 +8,8 @@
 #include "InstanceControllers/IInstanceMountHorseController.h"
 #include "InstanceControllers/IInstanceAnimationController.h"
 #include "InstanceComponents/InstanceVisualComponent.h"
+#include "EterBase/Result.h"
+#include "Client/Gameplay/CombatError.h"
 #include "InstanceComponents/InstancePhysicsComponent.h"
 #include "InstanceComponents/InstanceCombatComponent.h"
 
@@ -700,7 +702,7 @@ class CInstanceBase
 		void					BlockMovement();
 
 	public:
-		BOOL					CheckAttacking(CInstanceBase& rkInstVictim);
+		EterBase::Result<void, Client::Gameplay::CombatError> CheckAttacking(CInstanceBase& rkInstVictim);
 		void					ProcessHitting(DWORD dwMotionKey, CInstanceBase * pVictimInstance);
 		void					ProcessHitting(DWORD dwMotionKey, BYTE byEventIndex, CInstanceBase * pVictimInstance);
 		void					GetBlendingPosition(TPixelPosition * pPixelPosition);
@@ -800,7 +802,7 @@ class CInstanceBase
 		void					__Create_SetName(const SCreateData& c_rkCreateData);
 		void					__Create_SetWarpName(const SCreateData& c_rkCreateData);
 
-		CInstanceBase*			__GetMainInstancePtr();
+		CInstanceBase*			__GetMainActorPtr();
 		CInstanceBase*			__FindInstancePtr(DWORD dwVID);
 
 		bool  __FindRaceType(DWORD dwRace, BYTE* pbType);

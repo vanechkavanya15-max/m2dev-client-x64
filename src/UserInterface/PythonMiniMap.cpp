@@ -107,7 +107,7 @@ void CPythonMiniMap::Update(float fCenterX, float fCenterY)
 
 	CPythonCharacterManager& rkChrMgr=CPythonCharacterManager::Instance();
 
-	CInstanceBase* pkInstMain=rkChrMgr.GetMainInstancePtr();
+	CInstanceBase* pkInstMain=rkChrMgr.GetMainActorPtr();
 	if (!pkInstMain)
 		return;
 
@@ -131,7 +131,7 @@ void CPythonMiniMap::Update(float fCenterX, float fCenterY)
 
 		if (pkInstEach->IsPC() && !pkInstEach->IsInvisibility())
 		{
-			if (pkInstEach == CPythonCharacterManager::Instance().GetMainInstancePtr())
+			if (pkInstEach == CPythonCharacterManager::Instance().GetMainActorPtr())
 				continue;
 
 			aMarkPosition.m_fX = ( m_fWidth - (float)m_WhiteMark.GetWidth() ) / 2.0f + fDistanceFromCenterX + m_fScreenX;
@@ -437,7 +437,7 @@ void CPythonMiniMap::Render(float fScreenX, float fScreenY)
 	STATEMANAGER.SaveSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
 
 	// 캐릭터 마크
-	CInstanceBase * pkInst = CPythonCharacterManager::Instance().GetMainInstancePtr();
+	CInstanceBase * pkInst = CPythonCharacterManager::Instance().GetMainActorPtr();
 
 	if (pkInst)
 	{
@@ -907,7 +907,7 @@ void CPythonMiniMap::__GlobalPositionToAtlasPosition(long lx, long ly, float * p
 
 void CPythonMiniMap::UpdateAtlas()
 {
-	CInstanceBase * pkInst = CPythonCharacterManager::Instance().GetMainInstancePtr();
+	CInstanceBase * pkInst = CPythonCharacterManager::Instance().GetMainActorPtr();
 
 	if (pkInst)
 	{
@@ -1055,7 +1055,7 @@ bool CPythonMiniMap::GetPickedInstanceInfo(float fScreenX, float fScreenY, std::
 	float fRealX = m_fCenterX + fDistanceFromMiniMapCenterX / m_fScale * ((float) CTerrainImpl::CELLSCALE);
 	float fRealY = m_fCenterY + fDistanceFromMiniMapCenterY / m_fScale * ((float) CTerrainImpl::CELLSCALE);
 
-	CInstanceBase * pkInst = CPythonCharacterManager::Instance().GetMainInstancePtr();
+	CInstanceBase * pkInst = CPythonCharacterManager::Instance().GetMainActorPtr();
 
 	if (pkInst)
 	{
@@ -1122,7 +1122,7 @@ bool CPythonMiniMap::GetAtlasInfo(float fScreenX, float fScreenY, std::string & 
 	float fCheckWidth = fReverseScale * 5.0f;
 	float fCheckHeight = fReverseScale * 5.0f;
 	
-	CInstanceBase * pkInst = CPythonCharacterManager::Instance().GetMainInstancePtr();
+	CInstanceBase * pkInst = CPythonCharacterManager::Instance().GetMainActorPtr();
 
 	if (pkInst)
 	{

@@ -1,4 +1,5 @@
 #include "StdAfx.h"
+#include "EterBase/LogModern.h"
 #include "InstanceBase.h"
 #include "PythonBackground.h"
 #include "PythonCharacterManager.h"
@@ -447,10 +448,14 @@ void CInstanceBase::AttackProcess()
 
 		if (pkInstEach!=this)
 		{
-			if (CheckAttacking(*pkInstEach))
+			auto attackResult = CheckAttacking(*pkInstEach);
+			if (!attackResult.has_value())
 			{
-				pkInstLast=pkInstEach;
+				EterBase::ModernLogger::Warn("Attack Process declined: {}", Client::Gameplay::ToString(attackResult.error()));
+				continue;
 			}
+
+			pkInstLast = pkInstEach;
 		}
 	}
 
@@ -595,22 +600,28 @@ BOOL CInstanceBase::CheckAdvancing()
 	return FALSE;
 }
 
-BOOL CInstanceBase::CheckAttacking(CInstanceBase& rkInstVictim)
+EterBase::Result<void, Client::Gameplay::CombatError> CInstanceBase::CheckAttacking(CInstanceBase& rkInstVictim)
 {
+	if (rkInstVictim.IsDead())
+		return EterBase::MakeError(Client::Gameplay::CombatError::TargetDead);
+
+	if (IsStun())
+		return EterBase::MakeError(Client::Gameplay::CombatError::CharacterStunned);
+
 	if (IsInSafe())
-		return FALSE;
+		return EterBase::MakeError(Client::Gameplay::CombatError::InvalidTarget);
 
 	if (rkInstVictim.IsInSafe())
-		return FALSE;
+		return EterBase::MakeError(Client::Gameplay::CombatError::InvalidTarget);
 
 #ifdef __MOVIE_MODE__
-	return FALSE;
+	return EterBase::MakeError(Client::Gameplay::CombatError::InvalidTarget);
 #endif
 
 	if (!m_GraphicThingInstance.AttackingProcess(rkInstVictim.m_GraphicThingInstance))
-		return FALSE;
+		return EterBase::MakeError(Client::Gameplay::CombatError::TargetOutOfRange);
 
-	return TRUE;
+	return {};
 }
 
 BOOL CInstanceBase::isNormalAttacking()

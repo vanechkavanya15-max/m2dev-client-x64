@@ -44,8 +44,8 @@ namespace UserInterface::Network::Senders
          * @param victimId The unique strong ID of the target being attacked.
          * @param attackType The motion or type identifier of the attack.
          * @param networkStream Pointer to the network stream to transmit the data.
-         * @return EterBase::PacketResult<void> representing success or specific network failure.
+         * @return EterBase::PacketDispatchResult<void> representing success or specific network failure.
          */
-        static EterBase::PacketResult<void> Send(EterBase::EntityId victimId, uint8_t attackType, CNetworkStream* networkStream);
+        static EterBase::PacketDispatchResult<void> Send(EterBase::EntityId victimId, uint8_t attackType, CNetworkStream* networkStream);
     };
 } // namespace UserInterface::Network::Senders

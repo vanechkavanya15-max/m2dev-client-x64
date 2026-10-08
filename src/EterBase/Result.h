@@ -30,6 +30,13 @@ enum class PacketError : uint8_t {
     SequenceMismatch
 };
 
+enum class PacketDispatchError : uint8_t {
+    None = 0,
+    Disconnected,
+    QueueFull,
+    EncodingFailed
+};
+
 enum class EntityError : uint8_t {
     None = 0,
     NotFound,
@@ -84,6 +91,16 @@ enum class NavigationError : uint8_t {
     return "UnknownPacketError";
 }
 
+[[nodiscard]] constexpr std::string_view ToString(PacketDispatchError err) noexcept {
+    switch (err) {
+        case PacketDispatchError::None: return "None";
+        case PacketDispatchError::Disconnected: return "Disconnected";
+        case PacketDispatchError::QueueFull: return "QueueFull";
+        case PacketDispatchError::EncodingFailed: return "EncodingFailed";
+    }
+    return "UnknownPacketDispatchError";
+}
+
 [[nodiscard]] constexpr std::string_view ToString(EntityError err) noexcept {
     switch (err) {
         case EntityError::None: return "None";
@@ -125,6 +142,10 @@ using VoidResult = std::expected<void, E>;
 template <typename T = void>
 using PacketResult = std::expected<T, PacketError>;
 
+/// @brief Rezultat wysylania pakietow sieciowych
+template <typename T = void>
+using PacketDispatchResult = std::expected<T, PacketDispatchError>;
+
 /// @brief Pomocnik tworzenia bledu unexpected dla zwiezlosci w C++23
 template <typename E>
 [[nodiscard]] constexpr auto MakeError(E&& error) {
@@ -140,6 +161,13 @@ template <typename E>
 template <>
 struct std::formatter<EterBase::PacketError> : std::formatter<std::string_view> {
     auto format(EterBase::PacketError err, std::format_context& ctx) const {
+        return std::formatter<std::string_view>::format(EterBase::ToString(err), ctx);
+    }
+};
+
+template <>
+struct std::formatter<EterBase::PacketDispatchError> : std::formatter<std::string_view> {
+    auto format(EterBase::PacketDispatchError err, std::format_context& ctx) const {
         return std::formatter<std::string_view>::format(EterBase::ToString(err), ctx);
     }
 };

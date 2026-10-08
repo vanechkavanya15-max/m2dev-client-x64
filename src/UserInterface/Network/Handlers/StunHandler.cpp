@@ -27,7 +27,7 @@ TPacketGCStun stunPacket;
 
     if (targetInstance)
     {
-        if (characterManager.GetMainInstancePtr() == targetInstance)
+        if (characterManager.GetMainActorPtr() == targetInstance)
         {
             targetInstance->Die();
         }

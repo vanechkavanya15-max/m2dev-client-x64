@@ -20,7 +20,7 @@ bool PhaseGameCombatBridge::HandleDamageInfo(CPythonNetworkStream* pStream, cons
 	const auto& DamageInfoPacket = res.value();
 
 	CInstanceBase* pInstTarget = CPythonCharacterManager::Instance().GetInstancePtr(DamageInfoPacket.dwVID);
-	bool bSelf = (pInstTarget == CPythonCharacterManager::Instance().GetMainInstancePtr());
+	bool bSelf = (pInstTarget == CPythonCharacterManager::Instance().GetMainActorPtr());
 	bool bTarget = (pInstTarget == pStream->m_pInstTarget);
 	if (pInstTarget)
 	{
@@ -47,7 +47,7 @@ bool PhaseGameCombatBridge::HandleDead(CPythonNetworkStream* pStream, const TPac
 	CInstanceBase* pkChrInstSel = rkChrMgr.GetInstancePtr(DeadPacket.vid);
 	if (pkChrInstSel)
 	{
-		CInstanceBase* pkInstMain = rkChrMgr.GetMainInstancePtr();
+		CInstanceBase* pkInstMain = rkChrMgr.GetMainActorPtr();
 		if (pkInstMain == pkChrInstSel)
 		{
 			Tracenf("주인공 사망");

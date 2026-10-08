@@ -287,18 +287,22 @@ DWORD	CPythonItem::__GetUseSoundType(const CItemData& c_rkItemData)
 	return USESOUND_DEFAULT;
 }
 
-void CPythonItem::CreateItem(DWORD dwVirtualID, DWORD dwVirtualNumber, float x, float y, float z, bool bDrop)
+void CPythonItem::CreateItem(DWORD dropVid, DWORD itemVnum, const TPixelPosition& groundCoords, bool bDrop)
 {
+	float x = groundCoords.x;
+	float y = groundCoords.y;
+	float z = groundCoords.z;
+
 	//CItemManager& rkItemMgr=CItemManager::Instance();
 
 	CItemData * pItemData;
-	if (!CItemManager::Instance().GetItemDataPointer(dwVirtualNumber, &pItemData))
+	if (!CItemManager::Instance().GetItemDataPointer(itemVnum, &pItemData))
 		return;
 
 	CGraphicThing* pItemModel = pItemData->GetDropModelThing();
 
 	TGroundItemInstance *	pGroundItemInstance = m_GroundItemInstancePool.Alloc();	
-	pGroundItemInstance->dwVirtualNumber = dwVirtualNumber;
+	pGroundItemInstance->itemVnum = itemVnum;
 
 	bool bStabGround = false;
 
@@ -470,11 +474,11 @@ void CPythonItem::CreateItem(DWORD dwVirtualID, DWORD dwVirtualNumber, float x, 
 
 	pGroundItemInstance->ThingInstance.Show();
 
-	m_GroundItemInstanceMap.insert(TGroundItemInstanceMap::value_type(dwVirtualID, pGroundItemInstance));
+	m_GroundItemInstanceMap.insert(TGroundItemInstanceMap::value_type(dropVid, pGroundItemInstance));
 
 	CPythonTextTail& rkTextTail=CPythonTextTail::Instance();
 	rkTextTail.RegisterItemTextTail(
-		dwVirtualID,
+		dropVid,
 		pItemData->GetName(),
 		&pGroundItemInstance->ThingInstance);
 }
@@ -521,9 +525,9 @@ void CPythonItem::DeleteAllItems()
 	m_GroundItemInstanceMap.clear();
 }
 
-void CPythonItem::DeleteItem(DWORD dwVirtualID)
+void CPythonItem::DeleteItem(DWORD dropVid)
 {
-	TGroundItemInstanceMap::iterator itor = m_GroundItemInstanceMap.find(dwVirtualID);
+	TGroundItemInstanceMap::iterator itor = m_GroundItemInstanceMap.find(dropVid);
 	if (m_GroundItemInstanceMap.end() == itor)
 		return;
 
@@ -533,7 +537,7 @@ void CPythonItem::DeleteItem(DWORD dwVirtualID)
 	m_GroundItemInstanceMap.erase(itor);
 
 	// Text Tail
-	CPythonTextTail::Instance().DeleteItemTextTail(dwVirtualID);
+	CPythonTextTail::Instance().DeleteItemTextTail(dropVid);
 }
 
 
@@ -547,7 +551,7 @@ bool CPythonItem::GetCloseMoney(const TPixelPosition & c_rPixelPosition, DWORD *
 	{
 		TGroundItemInstance * pInstance = i->second;
 
-		if (pInstance->dwVirtualNumber!=VNUM_MONEY)
+		if (pInstance->itemVnum!=VNUM_MONEY)
 			continue;
 
 		DWORD dwxDistance = DWORD(c_rPixelPosition.x-pInstance->v3EndPosition.x);
@@ -655,9 +659,9 @@ bool CPythonItem::GetCloseItem(const TPixelPosition& c_rPixelPosition, DWORD* pd
 	return true;
 }
 
-BOOL CPythonItem::GetGroundItemPosition(DWORD dwVirtualID, TPixelPosition * pPosition)
+BOOL CPythonItem::GetGroundItemPosition(DWORD dropVid, TPixelPosition * groundCoords)
 {
-	TGroundItemInstanceMap::iterator itor = m_GroundItemInstanceMap.find(dwVirtualID);
+	TGroundItemInstanceMap::iterator itor = m_GroundItemInstanceMap.find(dropVid);
 	if (m_GroundItemInstanceMap.end() == itor)
 		return FALSE;
 
@@ -665,9 +669,9 @@ BOOL CPythonItem::GetGroundItemPosition(DWORD dwVirtualID, TPixelPosition * pPos
 
 	const D3DXVECTOR3& rkD3DVct3=pInstance->ThingInstance.GetPosition();
 
-	pPosition->x=+rkD3DVct3.x;
-	pPosition->y=-rkD3DVct3.y;
-	pPosition->z=+rkD3DVct3.z;
+	groundCoords->x=+rkD3DVct3.x;
+	groundCoords->y=-rkD3DVct3.y;
+	groundCoords->z=+rkD3DVct3.z;
 
 	return TRUE;
 }
@@ -707,7 +711,7 @@ DWORD CPythonItem::GetVirtualNumberOfGroundItem(DWORD dwVID)
 	if (itor == m_GroundItemInstanceMap.end())
 		return 0;
 	else
-		return itor->second->dwVirtualNumber;
+		return itor->second->itemVnum;
 }
 
 void CPythonItem::BuildNoGradeNameData(int iType)

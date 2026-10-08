@@ -103,7 +103,7 @@ bool PhaseGameWorldBridge::HandleFishing(CPythonNetworkStream* pStream, const TP
 			break;
 		case FishingSub::GC::FAIL:
 			pFishingInstance->CatchFail();
-			if (pFishingInstance == CPythonCharacterManager::Instance().GetMainInstancePtr())
+			if (pFishingInstance == CPythonCharacterManager::Instance().GetMainActorPtr())
 			{
 				PyCallClassMemberFunc(pStream->GetPhaseWindow(CPythonNetworkStream::PHASE_WINDOW_GAME), "OnFishingFailure", Py_BuildValue("()"));
 			}
@@ -121,7 +121,7 @@ bool PhaseGameWorldBridge::HandleFishing(CPythonNetworkStream* pStream, const TP
 			if (!CItemManager::Instance().GetItemDataPointer(dwFishID, &pItemData))
 				return true;
 
-			CInstanceBase* pMainInstance = CPythonCharacterManager::Instance().GetMainInstancePtr();
+			CInstanceBase* pMainInstance = CPythonCharacterManager::Instance().GetMainActorPtr();
 			if (!pMainInstance)
 				return true;
 

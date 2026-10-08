@@ -23,7 +23,7 @@ struct ProxyPacketCGUseSkill
 static_assert(sizeof(ProxyPacketCGUseSkill) == 12, "ProxyPacketCGUseSkill musi miec dokladnie 12 bajtow (wyrownanie 1-bajtowe)");
 #pragma pack(pop)
 
-EterBase::PacketResult<void> SendUseSkillHandler::SendUseSkill(
+EterBase::PacketDispatchResult<void> SendUseSkillHandler::SendUseSkill(
     EterBase::SkillId skillId, 
     std::optional<EterBase::EntityId> targetId, 
     CNetworkStream* networkStream)
@@ -33,7 +33,7 @@ EterBase::PacketResult<void> SendUseSkillHandler::SendUseSkill(
         EterBase::ModernLogger::Error("SendUseSkill failed: NetworkStream is null (skill: {}, target: {})", 
                                       skillId.value(), 
                                       targetId.transform([](auto id) { return id.value(); }).value_or(0));
-        return EterBase::MakeError(EterBase::PacketError::SessionClosed);
+        return EterBase::MakeError(EterBase::PacketDispatchError::Disconnected);
     }
 
     ProxyPacketCGUseSkill packet{};
@@ -49,7 +49,7 @@ EterBase::PacketResult<void> SendUseSkillHandler::SendUseSkill(
     {
         EterBase::ModernLogger::Error("SendUseSkill failed to send buffer to network stream (skill: {}, target: {})", 
                                       skillId.value(), packet.targetId);
-        return EterBase::MakeError(EterBase::PacketError::BufferUnderflow);
+        return EterBase::MakeError(EterBase::PacketDispatchError::QueueFull);
     }
 
     EterBase::ModernLogger::Debug("SendUseSkill succeeded (skill: {}, target: {})", 

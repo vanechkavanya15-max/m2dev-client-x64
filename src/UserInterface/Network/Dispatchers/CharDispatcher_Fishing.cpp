@@ -56,7 +56,7 @@ namespace UserInterface::Network
             case FishingSub::GC::FAIL:
                 if (instance) {
                     instance->CatchFail();
-                    if (instance == CPythonCharacterManager::Instance().GetMainInstancePtr()) {
+                    if (instance == CPythonCharacterManager::Instance().GetMainActorPtr()) {
                         UserInterface::Core::EventBus::GetInstance().Publish(Handlers::FishingFailureEvent());
                     }
                 }
@@ -78,7 +78,7 @@ namespace UserInterface::Network
                     return {};
                 }
 
-                auto* mainInstance = CPythonCharacterManager::Instance().GetMainInstancePtr();
+                auto* mainInstance = CPythonCharacterManager::Instance().GetMainActorPtr();
                 if (!mainInstance)
                 {
                     return {};

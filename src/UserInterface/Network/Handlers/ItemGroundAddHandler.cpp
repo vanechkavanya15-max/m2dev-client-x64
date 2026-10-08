@@ -27,12 +27,11 @@ bool ItemGroundAddHandler::Handle(std::span<const uint8_t> buffer)
     CPythonBackground::Instance().GlobalPositionToLocalPosition(x, y);
 
 
+    TPixelPosition groundCoords(static_cast<float>(x), static_cast<float>(y), static_cast<float>(packet.z));
     CPythonItem::Instance().CreateItem(
         packet.id,
         packet.vnum,
-        static_cast<float>(x),
-        static_cast<float>(y),
-        static_cast<float>(packet.z)
+        groundCoords
     );
 
     return true;

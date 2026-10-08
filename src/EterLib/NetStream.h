@@ -4,6 +4,7 @@
 #include "NetAddress.h"
 #include "RingBuffer.h"
 #include "ControlPackets.h"
+#include <span>
 
 
 class CNetworkStream
@@ -29,17 +30,22 @@ class CNetworkStream
 		bool Connect(DWORD dwAddr, int port, int limitSec = 3);
 		void Disconnect();
 
-		bool Peek(int len);
-		bool Peek(int len, char* pDestBuf);
-		bool Recv(int len);
-		bool Recv(int len, char* pDestBuf);
-		bool Send(int len, const char* pSrcBuf);
+		bool Peek(int length);
+		bool Peek(int length, char* bufferData);
+		bool Recv(int length);
+		bool Recv(int length, char* bufferData);
+		bool Send(int length, const char* bufferData);
 
-		bool Peek(int len, void* pDestBuf);
-		bool Recv(int len, void* pDestBuf);
+		bool Peek(int length, void* bufferData);
+		bool Recv(int length, void* bufferData);
 
-		bool Send(int len, const void* pSrcBuf);
-		bool SendFlush(int len, const void* pSrcBuf);
+		bool Send(int length, const void* bufferData);
+		bool SendFlush(int length, const void* bufferData);
+
+		bool Peek(std::span<uint8_t> bufferData);
+		bool Recv(std::span<uint8_t> bufferData);
+		bool Send(std::span<const uint8_t> bufferData);
+		bool SendFlush(std::span<const uint8_t> bufferData);
 
 		bool IsOnline();
 

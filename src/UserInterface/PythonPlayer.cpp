@@ -58,7 +58,7 @@ bool CPythonPlayer::AffectIndexToSkillSlotIndex(UINT uAffect, DWORD* pdwSkillSlo
 bool CPythonPlayer::__GetPickedActorPtr(CInstanceBase** ppkInstPicked)
 {
 	CPythonCharacterManager& rkChrMgr=CPythonCharacterManager::Instance();
-	CInstanceBase* pkInstPicked=rkChrMgr.OLD_GetPickedInstancePtr();
+	CInstanceBase* pkInstPicked=rkChrMgr.GetPickedActorPtr();
 	if (!pkInstPicked)
 		return false;
 
@@ -69,7 +69,7 @@ bool CPythonPlayer::__GetPickedActorPtr(CInstanceBase** ppkInstPicked)
 bool CPythonPlayer::__GetPickedActorID(DWORD* pdwActorID)
 {
 	CPythonCharacterManager& rkChrMgr=CPythonCharacterManager::Instance();
-	return rkChrMgr.OLD_GetPickedInstanceVID(pdwActorID);
+	return rkChrMgr.GetPickedActorID(pdwActorID);
 }
 
 bool CPythonPlayer::__GetPickedItemID(DWORD* pdwItemID)

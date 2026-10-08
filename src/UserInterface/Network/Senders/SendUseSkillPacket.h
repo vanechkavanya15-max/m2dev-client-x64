@@ -49,10 +49,10 @@ public:
      * @param targetId Opcjonalny cel uzycia umiejetnosci (w przypadku umiejetnosci obszarowych/na siebie - brak).
      * @param networkStream Wskaznik na strumien sieciowy (wymagany do wyslania pakietu).
      * 
-     * @return EterBase::PacketResult<void> oznaczajacy poprawnosc wykonania zadania,
-     *         bądź kod bledu z EterBase::PacketError w przypadku porazki.
+     * @return EterBase::PacketDispatchResult<void> oznaczajacy poprawnosc wykonania zadania,
+     *         bądź kod bledu z EterBase::PacketDispatchError w przypadku porazki.
      */
-    static EterBase::PacketResult<void> SendUseSkill(
+    static EterBase::PacketDispatchResult<void> SendUseSkill(
         EterBase::SkillId skillId, 
         std::optional<EterBase::EntityId> targetId, 
         CNetworkStream* networkStream);

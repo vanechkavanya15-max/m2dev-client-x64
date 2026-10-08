@@ -298,7 +298,7 @@ void CInstanceBase::__AttachEmpireEffect(DWORD eEmpire)
 	if (!__IsExistMainInstance())
 		return;	
 	
-	CInstanceBase* pkInstMain=__GetMainInstancePtr();
+	CInstanceBase* pkInstMain=__GetMainActorPtr();
 
 	if (IsWarp())
 		return;
@@ -542,7 +542,7 @@ UINT CInstanceBase::GetNameColorIndex()
 
 		if (__IsExistMainInstance() && !__IsMainInstance())
 		{			
-			CInstanceBase* pkInstMain=__GetMainInstancePtr();
+			CInstanceBase* pkInstMain=__GetMainActorPtr();
 			if (!pkInstMain)
 			{
 				TraceError("CInstanceBase::GetNameColorIndex - MainInstance is NULL");

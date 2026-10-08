@@ -59,7 +59,7 @@ void CPythonTextTail::GetInfo(std::string* pstInfo)
 
 void CPythonTextTail::UpdateAllTextTail()
 {
-	CInstanceBase * pInstance = CPythonCharacterManager::Instance().GetMainInstancePtr();
+	CInstanceBase * pInstance = CPythonCharacterManager::Instance().GetMainActorPtr();
 	if (pInstance)
 	{
 		TPixelPosition pixelPos;

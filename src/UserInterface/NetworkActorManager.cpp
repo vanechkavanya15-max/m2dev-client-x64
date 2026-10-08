@@ -255,7 +255,7 @@ void CNetworkActorManager::__RemoveDynamicActors()
 void CNetworkActorManager::__UpdateMainActor()
 {
 	CPythonCharacterManager & rkChrMgr = CPythonCharacterManager::Instance();	
-	CInstanceBase* pkInstMain=rkChrMgr.GetMainInstancePtr();
+	CInstanceBase* pkInstMain=rkChrMgr.GetMainActorPtr();
 	if (!pkInstMain)
 		return;
 

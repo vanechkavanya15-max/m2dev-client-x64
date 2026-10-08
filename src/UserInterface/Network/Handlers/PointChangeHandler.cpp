@@ -10,7 +10,7 @@ bool PointChangeHandler::HandlePointChange(const TPacketGCPointChange& pointChan
     CPythonCharacterManager& characterManager = CPythonCharacterManager::Instance();
     characterManager.ShowPointEffect(pointChange.Type, pointChange.dwVID);
 
-    CInstanceBase* mainInstance = characterManager.GetMainInstancePtr();
+    CInstanceBase* mainInstance = characterManager.GetMainActorPtr();
     
     // If the point change affects the main character
     if (mainInstance && pointChange.dwVID == mainInstance->GetVirtualID())

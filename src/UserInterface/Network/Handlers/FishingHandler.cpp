@@ -87,7 +87,7 @@ namespace Network::Handlers {
             case FishingSub::GC::FAIL:
                 fishingInstanceOpt.and_then([](CInstanceBase* instance) -> std::optional<CInstanceBase*> {
                     instance->CatchFail();
-                    if (instance == CPythonCharacterManager::Instance().GetMainInstancePtr()) {
+                    if (instance == CPythonCharacterManager::Instance().GetMainActorPtr()) {
                         UserInterface::Core::EventBus::GetInstance().Publish(FishingFailureEvent());
                     }
                     return instance;
@@ -118,7 +118,7 @@ namespace Network::Handlers {
                 
                 auto* itemData = itemDataOpt.value();
 
-                CInstanceBase* mainInstancePtr = CPythonCharacterManager::Instance().GetMainInstancePtr();
+                CInstanceBase* mainInstancePtr = CPythonCharacterManager::Instance().GetMainActorPtr();
                 std::optional<CInstanceBase*> mainInstanceOpt = mainInstancePtr ? std::make_optional(mainInstancePtr) : std::nullopt;
 
                 if (!mainInstanceOpt.has_value())

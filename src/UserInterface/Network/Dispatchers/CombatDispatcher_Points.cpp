@@ -47,7 +47,7 @@ EterBase::PacketResult<void> DispatchPointsUpdate(std::span<const uint8_t> paylo
     auto& charManager = CPythonCharacterManager::Instance();
     charManager.ShowPointEffect(packet->Type, entityId.get());
 
-    auto* mainInstance = charManager.GetMainInstancePtr();
+    auto* mainInstance = charManager.GetMainActorPtr();
     if (mainInstance && entityId.get() == mainInstance->GetVirtualID()) {
         auto& player = CPythonPlayer::Instance();
         player.SetStatus(packet->Type, packet->value);

@@ -83,7 +83,7 @@ PyObject * chrmgrGetPickedVID(PyObject* poSelf, PyObject* poArgs)
 	CPythonCharacterManager& rkChrMgr=CPythonCharacterManager::Instance();
 
 	DWORD dwPickedActorID;
-	if (rkChrMgr.OLD_GetPickedInstanceVID(&dwPickedActorID))
+	if (rkChrMgr.GetPickedActorID(&dwPickedActorID))
 		return Py_BuildValue("i", dwPickedActorID);
 	else
 		return Py_BuildValue("i", -1);

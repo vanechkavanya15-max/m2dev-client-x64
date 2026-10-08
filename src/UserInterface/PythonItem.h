@@ -46,7 +46,7 @@ class CPythonItem : public CSingleton<CPythonItem>
 
 		typedef struct SGroundItemInstance
 		{
-			DWORD					dwVirtualNumber;
+			DWORD					itemVnum;
 			D3DXVECTOR3				v3EndPosition;
 
 			D3DXVECTOR3				v3RotationAxis;
@@ -96,12 +96,12 @@ class CPythonItem : public CSingleton<CPythonItem>
 		void	Render();
 		void	Update(const POINT& c_rkPtMouse);
 
-		void	CreateItem(DWORD dwVirtualID, DWORD dwVirtualNumber, float x, float y, float z, bool bDrop=true);
-		void	DeleteItem(DWORD dwVirtualID);		
+		void	CreateItem(DWORD dropVid, DWORD itemVnum, const TPixelPosition& groundCoords, bool bDrop=true);
+		void	DeleteItem(DWORD dropVid);		
 		void	SetOwnership(DWORD dwVID, const char * c_pszName);
 		bool	GetOwnership(DWORD dwVID, const char ** c_pszName);
 
-		BOOL	GetGroundItemPosition(DWORD dwVirtualID, TPixelPosition * pPosition);
+		BOOL	GetGroundItemPosition(DWORD dropVid, TPixelPosition * groundCoords);
 
 		bool	GetPickedItemID(DWORD* pdwPickedItemID);
 

@@ -75,7 +75,7 @@ void CPythonCharacterManager::RemovePVPKey(DWORD dwVIDSrc, DWORD dwVIDDst)
 
 void CPythonCharacterManager::ChangeGVG(DWORD dwSrcGuildID, DWORD dwDstGuildID)
 {
-	for (auto& pair : m_kAliveInstMap)
+	for (auto& pair : m_aliveActorsMap)
 	{
 		CInstanceBase* pInstance = pair.second;
 		DWORD dwInstanceGuildID = pInstance->GetGuildID();
@@ -88,23 +88,23 @@ void CPythonCharacterManager::ChangeGVG(DWORD dwSrcGuildID, DWORD dwDstGuildID)
 
 void CPythonCharacterManager::ClearMainInstance()
 {
-	m_pkInstMain = NULL;
+	m_mainActor = NULL;
 	m_actorRegistry.SetMainActorVid(EntityVid(0));
 }
 
 bool CPythonCharacterManager::SetMainInstance(DWORD dwVID)
 {
-	m_pkInstMain = GetInstancePtr(dwVID);
-	if (!m_pkInstMain)
+	m_mainActor = GetInstancePtr(dwVID);
+	if (!m_mainActor)
 		return false;
 
 	m_actorRegistry.SetMainActorVid(EntityVid(dwVID));
 	return true;
 }
 
-CInstanceBase* CPythonCharacterManager::GetMainInstancePtr()
+CInstanceBase* CPythonCharacterManager::GetMainActorPtr()
 {
-	return m_pkInstMain;
+	return m_mainActor;
 }
 
 void CPythonCharacterManager::GetInfo(std::string* pstInfo)
@@ -114,7 +114,7 @@ void CPythonCharacterManager::GetInfo(std::string* pstInfo)
 
 	char szInfo[256];
 	sprintf(szInfo, "Container - Live %zd, Dead %zd, Grid %zd",
-		m_kAliveInstMap.size(),
+		m_aliveActorsMap.size(),
 		m_sceneMgr.GetDeadCount(),
 		m_spatialGrid.Count());
 	pstInfo->append(szInfo);
@@ -127,12 +127,12 @@ bool CPythonCharacterManager::IsCacheMode()
 	bool isCacheMode = s_isOldCacheMode;
 	if (s_isOldCacheMode)
 	{
-		if (m_kAliveInstMap.size() < 30)
+		if (m_aliveActorsMap.size() < 30)
 			isCacheMode = false;
 	}
 	else
 	{
-		if (m_kAliveInstMap.size() > 40)
+		if (m_aliveActorsMap.size() > 40)
 			isCacheMode = true;
 	}
 	s_isOldCacheMode = isCacheMode;
@@ -144,11 +144,11 @@ void CPythonCharacterManager::Update()
 {
 	CInstanceBase::ResetPerformanceCounter();
 
-	CInstanceBase* pkInstMain = GetMainInstancePtr();
+	CInstanceBase* pkInstMain = GetMainActorPtr();
 	const float fViewBoundSquared = (CHAR_STAGE_VIEW_BOUND + 10) * (CHAR_STAGE_VIEW_BOUND + 10);
 
-	TCharacterInstanceMap::iterator i = m_kAliveInstMap.begin();
-	while (m_kAliveInstMap.end() != i)
+	TCharacterInstanceMap::iterator i = m_aliveActorsMap.begin();
+	while (m_aliveActorsMap.end() != i)
 	{
 		TCharacterInstanceMap::iterator c = i++;
 
@@ -169,7 +169,7 @@ void CPythonCharacterManager::Update()
 			float fDistanceSquared = pkInstEach->NEW_GetDistanceFromDestInstanceSquared(*pkInstMain);
 			if (fDistanceSquared > fViewBoundSquared) [[unlikely]] {
 				__DeleteBlendOutInstance(pkInstEach);
-				m_kAliveInstMap.erase(c);
+				m_aliveActorsMap.erase(c);
 			}
 		}
 	}
@@ -181,7 +181,7 @@ void CPythonCharacterManager::Update()
 
 void CPythonCharacterManager::ShowPointEffect(DWORD ePoint, DWORD dwVID)
 {
-	CInstanceBase* pkInstSel = (dwVID == 0xffffffff) ? GetMainInstancePtr() : GetInstancePtr(dwVID);
+	CInstanceBase* pkInstSel = (dwVID == 0xffffffff) ? GetMainActorPtr() : GetInstancePtr(dwVID);
 	if (!pkInstSel)
 		return;
 
@@ -209,11 +209,11 @@ bool CPythonCharacterManager::RegisterPointEffect(DWORD ePoint, const char* c_sz
 
 void CPythonCharacterManager::UpdateTransform()
 {
-	CInstanceBase* pMainInstance = GetMainInstancePtr();
+	CInstanceBase* pMainInstance = GetMainActorPtr();
 	if (pMainInstance)
 	{
 		CPythonBackground& rkBG = CPythonBackground::Instance();
-		for (auto& pair : m_kAliveInstMap)
+		for (auto& pair : m_aliveActorsMap)
 		{
 			CInstanceBase* pSrcInstance = pair.second;
 			pSrcInstance->CheckAdvancing();
@@ -222,10 +222,10 @@ void CPythonCharacterManager::UpdateTransform()
 				rkBG.CheckAdvancing(pSrcInstance);
 		}
 
-		rkBG.CheckAdvancing(m_pkInstMain);
+		rkBG.CheckAdvancing(m_mainActor);
 	}
 
-	for (auto& pair : m_kAliveInstMap)
+	for (auto& pair : m_aliveActorsMap)
 	{
 		pair.second->Transform();
 	}
@@ -241,33 +241,33 @@ void CPythonCharacterManager::Deform()
 	m_sceneMgr.Deform();
 }
 
-bool CPythonCharacterManager::OLD_GetPickedInstanceVID(DWORD* pdwPickedActorID)
+bool CPythonCharacterManager::GetPickedActorID(DWORD* pdwPickedActorID)
 {
-	if (!m_pkInstPick)
+	if (!m_pickedActor)
 		return false;
 		
-	*pdwPickedActorID = m_pkInstPick->GetVirtualID();
+	*pdwPickedActorID = m_pickedActor->GetVirtualID();
 	return true;
 }
 
-CInstanceBase* CPythonCharacterManager::OLD_GetPickedInstancePtr()
+CInstanceBase* CPythonCharacterManager::GetPickedActorPtr()
 {
-	return m_pkInstPick;
+	return m_pickedActor;
 }
 
-D3DXVECTOR2& CPythonCharacterManager::OLD_GetPickedInstPosReference()
+D3DXVECTOR2& CPythonCharacterManager::GetPickedActorScreenPos()
 {
-	return m_v2PickedInstProjPos;
+	return m_pickedActorScreenPos;
 }
 
 bool CPythonCharacterManager::IsRegisteredVID(DWORD dwVID)
 {
-	return m_kAliveInstMap.find(dwVID) != m_kAliveInstMap.end();
+	return m_aliveActorsMap.find(dwVID) != m_aliveActorsMap.end();
 }
 
 bool CPythonCharacterManager::IsAliveVID(DWORD dwVID)
 {
-	return m_actorRegistry.IsAlive(EntityVid(dwVID)) || (m_kAliveInstMap.find(dwVID) != m_kAliveInstMap.end());
+	return m_actorRegistry.IsAlive(EntityVid(dwVID)) || (m_aliveActorsMap.find(dwVID) != m_aliveActorsMap.end());
 }
 
 bool CPythonCharacterManager::IsDeadVID(DWORD dwVID)
@@ -293,17 +293,17 @@ void CPythonCharacterManager::Render()
 {
 	m_sceneMgr.Render();
 
-	CInstanceBase* pkPickedInst = OLD_GetPickedInstancePtr();
+	CInstanceBase* pkPickedInst = GetPickedActorPtr();
 	if (pkPickedInst)
 	{
 		const D3DXVECTOR3& c_rv3Position = pkPickedInst->GetGraphicThingInstanceRef().GetPosition();
-		CPythonGraphic::Instance().ProjectPosition(c_rv3Position.x, c_rv3Position.y, c_rv3Position.z, &m_v2PickedInstProjPos.x, &m_v2PickedInstProjPos.y);
+		CPythonGraphic::Instance().ProjectPosition(c_rv3Position.x, c_rv3Position.y, c_rv3Position.z, &m_pickedActorScreenPos.x, &m_pickedActorScreenPos.y);
 	}
 }
 
 void CPythonCharacterManager::RenderShadowMainInstance()
 {
-	m_sceneMgr.RenderShadowMainInstance(GetMainInstancePtr());
+	m_sceneMgr.RenderShadowMainInstance(GetMainActorPtr());
 }
 
 void CPythonCharacterManager::RenderShadowAllInstances()
@@ -370,14 +370,14 @@ CInstanceBase* CPythonCharacterManager::CreateInstance(const CInstanceBase::SCre
 
 CInstanceBase* CPythonCharacterManager::RegisterInstance(DWORD VirtualID)
 {
-	TCharacterInstanceMap::iterator itor = m_kAliveInstMap.find(VirtualID);
-	if (m_kAliveInstMap.end() != itor)
+	TCharacterInstanceMap::iterator itor = m_aliveActorsMap.find(VirtualID);
+	if (m_aliveActorsMap.end() != itor)
 	{
 		return NULL;
 	}
 
 	CInstanceBase* pCharacterInstance = CInstanceBase::New();
-	m_kAliveInstMap.insert(TCharacterInstanceMap::value_type(VirtualID, pCharacterInstance));
+	m_aliveActorsMap.insert(TCharacterInstanceMap::value_type(VirtualID, pCharacterInstance));
 
 	// Synchronize with modern domain registries and graphic scene manager
 	Client::World::ActorRecord record{
@@ -407,8 +407,8 @@ void CPythonCharacterManager::DeleteInstance(DWORD dwDelVID)
 	m_actorRegistry.UnregisterActor(EntityVid(dwDelVID));
 	m_spatialGrid.Remove(EntityVid(dwDelVID));
 
-	TCharacterInstanceMap::iterator itor = m_kAliveInstMap.find(dwDelVID);
-	if (m_kAliveInstMap.end() == itor)
+	TCharacterInstanceMap::iterator itor = m_aliveActorsMap.find(dwDelVID);
+	if (m_aliveActorsMap.end() == itor)
 	{
 		Tracef("DeleteCharacterInstance: no vid by %d\n", dwDelVID);
 		return;
@@ -416,20 +416,20 @@ void CPythonCharacterManager::DeleteInstance(DWORD dwDelVID)
 
 	CInstanceBase* pkInstDel = itor->second;
 
-	if (pkInstDel == m_pkInstBind)
-		m_pkInstBind = NULL;
+	if (pkInstDel == m_boundActor)
+		m_boundActor = NULL;
 
-	if (pkInstDel == m_pkInstMain)
-		m_pkInstMain = NULL;
+	if (pkInstDel == m_mainActor)
+		m_mainActor = NULL;
 
-	if (pkInstDel == m_pkInstPick)
-		m_pkInstPick = NULL;
+	if (pkInstDel == m_pickedActor)
+		m_pickedActor = NULL;
 
 	m_sceneMgr.RemoveAliveInstance(pkInstDel);
 	m_sceneMgr.RemoveDeadInstance(pkInstDel);
 
 	CInstanceBase::Delete(pkInstDel);
-	m_kAliveInstMap.erase(itor);
+	m_aliveActorsMap.erase(itor);
 }
 
 void CPythonCharacterManager::__DeleteBlendOutInstance(CInstanceBase* pkInstDel)
@@ -464,39 +464,47 @@ void CPythonCharacterManager::__DeleteBlendOutInstance(CInstanceBase* pkInstDel)
 
 void CPythonCharacterManager::DeleteInstanceByFade(DWORD dwVID)
 {
-	TCharacterInstanceMap::iterator f = m_kAliveInstMap.find(dwVID);
-	if (m_kAliveInstMap.end() == f)
+	TCharacterInstanceMap::iterator f = m_aliveActorsMap.find(dwVID);
+	if (m_aliveActorsMap.end() == f)
 	{
 		return;
 	}
 	__DeleteBlendOutInstance(f->second);
-	m_kAliveInstMap.erase(f);	
+	m_aliveActorsMap.erase(f);	
 }
 
 void CPythonCharacterManager::SelectInstance(DWORD VirtualID)
 {
-	TCharacterInstanceMap::iterator itor = m_kAliveInstMap.find(VirtualID);
-	if (m_kAliveInstMap.end() == itor)
+	TCharacterInstanceMap::iterator itor = m_aliveActorsMap.find(VirtualID);
+	if (m_aliveActorsMap.end() == itor)
 	{
 		Tracef("SelectCharacterInstance: no vid by %d\n", VirtualID);
 		return;
 	}
 
-	m_pkInstBind = itor->second;
+	m_boundActor = itor->second;
 }
 
 CInstanceBase* CPythonCharacterManager::GetInstancePtr(DWORD VirtualID)
 {
-	TCharacterInstanceMap::iterator itor = m_kAliveInstMap.find(VirtualID);
-	if (m_kAliveInstMap.end() == itor)
+	TCharacterInstanceMap::iterator itor = m_aliveActorsMap.find(VirtualID);
+	if (m_aliveActorsMap.end() == itor)
 		return NULL;
 
 	return itor->second;
 }
 
+Core::Result<CInstanceBase*, Core::ActorError> CPythonCharacterManager::GetInstanceResult(DWORD VirtualID)
+{
+	CInstanceBase* pActor = GetInstancePtr(VirtualID);
+	if (!pActor)
+		return std::unexpected(Core::ActorError::ActorNotFound);
+	return pActor;
+}
+
 CInstanceBase* CPythonCharacterManager::GetInstancePtrByName(const char* name)
 {
-	for (auto& pair : m_kAliveInstMap)
+	for (auto& pair : m_aliveActorsMap)
 	{
 		CInstanceBase* pInstance = pair.second;
 		if (!strcmp(pInstance->GetNameString(), name))
@@ -508,7 +516,7 @@ CInstanceBase* CPythonCharacterManager::GetInstancePtrByName(const char* name)
 
 CInstanceBase* CPythonCharacterManager::GetSelectedInstancePtr()
 {
-	return m_pkInstBind;
+	return m_boundActor;
 }
 
 CInstanceBase* CPythonCharacterManager::FindClickableInstancePtr()
@@ -526,7 +534,7 @@ void CPythonCharacterManager::__UpdatePickedActorList()
 {
 	m_pickedInstances.clear();
 
-	for (auto& pair : m_kAliveInstMap)
+	for (auto& pair : m_aliveActorsMap)
 	{
 		CInstanceBase* pkInstEach = pair.second;
 		if (pkInstEach->CanPickInstance())
@@ -582,19 +590,19 @@ void CPythonCharacterManager::__NEW_Pick()
 {
 	__UpdateSortPickedActorList();
 
-	CInstanceBase* pkInstMain = GetMainInstancePtr();
+	CInstanceBase* pkInstMain = GetMainActorPtr();
 
 	for (auto* pkInstEach : m_pickedInstances)
 	{
 		if (pkInstEach != pkInstMain && pkInstEach->IntersectBoundingBox())
 		{
-			if (m_pkInstPick && m_pkInstPick != pkInstEach)
-				m_pkInstPick->OnUnselected();
+			if (m_pickedActor && m_pickedActor != pkInstEach)
+				m_pickedActor->OnUnselected();
 
 			if (pkInstEach->CanPickInstance())
 			{
-				m_pkInstPick = pkInstEach;
-				m_pkInstPick->OnSelected();
+				m_pickedActor = pkInstEach;
+				m_pickedActor->OnSelected();
 				return;
 			}
 		}
@@ -604,13 +612,13 @@ void CPythonCharacterManager::__NEW_Pick()
 	{
 		if (pkInstEach != pkInstMain)
 		{
-			if (m_pkInstPick && m_pkInstPick != pkInstEach)
-				m_pkInstPick->OnUnselected();
+			if (m_pickedActor && m_pickedActor != pkInstEach)
+				m_pickedActor->OnUnselected();
 
 			if (pkInstEach->CanPickInstance())
 			{
-				m_pkInstPick = pkInstEach;
-				m_pkInstPick->OnSelected();
+				m_pickedActor = pkInstEach;
+				m_pickedActor->OnSelected();
 				return;
 			}
 		}
@@ -620,51 +628,51 @@ void CPythonCharacterManager::__NEW_Pick()
 	{
 		if (m_pickedInstances.end() != std::find(m_pickedInstances.begin(), m_pickedInstances.end(), pkInstMain))
 		{
-			if (m_pkInstPick && m_pkInstPick != pkInstMain)
-				m_pkInstPick->OnUnselected();
+			if (m_pickedActor && m_pickedActor != pkInstMain)
+				m_pickedActor->OnUnselected();
 
-			m_pkInstPick = pkInstMain;
-			m_pkInstPick->OnSelected();
+			m_pickedActor = pkInstMain;
+			m_pickedActor->OnSelected();
 			return;
 		}
 	}
 
-	if (m_pkInstPick)
+	if (m_pickedActor)
 	{
-		m_pkInstPick->OnUnselected();
-		m_pkInstPick = NULL;
+		m_pickedActor->OnUnselected();
+		m_pickedActor = NULL;
 	}
 }
 
 void CPythonCharacterManager::__OLD_Pick()
 {
-	for (auto& pair : m_kAliveInstMap)
+	for (auto& pair : m_aliveActorsMap)
 	{
 		CInstanceBase* pkInstEach = pair.second;
-		if (pkInstEach == m_pkInstMain)
+		if (pkInstEach == m_mainActor)
 			continue;
 
 		if (pkInstEach->IntersectDefendingSphere())
 		{
-			if (m_pkInstPick && m_pkInstPick != pkInstEach)
-				m_pkInstPick->OnUnselected();
+			if (m_pickedActor && m_pickedActor != pkInstEach)
+				m_pickedActor->OnUnselected();
 
-			m_pkInstPick = pkInstEach;
-			m_pkInstPick->OnSelected();
+			m_pickedActor = pkInstEach;
+			m_pickedActor->OnSelected();
 			return;
 		}
 	}
 
-	if (m_pkInstPick)
+	if (m_pickedActor)
 	{
-		m_pkInstPick->OnUnselected();
-		m_pkInstPick = NULL;
+		m_pickedActor->OnUnselected();
+		m_pickedActor = NULL;
 	}
 }
 
 int CPythonCharacterManager::PickAll()
 {
-	for (auto& pair : m_kAliveInstMap)
+	for (auto& pair : m_aliveActorsMap)
 	{
 		CInstanceBase* pInstance = pair.second;
 		if (pInstance->IntersectDefendingSphere())
@@ -713,7 +721,7 @@ CInstanceBase* CPythonCharacterManager::GetCloseInstance(CInstanceBase* pInstanc
 	// Zabezpieczenie fallback w razie braku zaindeksowanych wpisow
 	if (!pCloseInstance && candidateIds.empty())
 	{
-		for (auto& pair : m_kAliveInstMap)
+		for (auto& pair : m_aliveActorsMap)
 		{
 			CInstanceBase* pTargetInstance = pair.second;
 			if (pTargetInstance == pInstance)
@@ -768,10 +776,10 @@ void CPythonCharacterManager::DeleteAllInstances()
 
 void CPythonCharacterManager::DestroyAliveInstanceMap()
 {
-	for (auto& pair : m_kAliveInstMap)
+	for (auto& pair : m_aliveActorsMap)
 		CInstanceBase::Delete(pair.second);
 
-	m_kAliveInstMap.clear();
+	m_aliveActorsMap.clear();
 	m_sceneMgr.ClearAlive();
 }
 
@@ -795,10 +803,10 @@ void CPythonCharacterManager::Destroy()
 void CPythonCharacterManager::__Initialize()
 {
 	memset(m_adwPointEffect, 0, sizeof(m_adwPointEffect));
-	m_pkInstMain = NULL;
-	m_pkInstBind = NULL;
-	m_pkInstPick = NULL;
-	m_v2PickedInstProjPos = D3DXVECTOR2(0.0f, 0.0f);
+	m_mainActor = NULL;
+	m_boundActor = NULL;
+	m_pickedActor = NULL;
+	m_pickedActorScreenPos = D3DXVECTOR2(0.0f, 0.0f);
 	m_pfnCharacterDeadCallback = nullptr;
 }
 

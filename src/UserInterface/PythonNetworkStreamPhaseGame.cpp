@@ -456,7 +456,7 @@ bool CPythonNetworkStream::RecvDuelStartPacket()
 
 	CPythonCharacterManager & rkChrMgr = CPythonCharacterManager::Instance();
 
-	CInstanceBase* pkInstMain=rkChrMgr.GetMainInstancePtr();
+	CInstanceBase* pkInstMain=rkChrMgr.GetMainActorPtr();
 	if (!pkInstMain)
 	{
 		TraceError("CPythonNetworkStream::RecvDuelStartPacket - MainCharacter is NULL");
@@ -869,7 +869,7 @@ bool CPythonNetworkStream::RecvPointChange()
 	CPythonCharacterManager& rkChrMgr = CPythonCharacterManager::Instance();
 	rkChrMgr.ShowPointEffect(PointChange.Type, PointChange.dwVID);
 
-	CInstanceBase * pInstance = CPythonCharacterManager::Instance().GetMainInstancePtr();
+	CInstanceBase * pInstance = CPythonCharacterManager::Instance().GetMainActorPtr();
 
 	// 자신의 Point가 변경되었을 경우..
 	if (pInstance)
@@ -956,7 +956,7 @@ bool CPythonNetworkStream::RecvStunPacket()
 
 	if (pkInstSel)
 	{
-		if (CPythonCharacterManager::Instance().GetMainInstancePtr()==pkInstSel)
+		if (CPythonCharacterManager::Instance().GetMainActorPtr()==pkInstSel)
 			pkInstSel->Die();
 		else
 			pkInstSel->Stun();
@@ -1361,7 +1361,7 @@ bool CPythonNetworkStream::SendPointResetPacket()
 bool CPythonNetworkStream::__IsPlayerAttacking()
 {
 	CPythonCharacterManager& rkChrMgr=CPythonCharacterManager::Instance();
-	CInstanceBase* pkInstMain=rkChrMgr.GetMainInstancePtr();
+	CInstanceBase* pkInstMain=rkChrMgr.GetMainActorPtr();
 	if (!pkInstMain)
 		return false;
 
@@ -1557,7 +1557,7 @@ bool CPythonNetworkStream::RecvTargetPacket()
 		return false;
 	}
 
-	CInstanceBase * pInstPlayer = CPythonCharacterManager::Instance().GetMainInstancePtr();
+	CInstanceBase * pInstPlayer = CPythonCharacterManager::Instance().GetMainActorPtr();
 	CInstanceBase * pInstTarget = CPythonCharacterManager::Instance().GetInstancePtr(TargetPacket.dwVID);
 	if (pInstPlayer && pInstTarget)
 	{

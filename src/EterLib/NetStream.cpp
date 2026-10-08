@@ -71,8 +71,8 @@ bool CNetworkStream::__SendInternalBuffer()
 	if (dataSize <= 0)
 		return true;
 
-	int sendSize = send(m_sock, reinterpret_cast<const char*>(m_sendBuf.ReadPtr()), dataSize, 0);
-	if (sendSize < 0)
+	int bytesSent = send(m_sock, reinterpret_cast<const char*>(m_sendBuf.ReadPtr()), dataSize, 0);
+	if (bytesSent < 0)
 	{
 		int err = WSAGetLastError();
 		TraceError("__SendInternalBuffer: send() failed, sock=%llu, dataSize=%d, error=%d",
@@ -80,7 +80,7 @@ bool CNetworkStream::__SendInternalBuffer()
 		return false;
 	}
 
-	m_sendBuf.Discard(sendSize);
+	m_sendBuf.Discard(bytesSent);
 
 	return true;
 }
@@ -260,14 +260,14 @@ int CNetworkStream::GetRecvBufferSize()
 	return static_cast<int>(m_recvBuf.ReadableBytes());
 }
 
-bool CNetworkStream::Peek(int size)
+bool CNetworkStream::Peek(int length)
 {
-	return m_recvBuf.HasBytes(static_cast<size_t>(size));
+	return m_recvBuf.HasBytes(static_cast<size_t>(length));
 }
 
-bool CNetworkStream::Peek(int size, char* pDestBuf)
+bool CNetworkStream::Peek(int length, char* bufferData)
 {
-	return m_recvBuf.Peek(pDestBuf, static_cast<size_t>(size));
+	return m_recvBuf.Peek(bufferData, static_cast<size_t>(length));
 }
 
 #ifdef _PACKETDUMP
@@ -479,51 +479,48 @@ static const char* GetHeaderName(uint16_t header)
 
 #endif
 
-bool CNetworkStream::Recv(int size)
+bool CNetworkStream::Recv(int length)
 {
-	if (!Peek(size))
+	if (!Peek(length))
 		return false;
 
-	m_recvBuf.Discard(static_cast<size_t>(size));
+	m_recvBuf.Discard(static_cast<size_t>(length));
 	return true;
 }
 
-static std::string dump_hex(const uint8_t* ptr, const std::size_t length)
+static std::string dump_hex(std::span<const uint8_t> data)
 {
-	if (!ptr || !length)
+	if (data.empty())
 		return {};
 
 	std::stringstream ss;
 
-	std::vector <uint8_t> buffer(length);
-	memcpy(&buffer[0], ptr, length);
-
-	for (size_t i = 0; i < length; ++i)
-		ss << std::hex << std::setfill('0') << std::setw(2) << (int)buffer.at(i) << ", ";
+	for (size_t i = 0; i < data.size(); ++i)
+		ss << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(data[i]) << ", ";
 
 	const auto str = ss.str();
-	return str.substr(0, str.size() - 2);
+	return str.substr(0, str.length() - 2);
 }
 
-bool CNetworkStream::Recv(int size, char * pDestBuf)
+bool CNetworkStream::Recv(int length, char * bufferData)
 {
-	if (!Peek(size, pDestBuf))
+	if (!Peek(length, bufferData))
 		return false;
 
 #ifdef _PACKETDUMP
-	if (size >= 2)
+	if (length >= 2)
 	{
 		// MR-11: Separate packet dump log from the main log file
-		const uint16_t kHeader = *reinterpret_cast<const uint16_t*>(pDestBuf);
-		PacketDumpf("RECV< %s 0x%04X (%d bytes)", GetHeaderName(kHeader), kHeader, size);
+		const uint16_t kHeader = *reinterpret_cast<const uint16_t*>(bufferData);
+		PacketDumpf("RECV< %s 0x%04X (%d bytes)", GetHeaderName(kHeader), kHeader, length);
 
-		const auto contents = dump_hex(reinterpret_cast<const uint8_t*>(pDestBuf), size);
+		const auto contents = dump_hex(std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(bufferData), length));
 		PacketDumpf("%s", contents.c_str());
 		// MR-11: -- END OF -- Separate packet dump log from the main log file
 	}
 #endif
 
-	m_recvBuf.Discard(static_cast<size_t>(size));
+	m_recvBuf.Discard(static_cast<size_t>(length));
 	return true;
 }
 
@@ -532,13 +529,13 @@ int CNetworkStream::__GetSendBufferSize()
 	return static_cast<int>(m_sendBuf.ReadableBytes());
 }
 
-bool CNetworkStream::Send(int size, const char * pSrcBuf)
+bool CNetworkStream::Send(int length, const char * bufferData)
 {
 	// Track packet sends: detect new packet start by checking [header:2][length:2] framing
-	if (size >= 4)
+	if (length >= 4)
 	{
-		const uint16_t wHeader = *reinterpret_cast<const uint16_t*>(pSrcBuf);
-		const uint16_t wLength = *reinterpret_cast<const uint16_t*>(pSrcBuf + 2);
+		const uint16_t wHeader = *reinterpret_cast<const uint16_t*>(bufferData);
+		const uint16_t wLength = *reinterpret_cast<const uint16_t*>(bufferData + 2);
 
 		if (wHeader != 0 && wLength >= 4)
 		{
@@ -550,27 +547,27 @@ bool CNetworkStream::Send(int size, const char * pSrcBuf)
 		}
 	}
 
-	m_sendBuf.EnsureWritable(static_cast<size_t>(size));
+	m_sendBuf.EnsureWritable(static_cast<size_t>(length));
 
 	// Copy data to send buffer
-	std::memcpy(m_sendBuf.WritePtr(), pSrcBuf, static_cast<size_t>(size));
+	std::memcpy(m_sendBuf.WritePtr(), bufferData, static_cast<size_t>(length));
 
 	// Encrypt in-place before committing
 	if (m_secureCipher.IsActivated())
 	{
-		m_secureCipher.EncryptInPlace(m_sendBuf.WritePtr(), size);
+		m_secureCipher.EncryptInPlace(m_sendBuf.WritePtr(), length);
 	}
 
-	m_sendBuf.CommitWrite(static_cast<size_t>(size));
+	m_sendBuf.CommitWrite(static_cast<size_t>(length));
 
 #ifdef _PACKETDUMP
-	if (size >= 2)
+	if (length >= 2)
 	{
 		// MR-11: Separate packet dump log from the main log file
-		const uint16_t kHeader = *reinterpret_cast<const uint16_t*>(pSrcBuf);
-		PacketDumpf("SEND> %s 0x%04X (%d bytes)", GetHeaderName(kHeader), kHeader, size);
+		const uint16_t kHeader = *reinterpret_cast<const uint16_t*>(bufferData);
+		PacketDumpf("SEND> %s 0x%04X (%d bytes)", GetHeaderName(kHeader), kHeader, length);
 
-		const auto contents = dump_hex(reinterpret_cast<const uint8_t*>(pSrcBuf), size);
+		const auto contents = dump_hex(std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(bufferData), length));
 		PacketDumpf("%s", contents.c_str());
 		 // MR-11: -- END OF -- Separate packet dump log from the main log file
 	}
@@ -579,27 +576,27 @@ bool CNetworkStream::Send(int size, const char * pSrcBuf)
 	return true;
 }
 
-bool CNetworkStream::Peek(int len, void* pDestBuf)
+bool CNetworkStream::Peek(int length, void* bufferData)
 {
-	return Peek(len, (char*)pDestBuf);
+	return Peek(length, (char*)bufferData);
 }
 
-bool CNetworkStream::Recv(int len, void* pDestBuf)
+bool CNetworkStream::Recv(int length, void* bufferData)
 {
-	return Recv(len, (char*)pDestBuf);
+	return Recv(length, (char*)bufferData);
 }
 
-bool CNetworkStream::SendFlush(int len, const void* pSrcBuf)
+bool CNetworkStream::SendFlush(int length, const void* bufferData)
 {
-	if (!Send(len, pSrcBuf))
+	if (!Send(length, bufferData))
 		return false;
 
 	return __SendInternalBuffer();
 }
 
-bool CNetworkStream::Send(int len, const void* pSrcBuf)
+bool CNetworkStream::Send(int length, const void* bufferData)
 {
-	return Send(len, (const char*)pSrcBuf);
+	return Send(length, (const char*)bufferData);
 }
 
 bool CNetworkStream::IsOnline()
@@ -732,4 +729,24 @@ CNetworkStream::CNetworkStream()
 CNetworkStream::~CNetworkStream()
 {
 	Clear();
+}
+
+bool CNetworkStream::Peek(std::span<uint8_t> bufferData)
+{
+	return Peek(static_cast<int>(bufferData.size()), bufferData.data());
+}
+
+bool CNetworkStream::Recv(std::span<uint8_t> bufferData)
+{
+	return Recv(static_cast<int>(bufferData.size()), bufferData.data());
+}
+
+bool CNetworkStream::Send(std::span<const uint8_t> bufferData)
+{
+	return Send(static_cast<int>(bufferData.size()), bufferData.data());
+}
+
+bool CNetworkStream::SendFlush(std::span<const uint8_t> bufferData)
+{
+	return SendFlush(static_cast<int>(bufferData.size()), bufferData.data());
 }

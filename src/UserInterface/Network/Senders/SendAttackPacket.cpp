@@ -28,11 +28,11 @@ struct ProxyPacketCGAttack
 static_assert(sizeof(ProxyPacketCGAttack) == 11, "ProxyPacketCGAttack must be exactly 11 bytes");
 #pragma pack(pop)
 
-EterBase::PacketResult<void> AttackSender::Send(EterBase::EntityId victimId, uint8_t attackType, CNetworkStream* networkStream)
+EterBase::PacketDispatchResult<void> AttackSender::Send(EterBase::EntityId victimId, uint8_t attackType, CNetworkStream* networkStream)
 {
     std::optional<CNetworkStream*> streamOpt = networkStream ? std::make_optional(networkStream) : std::nullopt;
     
-    return streamOpt.transform([victimId, attackType](CNetworkStream* stream) -> EterBase::PacketResult<void> {
+    return streamOpt.transform([victimId, attackType](CNetworkStream* stream) -> EterBase::PacketDispatchResult<void> {
         ProxyPacketCGAttack attackPacket;
         std::memset(&attackPacket, 0, sizeof(attackPacket));
         
@@ -48,7 +48,7 @@ EterBase::PacketResult<void> AttackSender::Send(EterBase::EntityId victimId, uin
         if (!stream->Send(static_cast<int>(packetSpan.size()), packetSpan.data()))
         {
             EterBase::ModernLogger::Log(EterBase::LogLevel::Error, "Failed to send CG::ATTACK for VictimId: {}", victimId.get());
-            return EterBase::MakeError(EterBase::PacketError::SessionClosed);
+            return EterBase::MakeError(EterBase::PacketDispatchError::QueueFull);
         }
 
         // Publish event to notify GUI and game systems (Zero-Conflict / Event-Driven)
@@ -57,7 +57,7 @@ EterBase::PacketResult<void> AttackSender::Send(EterBase::EntityId victimId, uin
         EterBase::ModernLogger::Log(EterBase::LogLevel::Info, "Successfully queued CG::ATTACK for VictimId: {}", victimId.get());
         
         return {};
-    }).value_or(EterBase::MakeError(EterBase::PacketError::SessionClosed));
+    }).value_or(EterBase::MakeError(EterBase::PacketDispatchError::Disconnected));
 }
 
 } // namespace UserInterface::Network::Senders

@@ -13,6 +13,7 @@
 #include "World/ActorRegistry.h"
 #include "World/SpatialHashGrid.h"
 #include "InstanceSceneManager.h"
+#include "Client/Core/DomainErrors.h"
 
 class CPythonCharacterManager : public CSingleton<CPythonCharacterManager>, public IAbstractCharacterManager, public IObjectManager
 {
@@ -39,9 +40,9 @@ class CPythonCharacterManager : public CSingleton<CPythonCharacterManager>, publ
 		bool IsDeadVID(DWORD dwVID);
 		bool IsCacheMode();
 
-		bool OLD_GetPickedInstanceVID(DWORD* pdwPickedActorID);
-		CInstanceBase* OLD_GetPickedInstancePtr();
-		D3DXVECTOR2& OLD_GetPickedInstPosReference();
+		bool GetPickedActorID(DWORD* pdwPickedActorID);
+		CInstanceBase* GetPickedActorPtr();
+		D3DXVECTOR2& GetPickedActorScreenPos();
 
 		CInstanceBase* FindClickableInstancePtr();
 
@@ -53,7 +54,7 @@ class CPythonCharacterManager : public CSingleton<CPythonCharacterManager>, publ
 
 		void ClearMainInstance();
 		bool SetMainInstance(DWORD dwVID);
-		CInstanceBase* GetMainInstancePtr();
+		CInstanceBase* GetMainActorPtr();
 
 		void								SCRIPT_SetAffect(DWORD dwVID, DWORD eAffect, BOOL isVisible);
 		void								SetEmoticon(DWORD dwVID, DWORD eEmoticon);
@@ -87,14 +88,15 @@ class CPythonCharacterManager : public CSingleton<CPythonCharacterManager>, publ
 		void 								DestroyAliveInstanceMap();
 		void 								DestroyDeadInstanceList();
 
-		inline CharacterIterator			CharacterInstanceBegin() { return CharacterIterator(m_kAliveInstMap.begin());}
-		inline CharacterIterator			CharacterInstanceEnd() { return CharacterIterator(m_kAliveInstMap.end());}
+		inline CharacterIterator			CharacterInstanceBegin() { return CharacterIterator(m_aliveActorsMap.begin());}
+		inline CharacterIterator			CharacterInstanceEnd() { return CharacterIterator(m_aliveActorsMap.end());}
 
 		// Access Instance
 		void								SelectInstance(DWORD VirtualID);
 		CInstanceBase *						GetSelectedInstancePtr();
 
 		CInstanceBase *						GetInstancePtr(DWORD VirtualID);
+		Core::Result<CInstanceBase*, Core::ActorError> GetInstanceResult(DWORD VirtualID);
 		CInstanceBase *						GetInstancePtrByName(const char *name);
 
 		// Pick		
@@ -133,12 +135,12 @@ class CPythonCharacterManager : public CSingleton<CPythonCharacterManager>, publ
 		void __RenderSortedDeadActorList();
 
 	protected:
-		CInstanceBase *						m_pkInstMain;
-		CInstanceBase *						m_pkInstPick;
-		CInstanceBase *						m_pkInstBind;
-		D3DXVECTOR2							m_v2PickedInstProjPos;
+		CInstanceBase *						m_mainActor;
+		CInstanceBase *						m_pickedActor;
+		CInstanceBase *						m_boundActor;
+		D3DXVECTOR2							m_pickedActorScreenPos;
 
-		TCharacterInstanceMap				m_kAliveInstMap;
+		TCharacterInstanceMap				m_aliveActorsMap;
 
 		std::vector<CInstanceBase*>			m_pickedInstances;
 

@@ -91,7 +91,7 @@ bool PhaseGameChatBridge::HandleChat(CPythonNetworkStream* pStream, const TPacke
 				{
 					if (gs_bEmpireLanuageEnable)
 					{
-						CInstanceBase* pkInstMain = rkChrMgr.GetMainInstancePtr();
+						CInstanceBase* pkInstMain = rkChrMgr.GetMainActorPtr();
 						if (pkInstMain)
 							if (!pkInstMain->IsSameEmpire(*pkInstChatter))
 								pStream->__ConvertEmpireText(pkInstChatter->GetEmpireID(), p);

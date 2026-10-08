@@ -393,7 +393,7 @@ bool CInstanceBase::__IsInDustRange()
 	if (!__IsExistMainInstance())
 		return false;
 
-	CInstanceBase* pkInstMain=__GetMainInstancePtr();
+	CInstanceBase* pkInstMain=__GetMainActorPtr();
 
 	float fDistance=NEW_GetDistanceFromDestInstance(*pkInstMain);
 
@@ -657,10 +657,10 @@ void CInstanceBase::SetMainInstance()
 	m_GraphicThingInstance.SetMainInstance();
 }
 
-CInstanceBase* CInstanceBase::__GetMainInstancePtr()
+CInstanceBase* CInstanceBase::__GetMainActorPtr()
 {
 	CPythonCharacterManager& rkChrMgr=CPythonCharacterManager::Instance();
-	return rkChrMgr.GetMainInstancePtr();
+	return rkChrMgr.GetMainActorPtr();
 }
 
 void CInstanceBase::__ClearMainInstance()
@@ -672,7 +672,7 @@ void CInstanceBase::__ClearMainInstance()
 /* 실제 플레이어 캐릭터인지 조사.*/
 bool CInstanceBase::__IsMainInstance()
 {
-	if (this==__GetMainInstancePtr())
+	if (this==__GetMainActorPtr())
 		return true;
 
 	return false;
@@ -680,7 +680,7 @@ bool CInstanceBase::__IsMainInstance()
 
 bool CInstanceBase::__IsExistMainInstance()
 {
-	if(__GetMainInstancePtr())
+	if(__GetMainActorPtr())
 		return true;
 	else
 		return false;
@@ -689,7 +689,7 @@ bool CInstanceBase::__IsExistMainInstance()
 bool CInstanceBase::__MainCanSeeHiddenThing()
 {
 	return false;
-//	CInstanceBase * pInstance = __GetMainInstancePtr();
+//	CInstanceBase * pInstance = __GetMainActorPtr();
 //	return pInstance->IsAffect(AFFECT_GAMJI);
 }
 
@@ -2065,7 +2065,7 @@ void CInstanceBase::RenderToShadowMap()
 	if (!__IsExistMainInstance())
 		return;
 
-	CInstanceBase* pkInstMain=__GetMainInstancePtr();
+	CInstanceBase* pkInstMain=__GetMainActorPtr();
 
 	const float SHADOW_APPLY_DISTANCE = 2500.0f;
 

@@ -35,7 +35,7 @@ void CPythonNetworkStream::__LocalPositionToGlobalPosition(uint32_t& rLocalX, ui
 bool CPythonNetworkStream::__CanActMainInstance()
 {
 	CPythonCharacterManager& rkChrMgr=CPythonCharacterManager::Instance();
-	CInstanceBase* pkInstMain=rkChrMgr.GetMainInstancePtr();
+	CInstanceBase* pkInstMain=rkChrMgr.GetMainActorPtr();
 	if (!pkInstMain)
 		return false;
 

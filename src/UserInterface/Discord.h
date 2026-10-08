@@ -44,7 +44,7 @@ namespace Discord
 	/*RACE*/
 	inline DCDATA GetRaceData()
 	{
-		auto pInstance = CPythonCharacterManager::Instance().GetMainInstancePtr();
+		auto pInstance = CPythonCharacterManager::Instance().GetMainActorPtr();
 		if (!pInstance)
 			return { "","" };
 
@@ -80,7 +80,7 @@ namespace Discord
 	/*EMPIRE*/
 	inline DCDATA GetEmpireData()
 	{
-		auto pInstance = CPythonCharacterManager::Instance().GetMainInstancePtr();
+		auto pInstance = CPythonCharacterManager::Instance().GetMainActorPtr();
 		if (!pInstance)
 			return { "","" };
 

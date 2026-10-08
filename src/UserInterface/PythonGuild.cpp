@@ -1,5 +1,6 @@
 #include "StdAfx.h"
 #include "PythonGuild.h"
+#include "GuildErrors.h"
 #include "AbstractPlayer.h"
 #include "MarkManager.h"
 

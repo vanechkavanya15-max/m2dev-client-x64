@@ -53,7 +53,7 @@ PyObject * textTailGetPosition(PyObject * poSelf, PyObject * poArgs)
 	if (!isData)
 	{
 		CPythonCharacterManager& rkChrMgr=CPythonCharacterManager::Instance();
-		CInstanceBase* pkInstMain=rkChrMgr.GetMainInstancePtr();
+		CInstanceBase* pkInstMain=rkChrMgr.GetMainActorPtr();
 		if (pkInstMain)
 		{
 			const D3DXVECTOR3 & c_rv3Position = pkInstMain->GetGraphicThingInstanceRef().GetPosition();

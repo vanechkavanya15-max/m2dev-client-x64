@@ -334,11 +334,10 @@ bool CPythonNetworkStream::RecvItemGroundAddPacket()
 
 	__GlobalPositionToLocalPosition(packet_item_ground_add.lX, packet_item_ground_add.lY);
 
+	TPixelPosition groundCoords(packet_item_ground_add.lX, packet_item_ground_add.lY, packet_item_ground_add.lZ);
 	CPythonItem::Instance().CreateItem(packet_item_ground_add.dwVID, 
 									   packet_item_ground_add.dwVnum,
-									   packet_item_ground_add.lX,
-									   packet_item_ground_add.lY,
-									   packet_item_ground_add.lZ);
+									   groundCoords);
 	return true;
 }
 

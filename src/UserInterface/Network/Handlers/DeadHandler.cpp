@@ -26,7 +26,7 @@ namespace Network::Handlers
             // Wyczyszczenie celu walki, jesli to aktualny cel
             CPythonPlayer::Instance().NotifyCharacterDead(targetId.value());
 
-            auto* mainInstance = characterManager.GetMainInstancePtr();
+            auto* mainInstance = characterManager.GetMainActorPtr();
             if (mainInstance == targetInstance)
             {
                 // Notyfikacja gracza o wlasnej smierci
