@@ -6,8 +6,12 @@
 #include <optional>
 #include <expected>
 #include "../../EterBase/Result.h"
+#include "../Core/StrongTypes.h"
 
 namespace Client::Gameplay {
+
+using SlotIndex = Client::Core::SlotIndex;
+using ItemSlot = Client::Core::ItemSlot;
 
 /**
  * @brief Pojedynczy slot paska szybkiego dostepu (Quickslot).
@@ -54,37 +58,58 @@ public:
     /**
      * @brief Konwertuje lokalny indeks slotu (0..7) na globalny indeks w tablicy (0..35).
      */
-    [[nodiscard]] uint32_t LocalToGlobalIndex(uint32_t localSlotIndex) const noexcept;
+    [[nodiscard]] SlotIndex LocalToGlobalIndex(SlotIndex localSlotIndex) const noexcept;
+    [[nodiscard]] uint32_t LocalToGlobalIndex(uint32_t localSlotIndex) const noexcept {
+        return LocalToGlobalIndex(SlotIndex(static_cast<uint16_t>(localSlotIndex))).get();
+    }
 
     /**
      * @brief Pobiera dane slotu na podstawie globalnego indeksu.
      */
-    [[nodiscard]] std::expected<QuickslotItem, EterBase::InventoryError> GetSlot(uint32_t globalSlotIndex) const;
+    [[nodiscard]] std::expected<QuickslotItem, EterBase::InventoryError> GetSlot(SlotIndex globalSlotIndex) const;
+    [[nodiscard]] std::expected<QuickslotItem, EterBase::InventoryError> GetSlot(uint32_t globalSlotIndex) const {
+        return GetSlot(SlotIndex(static_cast<uint16_t>(globalSlotIndex)));
+    }
 
     /**
      * @brief Ustawia zawartosc slotu na podstawie globalnego indeksu.
      */
-    [[nodiscard]] std::expected<void, EterBase::InventoryError> SetSlot(uint32_t globalSlotIndex, const QuickslotItem& item);
+    [[nodiscard]] std::expected<void, EterBase::InventoryError> SetSlot(SlotIndex globalSlotIndex, const QuickslotItem& item);
+    [[nodiscard]] std::expected<void, EterBase::InventoryError> SetSlot(uint32_t globalSlotIndex, const QuickslotItem& item) {
+        return SetSlot(SlotIndex(static_cast<uint16_t>(globalSlotIndex)), item);
+    }
 
     /**
      * @brief Czysci zawartosc slotu (ustawia type=0, position=0).
      */
-    [[nodiscard]] std::expected<void, EterBase::InventoryError> ClearSlot(uint32_t globalSlotIndex);
+    [[nodiscard]] std::expected<void, EterBase::InventoryError> ClearSlot(SlotIndex globalSlotIndex);
+    [[nodiscard]] std::expected<void, EterBase::InventoryError> ClearSlot(uint32_t globalSlotIndex) {
+        return ClearSlot(SlotIndex(static_cast<uint16_t>(globalSlotIndex)));
+    }
 
     /**
      * @brief Zamienia miejscami dwa sloty globalne.
      */
-    [[nodiscard]] std::expected<void, EterBase::InventoryError> SwapSlots(uint32_t slotA, uint32_t slotB);
+    [[nodiscard]] std::expected<void, EterBase::InventoryError> SwapSlots(SlotIndex slotA, SlotIndex slotB);
+    [[nodiscard]] std::expected<void, EterBase::InventoryError> SwapSlots(uint32_t slotA, uint32_t slotB) {
+        return SwapSlots(SlotIndex(static_cast<uint16_t>(slotA)), SlotIndex(static_cast<uint16_t>(slotB)));
+    }
 
     /**
      * @brief Pobiera dane lokalnego slotu biezacej strony.
      */
-    [[nodiscard]] std::expected<QuickslotItem, EterBase::InventoryError> GetLocalSlot(uint32_t localSlotIndex) const;
+    [[nodiscard]] std::expected<QuickslotItem, EterBase::InventoryError> GetLocalSlot(SlotIndex localSlotIndex) const;
+    [[nodiscard]] std::expected<QuickslotItem, EterBase::InventoryError> GetLocalSlot(uint32_t localSlotIndex) const {
+        return GetLocalSlot(SlotIndex(static_cast<uint16_t>(localSlotIndex)));
+    }
 
     /**
      * @brief Ustawia dane lokalnego slotu biezacej strony.
      */
-    [[nodiscard]] std::expected<void, EterBase::InventoryError> SetLocalSlot(uint32_t localSlotIndex, const QuickslotItem& item);
+    [[nodiscard]] std::expected<void, EterBase::InventoryError> SetLocalSlot(SlotIndex localSlotIndex, const QuickslotItem& item);
+    [[nodiscard]] std::expected<void, EterBase::InventoryError> SetLocalSlot(uint32_t localSlotIndex, const QuickslotItem& item) {
+        return SetLocalSlot(SlotIndex(static_cast<uint16_t>(localSlotIndex)), item);
+    }
 
     /**
      * @brief Zwraca widok wszystkich slotow.

@@ -46,20 +46,20 @@ public:
     void SortDeadInstances(const D3DXVECTOR3& cameraEye);
 
     // Gettery i zapytania
-    [[nodiscard]] size_t GetAliveCount() const noexcept { return m_kVct_pkInstAlive.size(); }
-    [[nodiscard]] size_t GetDeadCount() const noexcept { return m_kVct_pkInstDead.size(); }
-    [[nodiscard]] const std::vector<CInstanceBase*>& GetAliveInstances() const noexcept { return m_kVct_pkInstAlive; }
-    [[nodiscard]] const std::vector<CInstanceBase*>& GetDeadInstances() const noexcept { return m_kVct_pkInstDead; }
-    [[nodiscard]] bool IsDead(DWORD dwVID) const;
-    [[nodiscard]] bool IsAlive(DWORD dwVID) const;
+    [[nodiscard]] size_t GetAliveCount() const noexcept { return m_aliveInstances.size(); }
+    [[nodiscard]] size_t GetDeadCount() const noexcept { return m_deadInstances.size(); }
+    [[nodiscard]] const std::vector<CInstanceBase*>& GetAliveInstances() const noexcept { return m_aliveInstances; }
+    [[nodiscard]] const std::vector<CInstanceBase*>& GetDeadInstances() const noexcept { return m_deadInstances; }
+    [[nodiscard]] bool IsDead(DWORD vid) const;
+    [[nodiscard]] bool IsAlive(DWORD vid) const;
 
 private:
     void RenderSortedAliveActorList();
     void RenderSortedDeadActorList();
 
 private:
-    std::vector<CInstanceBase*> m_kVct_pkInstAlive;
-    std::vector<CInstanceBase*> m_kVct_pkInstDead;
+    std::vector<CInstanceBase*> m_aliveInstances;
+    std::vector<CInstanceBase*> m_deadInstances;
 };
 
 } // namespace UserInterface

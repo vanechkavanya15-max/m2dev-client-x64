@@ -37,13 +37,13 @@ class CPythonPlayerEventHandler : public CActorInstance::IEventHandler
 	protected:
 		struct SVictim
 		{
-			DWORD	m_dwVID;
-			long	m_lPixelX;
-			long	m_lPixelY;
+			DWORD	vid;
+			long	pixelX;
+			long	pixelY;
 		};
 
 	protected:
-		std::vector<SVictim> m_kVctkVictim;
+		std::vector<SVictim> m_victimInstances;
 
 		DWORD m_dwPrevComboIndex;
 		DWORD m_dwNextWaitingNotifyTime;

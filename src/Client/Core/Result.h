@@ -5,6 +5,7 @@
 #include <string_view>
 #include <format>
 #include <cstdint>
+#include "DomainErrors.h"
 
 namespace Client::Core {
 
@@ -24,13 +25,6 @@ enum class EntityError : uint8_t {
     OutOfRange
 };
 
-enum class InventoryError : uint8_t {
-    SlotEmpty,
-    SlotOccupied,
-    InvalidVnum,
-    InsufficientCount
-};
-
 enum class MountError : uint8_t {
     NoHorseInstance,
     MotionKeyNotFound,
@@ -40,7 +34,6 @@ enum class MountError : uint8_t {
 // Funkcje pomocnicze do konwersji na tekst
 [[nodiscard]] std::string_view to_string(PacketError error) noexcept;
 [[nodiscard]] std::string_view to_string(EntityError error) noexcept;
-[[nodiscard]] std::string_view to_string(InventoryError error) noexcept;
 [[nodiscard]] std::string_view to_string(MountError error) noexcept;
 
 // Nowoczesny szablon Result oparty na std::expected
@@ -60,13 +53,6 @@ struct std::formatter<Client::Core::PacketError> : std::formatter<std::string_vi
 template <>
 struct std::formatter<Client::Core::EntityError> : std::formatter<std::string_view> {
     auto format(Client::Core::EntityError err, std::format_context& ctx) const {
-        return std::formatter<std::string_view>::format(Client::Core::to_string(err), ctx);
-    }
-};
-
-template <>
-struct std::formatter<Client::Core::InventoryError> : std::formatter<std::string_view> {
-    auto format(Client::Core::InventoryError err, std::format_context& ctx) const {
         return std::formatter<std::string_view>::format(Client::Core::to_string(err), ctx);
     }
 };

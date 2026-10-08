@@ -10,9 +10,9 @@
 #include "../../EterBase/StrongTypes.h"
 #include <shared_mutex>
 
-using EntityVid = EterBase::EntityId;
-
 namespace Client::World {
+
+using EntityVid = EterBase::EntityId;
 
 struct ActorRecord {
     EntityVid vid;

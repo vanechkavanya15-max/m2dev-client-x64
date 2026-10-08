@@ -4,6 +4,7 @@
 #include <shared_mutex>
 #include <unordered_map>
 #include <array>
+#include "../Core/StrongTypes.h"
 
 namespace Client::Gameplay {
 
@@ -21,10 +22,15 @@ public:
     uint32_t GetSP() const;
     uint32_t GetMaxSP() const;
     int64_t GetGold() const;
+    [[nodiscard]] Client::Core::Money64 GetGoldAmount() const noexcept;
+    void SetGoldAmount(Client::Core::Money64 amount);
     uint64_t GetExp() const;
     
     void SetStatusPoint(uint32_t stIndex, uint16_t value);
     uint16_t GetStatusPoint(uint32_t stIndex) const;
+
+    void Reset() noexcept;
+    void Clear() noexcept { Reset(); }
 
 private:
     mutable std::shared_mutex m_mutex;

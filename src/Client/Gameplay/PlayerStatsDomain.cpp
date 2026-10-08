@@ -56,6 +56,14 @@ int64_t PlayerStatsDomain::GetGold() const {
     return GetPoint(POINT_GOLD);
 }
 
+Client::Core::Money64 PlayerStatsDomain::GetGoldAmount() const noexcept {
+    return Client::Core::Money64(GetPoint(POINT_GOLD));
+}
+
+void PlayerStatsDomain::SetGoldAmount(Client::Core::Money64 amount) {
+    SetPoint(POINT_GOLD, amount.get());
+}
+
 uint64_t PlayerStatsDomain::GetExp() const {
     return static_cast<uint64_t>(GetPoint(POINT_EXP));
 }
@@ -73,6 +81,12 @@ uint16_t PlayerStatsDomain::GetStatusPoint(uint32_t stIndex) const {
         return m_statusPoints[stIndex];
     }
     return 0;
+}
+
+void PlayerStatsDomain::Reset() noexcept {
+    std::unique_lock lock(m_mutex);
+    m_points.clear();
+    m_statusPoints.fill(0);
 }
 
 } // namespace Client::Gameplay

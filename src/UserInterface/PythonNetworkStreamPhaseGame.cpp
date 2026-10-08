@@ -576,7 +576,7 @@ bool CPythonNetworkStream::SendCharacterStatePacket(const TPixelPosition& c_rkPP
 		return true;
 
 	// Strangler Fig C++23: Przekierowanie wykonania do nowoczesnej domeny i WorldContext
-	Client::Bridge::StranglerFacade::Instance().ExecuteMove(c_rkPPosDst.x, c_rkPPosDst.y, c_rkPPosDst.z, fDstRot, static_cast<uint8_t>(eFunc));
+	(void)Client::Bridge::StranglerFacade::Instance().ExecuteMove(c_rkPPosDst.x, c_rkPPosDst.y, c_rkPPosDst.z, fDstRot, static_cast<uint8_t>(eFunc));
 
 	if (fDstRot < 0.0f)
 		fDstRot = 360 + fDstRot;
@@ -1626,7 +1626,7 @@ bool CPythonNetworkStream::SendAttackPacket(UINT uMotAttack, DWORD dwVIDVictim)
 		return true;
 
 	// Strangler Fig C++23: Przekierowanie wykonania do nowoczesnej domeny ataku
-	Client::Bridge::StranglerFacade::Instance().ExecuteAttack(dwVIDVictim, static_cast<uint8_t>(uMotAttack));
+	(void)Client::Bridge::StranglerFacade::Instance().ExecuteAttack(dwVIDVictim, static_cast<uint8_t>(uMotAttack));
 
 #ifdef ATTACK_TIME_LOG
 	static DWORD prevTime = timeGetTime();

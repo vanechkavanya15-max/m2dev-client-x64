@@ -181,40 +181,40 @@ void CPythonPlayerEventHandler::OnHit(UINT uSkill, CActorInstance& rkActorVictim
 
 	const TPixelPosition& kPPosLast=rkActorVictim.NEW_GetLastPixelPositionRef();
 
-	SVictim kVictim;
-	kVictim.m_dwVID=dwVIDVictim;
-	kVictim.m_lPixelX=long(kPPosLast.x);
-	kVictim.m_lPixelY=long(kPPosLast.y);
+	SVictim victim;
+	victim.vid = dwVIDVictim;
+	victim.pixelX = long(kPPosLast.x);
+	victim.pixelY = long(kPPosLast.y);
 
-	rkActorVictim.TEMP_Push(kVictim.m_lPixelX, kVictim.m_lPixelY);
+	rkActorVictim.TEMP_Push(victim.pixelX, victim.pixelY);
 
-	m_kVctkVictim.push_back(kVictim);
+	m_victimInstances.push_back(victim);
 }
 
 void CPythonPlayerEventHandler::FlushVictimList()
 {
-	if (m_kVctkVictim.empty())
+	if (m_victimInstances.empty())
 		return;
 
 	// #0000682: [M2EU] 대진각 스킬 사용시 튕김 
 	unsigned int SYNC_POSITION_COUNT_LIMIT = 16;
-	unsigned int uiVictimCount = m_kVctkVictim.size();
+	unsigned int victimCount = m_victimInstances.size();
 
 	CPythonNetworkStream& rkStream=CPythonNetworkStream::Instance();
 
 	TPacketCGSyncPosition kPacketSyncPos;
 	kPacketSyncPos.header=CG::SYNC_POSITION;
-	kPacketSyncPos.length=sizeof(kPacketSyncPos)+sizeof(TPacketCGSyncPositionElement) * uiVictimCount;
+	kPacketSyncPos.length=sizeof(kPacketSyncPos)+sizeof(TPacketCGSyncPositionElement) * victimCount;
 
 	rkStream.Send(sizeof(kPacketSyncPos), &kPacketSyncPos);
 
-	for (unsigned int i = 0; i < uiVictimCount; ++i)
+	for (unsigned int i = 0; i < victimCount; ++i)
 	{
-		const SVictim& rkVictim =  m_kVctkVictim[i];
-		rkStream.SendSyncPositionElementPacket(rkVictim.m_dwVID, rkVictim.m_lPixelX, rkVictim.m_lPixelY);		
+		const SVictim& rkVictim = m_victimInstances[i];
+		rkStream.SendSyncPositionElementPacket(rkVictim.vid, rkVictim.pixelX, rkVictim.pixelY);		
 	}
 
-	m_kVctkVictim.clear();
+	m_victimInstances.clear();
 }
 
 CPythonPlayerEventHandler::CPythonPlayerEventHandler()

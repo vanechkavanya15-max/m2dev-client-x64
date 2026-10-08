@@ -21,7 +21,7 @@ public:
         std::chrono::milliseconds minInterval);
 
 private:
-    uint32_t m_dwSeq{0};
+    uint32_t m_sequence{0};
     std::chrono::steady_clock::time_point m_lastAttackTime{};
 };
 

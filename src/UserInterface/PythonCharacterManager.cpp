@@ -9,6 +9,8 @@
 #include "ECS/ECSWorldRegistry.h"
 #include "Core/EventBus.h"
 
+using Client::World::EntityVid;
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Frame Process
 
@@ -522,7 +524,7 @@ void CPythonCharacterManager::__UpdateSortPickedActorList()
 
 void CPythonCharacterManager::__UpdatePickedActorList()
 {
-	m_kVct_pkInstPicked.clear();
+	m_pickedInstances.clear();
 
 	for (auto& pair : m_kAliveInstMap)
 	{
@@ -532,12 +534,12 @@ void CPythonCharacterManager::__UpdatePickedActorList()
 			if (pkInstEach->IsDead())
 			{
 				if (pkInstEach->IntersectBoundingBox())
-					m_kVct_pkInstPicked.push_back(pkInstEach);
+					m_pickedInstances.push_back(pkInstEach);
 			}
 			else
 			{
 				if (pkInstEach->IntersectDefendingSphere())
-					m_kVct_pkInstPicked.push_back(pkInstEach);
+					m_pickedInstances.push_back(pkInstEach);
 			}
 		}
 	}
@@ -573,7 +575,7 @@ void CPythonCharacterManager::__SortPickedActorList()
 	CInstanceBase_SLessCameraDistance kLess;
 	kLess.m_kPPosEye = TPixelPosition(+c_rv3EyePos.x, -c_rv3EyePos.y, +c_rv3EyePos.z);
 
-	std::sort(m_kVct_pkInstPicked.begin(), m_kVct_pkInstPicked.end(), kLess);
+	std::sort(m_pickedInstances.begin(), m_pickedInstances.end(), kLess);
 }
 
 void CPythonCharacterManager::__NEW_Pick()
@@ -582,7 +584,7 @@ void CPythonCharacterManager::__NEW_Pick()
 
 	CInstanceBase* pkInstMain = GetMainInstancePtr();
 
-	for (auto* pkInstEach : m_kVct_pkInstPicked)
+	for (auto* pkInstEach : m_pickedInstances)
 	{
 		if (pkInstEach != pkInstMain && pkInstEach->IntersectBoundingBox())
 		{
@@ -598,7 +600,7 @@ void CPythonCharacterManager::__NEW_Pick()
 		}
 	}
 
-	for (auto* pkInstEach : m_kVct_pkInstPicked)
+	for (auto* pkInstEach : m_pickedInstances)
 	{
 		if (pkInstEach != pkInstMain)
 		{
@@ -616,7 +618,7 @@ void CPythonCharacterManager::__NEW_Pick()
 
 	if (pkInstMain && pkInstMain->CanPickInstance())
 	{
-		if (m_kVct_pkInstPicked.end() != std::find(m_kVct_pkInstPicked.begin(), m_kVct_pkInstPicked.end(), pkInstMain))
+		if (m_pickedInstances.end() != std::find(m_pickedInstances.begin(), m_pickedInstances.end(), pkInstMain))
 		{
 			if (m_pkInstPick && m_pkInstPick != pkInstMain)
 				m_pkInstPick->OnUnselected();

@@ -140,7 +140,7 @@ class CPythonCharacterManager : public CSingleton<CPythonCharacterManager>, publ
 
 		TCharacterInstanceMap				m_kAliveInstMap;
 
-		std::vector<CInstanceBase*>			m_kVct_pkInstPicked;
+		std::vector<CInstanceBase*>			m_pickedInstances;
 
 		DWORD								m_adwPointEffect[POINT_MAX_NUM];
 

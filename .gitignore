@@ -1,6 +1,7 @@
 /build/
 /m2dev-client-main/
 /log/
+/Testing/
 .vs/
 .idea/
 *.user

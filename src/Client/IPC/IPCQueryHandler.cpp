@@ -15,15 +15,19 @@ std::string IPCQueryHandler::HandleQueryPlayerState(Client::Core::WorldContext& 
 
 std::string IPCQueryHandler::HandleQueryInventory(Client::Core::WorldContext& ctx) {
     std::string itemsJson = "[";
-    for (size_t i = 0; i < ctx.inventory.size(); ++i) {
-        const auto& item = ctx.inventory[i];
-        if (i > 0) {
-            itemsJson += ",";
+    bool first = true;
+    for (uint16_t slotIdx = 0; slotIdx < Client::Gameplay::InventoryDomain::INVENTORY_MAX_NUM; ++slotIdx) {
+        auto itemRes = ctx.inventory.GetItem(Client::Gameplay::InventoryWindow::Inventory, EterBase::ItemSlot{slotIdx});
+        if (itemRes.has_value() && itemRes->vnum.get() != 0) {
+            if (!first) {
+                itemsJson += ",";
+            }
+            itemsJson += std::format(
+                "{{\"slot\":{},\"vnum\":{},\"count\":{}}}",
+                slotIdx, itemRes->vnum.get(), itemRes->count
+            );
+            first = false;
         }
-        itemsJson += std::format(
-            "{{\"slot\":{},\"vnum\":{},\"count\":{}}}",
-            item.slot, item.vnum, item.count
-        );
     }
     itemsJson += "]";
     return "{\"inventory\":" + itemsJson + "}";

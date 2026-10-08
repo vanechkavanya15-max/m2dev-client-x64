@@ -5,15 +5,14 @@
 #include <string>
 #include <shared_mutex>
 #include "SkillCooldownTracker.h"
+#include "../Core/DomainErrors.h"
+#include "../Core/DomainEvents.h"
+#include "../Core/StrongTypes.h"
 
 namespace Client::Gameplay {
 
     /**
      * @brief Definiuje typ umiejętności w systemie gry.
-     * 
-     * Typ umiejętności determinuje sposób jej aktywacji oraz to,
-     * czy umiejętność zużywa punkty many (SP) jednorazowo podczas
-     * wywołania, czy może w czasie rzeczywistym w formie przełącznika.
      */
     enum class SkillType : uint8_t {
         Passive, ///< Pasywna umiejętność, aktywna stale, brak kosztu użycia.
@@ -23,9 +22,6 @@ namespace Client::Gameplay {
 
     /**
      * @brief Zdefiniowane rodzaje celów dla umiejętności postaci.
-     * 
-     * Różne umiejętności wymagają różnych celów, od rzucania czarów
-     * na wroga, aż po wzmacnianie sojuszników w grupie.
      */
     enum class SkillTarget : uint8_t {
         None,    ///< Brak specyficznego celu (np. umiejętności obszarowe rzucane wokoło siebie).
@@ -43,6 +39,7 @@ namespace Client::Gameplay {
      * @brief Unikalny identyfikator umiejętności w grze.
      */
     using SkillId = uint32_t;
+    using SkillIndex = uint32_t;
     
     /**
      * @brief Definiuje stopien zaawansowania (mistrzostwa) umiejetnosci.
@@ -230,6 +227,12 @@ namespace Client::Gameplay {
          */
         void ResetAllCooldowns();
 
+        /**
+         * @brief Czyste zresetowanie stanu umiejetnosci gracza i cooldownow.
+         */
+        void Clear() noexcept;
+        void Reset() noexcept { Clear(); }
+
         [[nodiscard]] const SkillCooldownTracker& GetCooldownTracker() const noexcept { return m_cooldownTracker; }
         [[nodiscard]] SkillCooldownTracker& GetCooldownTracker() noexcept { return m_cooldownTracker; }
 
@@ -269,6 +272,26 @@ namespace Client::Gameplay {
          * @return const SkillData* Wskaźnik na definicję lub nullptr w przypadku braku.
          */
         const SkillData* GetSkillData(SkillId skillId) const;
+
+        using SkillError = Client::Core::SkillError;
+        template <typename T, typename E = SkillError>
+        using Result = Client::Core::Result<T, E>;
+
+        /**
+         * @brief Nowoczesne metody domenowe wspierajace Result oraz SkillError.
+         */
+        [[nodiscard]] Result<void, SkillError> CanCast(SkillId skillId, std::optional<uint32_t> currentSP = std::nullopt) const;
+        [[nodiscard]] Result<void, SkillError> CanCast(SkillId skillId, uint32_t currentSP) const;
+        [[nodiscard]] Result<uint32_t, SkillError> CalculateSPCostResult(SkillId skillId) const;
+        [[nodiscard]] Result<uint32_t, SkillError> CalculateSPCostSafe(SkillId skillId) const {
+            return CalculateSPCostResult(skillId);
+        }
+
+        [[nodiscard]] Result<void, SkillError> CanUseSkill(SkillId skillId, uint32_t currentSP) const;
+        [[nodiscard]] Result<void, SkillError> UseSkill(SkillId skillId, uint32_t currentSP, uint32_t cooldownMs);
+        [[nodiscard]] Result<void, SkillError> StartCooldownResult(SkillId skillId, uint32_t durationMs);
+        [[nodiscard]] Result<void, SkillError> SetSkillLevelResult(SkillId skillId, SkillLevel level);
+        [[nodiscard]] Result<void, SkillError> ToggleSkillResult(SkillId skillId, bool state);
 
     private:
         mutable std::shared_mutex m_mutex;

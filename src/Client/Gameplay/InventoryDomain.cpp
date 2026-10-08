@@ -1,4 +1,5 @@
 #include "InventoryDomain.h"
+#include "UserInterface/Core/EventBus.h"
 #include <algorithm>
 
 namespace Client::Gameplay {
@@ -158,6 +159,18 @@ void InventoryDomain::NotifySlotUpdated(InventoryWindow windowType, EterBase::It
     {
         m_slotUpdateCallback(InventorySlotUpdatedEvent(windowType, slot));
     }
+
+    uint32_t vnum = 0;
+    uint32_t count = 0;
+    auto itemRes = GetItem(windowType, slot);
+    if (itemRes.has_value())
+    {
+        vnum = itemRes.value().vnum.get();
+        count = itemRes.value().count;
+    }
+    ::UserInterface::Core::EventBus::GetInstance().Publish(
+        ::Client::Core::InventorySlotUpdatedEvent{ slot.get(), vnum, count }
+    );
 }
 
 std::expected<void, EterBase::InventoryError> InventoryDomain::SetItem(InventoryWindow windowType, EterBase::ItemSlot slot, const ItemData& item)
@@ -400,6 +413,113 @@ std::expected<void, EterBase::InventoryError> InventoryDomain::SplitItem(Invento
     if (!resSetDst) return std::unexpected(resSetDst.error());
 
     return {};
+}
+
+namespace {
+    Client::Core::InventoryError MapToDomainError(EterBase::InventoryError err) {
+        switch (err) {
+            case EterBase::InventoryError::None: return Client::Core::InventoryError::None;
+            case EterBase::InventoryError::SlotOutOfRange: return Client::Core::InventoryError::SlotOutOfBounds;
+            case EterBase::InventoryError::SlotOccupied: return Client::Core::InventoryError::SlotOccupied;
+            case EterBase::InventoryError::SlotEmpty: return Client::Core::InventoryError::SlotEmpty;
+            case EterBase::InventoryError::ItemLocked: return Client::Core::InventoryError::ItemLocked;
+            case EterBase::InventoryError::InsufficientCount: return Client::Core::InventoryError::InsufficientCount;
+            case EterBase::InventoryError::InvalidVnum: return Client::Core::InventoryError::InvalidVnum;
+            default: return Client::Core::InventoryError::None;
+        }
+    }
+}
+
+Client::Core::Result<void, Client::Core::InventoryError> InventoryDomain::AddItem(InventoryWindow windowType, EterBase::ItemSlot slot, const ItemData& item)
+{
+    return SetItemResult(windowType, slot, item);
+}
+
+Client::Core::Result<void, Client::Core::InventoryError> InventoryDomain::AddItem(InventoryWindow windowType, const ItemData& item)
+{
+    if (item.vnum.get() == 0) {
+        return std::unexpected(Client::Core::InventoryError::InvalidVnum);
+    }
+    int32_t freeSlot = FindEmptyCell(windowType, item.size);
+    if (freeSlot < 0) {
+        return std::unexpected(Client::Core::InventoryError::SlotOutOfBounds);
+    }
+    return SetItemResult(windowType, EterBase::ItemSlot(static_cast<uint16_t>(freeSlot)), item);
+}
+
+Client::Core::Result<void, Client::Core::InventoryError> InventoryDomain::AddItem(const ItemData& item)
+{
+    return AddItem(InventoryWindow::Inventory, item);
+}
+
+Client::Core::Result<void, Client::Core::InventoryError> InventoryDomain::AddItem(uint16_t slot, const ItemData& item)
+{
+    return SetItemResult(InventoryWindow::Inventory, EterBase::ItemSlot(slot), item);
+}
+
+Client::Core::Result<void, Client::Core::InventoryError> InventoryDomain::RemoveItem(uint16_t slot)
+{
+    return RemoveItemResult(InventoryWindow::Inventory, EterBase::ItemSlot(slot));
+}
+
+Client::Core::Result<void, Client::Core::InventoryError> InventoryDomain::RemoveItem(InventoryWindow windowType, uint16_t slot)
+{
+    return RemoveItemResult(windowType, EterBase::ItemSlot(slot));
+}
+
+Client::Core::Result<void, Client::Core::InventoryError> InventoryDomain::RemoveItemResult(EterBase::ItemSlot slot)
+{
+    return RemoveItemResult(InventoryWindow::Inventory, slot);
+}
+
+Client::Core::Result<void, Client::Core::InventoryError> InventoryDomain::RemoveItemResult(uint16_t slot)
+{
+    return RemoveItemResult(InventoryWindow::Inventory, EterBase::ItemSlot(slot));
+}
+
+Client::Core::Result<void, Client::Core::InventoryError> InventoryDomain::SetItemResult(InventoryWindow windowType, EterBase::ItemSlot slot, const ItemData& item)
+{
+    auto res = SetItem(windowType, slot, item);
+    if (!res) {
+        return std::unexpected(MapToDomainError(res.error()));
+    }
+    return {};
+}
+
+Client::Core::Result<void, Client::Core::InventoryError> InventoryDomain::RemoveItemResult(InventoryWindow windowType, EterBase::ItemSlot slot)
+{
+    auto res = RemoveItem(windowType, slot);
+    if (!res) {
+        return std::unexpected(MapToDomainError(res.error()));
+    }
+    return {};
+}
+
+Client::Core::Result<void, Client::Core::InventoryError> InventoryDomain::SwapItemResult(InventoryWindow windowType, EterBase::ItemSlot srcSlot, InventoryWindow dstWindowType, EterBase::ItemSlot dstSlot)
+{
+    auto res = SwapItem(windowType, srcSlot, dstWindowType, dstSlot);
+    if (!res) {
+        return std::unexpected(MapToDomainError(res.error()));
+    }
+    return {};
+}
+
+Client::Core::Result<void, Client::Core::InventoryError> InventoryDomain::SplitItemResult(InventoryWindow windowType, EterBase::ItemSlot srcSlot, EterBase::ItemSlot dstSlot, uint32_t splitCount)
+{
+    auto res = SplitItem(windowType, srcSlot, dstSlot, splitCount);
+    if (!res) {
+        return std::unexpected(MapToDomainError(res.error()));
+    }
+    return {};
+}
+
+Client::Core::Result<ItemData, Client::Core::InventoryError> InventoryDomain::GetItemResult(InventoryWindow windowType, EterBase::ItemSlot slot) const
+{
+    auto res = GetItem(windowType, slot);
+    if (!res) {
+        return std::unexpected(MapToDomainError(res.error()));
+    }
+    return res.value();
 }
 
 } // namespace Client::Gameplay

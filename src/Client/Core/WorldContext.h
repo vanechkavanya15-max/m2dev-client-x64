@@ -3,7 +3,19 @@
 #include <cstdint>
 #include <vector>
 #include <array>
+#include <string>
+#include <optional>
+#include <shared_mutex>
+#include <mutex>
+#include <chrono>
+
 #include "StrongTypes.h"
+#include "../Gameplay/InventoryDomain.h"
+#include "../Gameplay/PlayerStatsDomain.h"
+#include "../Gameplay/SkillDomain.h"
+#include "../Gameplay/QuickslotDomain.h"
+#include "../World/ActorRegistry.h"
+#include "../World/SpatialHashGrid.h"
 
 namespace Client::Core {
 
@@ -15,7 +27,34 @@ struct WorldEntity {
     bool isHostile{false};
 };
 
+/**
+ * @brief Centralny kontekst swiata gry i stanu gracza (WorldContext) C++23.
+ * 
+ * Zapewnia Dependency Injection dla glownych domen:
+ * - Client::Gameplay::InventoryDomain inventory
+ * - Client::Gameplay::PlayerStatsDomain stats
+ * - Client::Gameplay::SkillDomain skills
+ * - Client::Gameplay::QuickslotDomain quickslot
+ * - Client::World::ActorRegistry actors
+ * - Client::World::SpatialHashGrid spatialGrid
+ * 
+ * Oferuje pelne wsparcie dla wielowatkowosci (std::shared_mutex) oraz
+ * koordynacje logiki biznesowej i przestrzennej pomiedzy podsystemami.
+ */
 struct WorldContext {
+    // ========================================================================
+    // Instancje glownych domen C++23 (Dependency Injection)
+    // ========================================================================
+    Client::Gameplay::InventoryDomain inventory;
+    Client::Gameplay::PlayerStatsDomain stats;
+    Client::Gameplay::SkillDomain skills;
+    Client::Gameplay::QuickslotDomain quickslot;
+    Client::World::ActorRegistry actors;
+    Client::World::SpatialHashGrid spatialGrid;
+
+    // ========================================================================
+    // Stan bazowy postaci i swiata gry
+    // ========================================================================
     uint32_t currentHp{0};
     uint32_t maxHp{0};
     uint32_t currentSp{0};
@@ -27,7 +66,7 @@ struct WorldContext {
     uint32_t currentMapIndex{0};
     uint32_t currentChannel{1};
     bool isDead{false};
-    
+
     EntityVid localPlayerVid{0};
     MapCoords localPlayerCoords;
     float localPlayerRotation{0.0f};
@@ -35,71 +74,77 @@ struct WorldContext {
     float posY{0.0f};
     float posZ{0.0f};
 
-    struct InventoryItem {
-        uint16_t slot{0};
-        uint32_t vnum{0};
-        uint32_t count{0};
-    };
-    std::vector<InventoryItem> inventory;
-
     std::vector<WorldEntity> entities;
-
     std::array<int64_t, 255> points{};
 
-    [[nodiscard]] int64_t GetPoint(uint32_t pointType) const noexcept {
-        if (pointType >= points.size()) return 0;
-        return points[pointType];
-    }
+    mutable std::shared_mutex m_contextMutex;
 
-    void SetPoint(uint32_t pointType, int64_t value) noexcept {
-        if (pointType >= points.size()) return;
-        points[pointType] = value;
-        switch (pointType) {
-            case 5:  // POINT_HP
-                currentHp = static_cast<uint32_t>(value);
-                break;
-            case 6:  // POINT_MAX_HP
-                maxHp = static_cast<uint32_t>(value);
-                break;
-            case 7:  // POINT_SP
-                currentSp = static_cast<uint32_t>(value);
-                break;
-            case 8:  // POINT_MAX_SP
-                maxSp = static_cast<uint32_t>(value);
-                break;
-            case 3:  // POINT_EXP
-                currentExp = static_cast<uint64_t>(value);
-                break;
-            case 11: // POINT_GOLD
-                currentGold = value;
-                break;
-            default:
-                break;
-        }
-    }
+    // ========================================================================
+    // Konstruktory i zarzadzanie pamiecia
+    // ========================================================================
+    WorldContext();
+    ~WorldContext() = default;
 
-    void Reset() noexcept {
-        currentHp = 0;
-        maxHp = 0;
-        currentSp = 0;
-        maxSp = 0;
-        currentExp = 0;
-        currentGold = 0;
-        currentCheque = 0;
-        currentGaya = 0;
-        currentMapIndex = 0;
-        currentChannel = 1;
-        isDead = false;
-        localPlayerVid = EntityVid{0};
-        localPlayerCoords = MapCoords{};
-        localPlayerRotation = 0.0f;
-        posX = 0.0f;
-        posY = 0.0f;
-        posZ = 0.0f;
-        inventory.clear();
-        entities.clear();
-        points.fill(0);
+    WorldContext(const WorldContext&) = delete;
+    WorldContext& operator=(const WorldContext&) = delete;
+    WorldContext(WorldContext&&) = delete;
+    WorldContext& operator=(WorldContext&&) = delete;
+
+    // ========================================================================
+    // Reset stanu calego kontekstu
+    // ========================================================================
+    void Reset() noexcept;
+
+    // ========================================================================
+    // Punkty i statystyki postaci (wielowatkowa synchronizacja ze stats)
+    // ========================================================================
+    [[nodiscard]] int64_t GetPoint(uint32_t pointType) const noexcept;
+    void SetPoint(uint32_t pointType, int64_t value) noexcept;
+
+    void SetPlayerHp(uint32_t hp, std::optional<uint32_t> maxHpVal = std::nullopt) noexcept;
+    void SetPlayerSp(uint32_t sp, std::optional<uint32_t> maxSpVal = std::nullopt) noexcept;
+    void SetPlayerDead(bool dead) noexcept;
+    [[nodiscard]] bool IsAlive() const noexcept;
+
+    // ========================================================================
+    // Koordynacja lokalnego gracza i poruszania
+    // ========================================================================
+    void SetLocalPlayer(EntityVid vid, float x, float y, float z, float rotation, const std::string& name = "");
+    void SetLocalPlayer(EterBase::EntityId vid, float x, float y, float z, float rotation, const std::string& name = "") {
+        SetLocalPlayer(EntityVid{vid.get()}, x, y, z, rotation, name);
     }
+    void UpdatePlayerPosition(float x, float y, float z, float rotation) noexcept;
+
+    // ========================================================================
+    // Koordynacja aktorow i siatki przestrzennej (SpatialHashGrid + ActorRegistry)
+    // ========================================================================
+    bool RegisterActor(const Client::World::ActorRecord& record);
+    bool UnregisterActor(EntityVid vid);
+    bool UnregisterActor(EterBase::EntityId vid) {
+        return UnregisterActor(EntityVid{vid.get()});
+    }
+    bool UpdateActorPosition(EntityVid vid, float x, float y, float z, float rotation);
+    bool UpdateActorPosition(EterBase::EntityId vid, float x, float y, float z, float rotation) {
+        return UpdateActorPosition(EntityVid{vid.get()}, x, y, z, rotation);
+    }
+    [[nodiscard]] std::vector<Client::World::ActorRecord> FindActorsInRadius(float x, float y, float radius) const;
+    [[nodiscard]] std::vector<Client::World::ActorRecord> FindNearbyActors(float radius) const;
+    [[nodiscard]] std::optional<Client::World::ActorRecord> FindNearestActor(float maxRadius, bool excludeSelf = true) const;
+
+    // ========================================================================
+    // Koordynacja umiejetnosci i many (SkillDomain + PlayerStatsDomain)
+    // ========================================================================
+    [[nodiscard]] bool CanUseSkill(uint32_t skillId) const;
+    bool UseSkill(uint32_t skillId, std::chrono::milliseconds cooldownDuration);
+    bool UseSkillMs(uint32_t skillId, uint32_t cooldownMs);
+
+    // ========================================================================
+    // Koordynacja paska szybkiego dostepu i ekwipunku
+    // ========================================================================
+    bool BindQuickslotSkill(uint32_t quickslotIndex, uint32_t skillId);
+    bool BindQuickslotItem(uint32_t quickslotIndex, uint16_t inventorySlot);
+
+    [[nodiscard]] std::shared_mutex& GetMutex() const noexcept { return m_contextMutex; }
 };
 
 } // namespace Client::Core

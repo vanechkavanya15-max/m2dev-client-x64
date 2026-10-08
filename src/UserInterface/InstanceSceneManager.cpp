@@ -37,10 +37,10 @@ void InstanceSceneManager::AddAliveInstance(CInstanceBase* pkInst)
     if (!pkInst)
         return;
 
-    auto it = std::find(m_kVct_pkInstAlive.begin(), m_kVct_pkInstAlive.end(), pkInst);
-    if (it == m_kVct_pkInstAlive.end())
+    auto it = std::find(m_aliveInstances.begin(), m_aliveInstances.end(), pkInst);
+    if (it == m_aliveInstances.end())
     {
-        m_kVct_pkInstAlive.push_back(pkInst);
+        m_aliveInstances.push_back(pkInst);
     }
 }
 
@@ -49,10 +49,10 @@ void InstanceSceneManager::RemoveAliveInstance(CInstanceBase* pkInst)
     if (!pkInst)
         return;
 
-    auto it = std::find(m_kVct_pkInstAlive.begin(), m_kVct_pkInstAlive.end(), pkInst);
-    if (it != m_kVct_pkInstAlive.end())
+    auto it = std::find(m_aliveInstances.begin(), m_aliveInstances.end(), pkInst);
+    if (it != m_aliveInstances.end())
     {
-        m_kVct_pkInstAlive.erase(it);
+        m_aliveInstances.erase(it);
     }
 }
 
@@ -61,7 +61,7 @@ void InstanceSceneManager::AddDeadInstance(CInstanceBase* pkInst)
     if (!pkInst)
         return;
 
-    m_kVct_pkInstDead.push_back(pkInst);
+    m_deadInstances.push_back(pkInst);
 }
 
 void InstanceSceneManager::RemoveDeadInstance(CInstanceBase* pkInst)
@@ -69,10 +69,10 @@ void InstanceSceneManager::RemoveDeadInstance(CInstanceBase* pkInst)
     if (!pkInst)
         return;
 
-    auto it = std::find(m_kVct_pkInstDead.begin(), m_kVct_pkInstDead.end(), pkInst);
-    if (it != m_kVct_pkInstDead.end())
+    auto it = std::find(m_deadInstances.begin(), m_deadInstances.end(), pkInst);
+    if (it != m_deadInstances.end())
     {
-        m_kVct_pkInstDead.erase(it);
+        m_deadInstances.erase(it);
     }
 }
 
@@ -93,31 +93,31 @@ void InstanceSceneManager::Clear()
 
 void InstanceSceneManager::ClearAlive()
 {
-    m_kVct_pkInstAlive.clear();
+    m_aliveInstances.clear();
 }
 
 void InstanceSceneManager::ClearDead()
 {
-    for (auto* pkInst : m_kVct_pkInstDead)
+    for (auto* pkInst : m_deadInstances)
     {
         if (pkInst)
         {
             CInstanceBase::Delete(pkInst);
         }
     }
-    m_kVct_pkInstDead.clear();
+    m_deadInstances.clear();
 }
 
 void InstanceSceneManager::SortAliveInstances(const D3DXVECTOR3& cameraEye)
 {
     LessCharacterInstancePtrRenderOrder sortFunc{ cameraEye };
-    std::sort(m_kVct_pkInstAlive.begin(), m_kVct_pkInstAlive.end(), sortFunc);
+    std::sort(m_aliveInstances.begin(), m_aliveInstances.end(), sortFunc);
 }
 
 void InstanceSceneManager::SortDeadInstances(const D3DXVECTOR3& cameraEye)
 {
     LessCharacterInstancePtrRenderOrder sortFunc{ cameraEye };
-    std::sort(m_kVct_pkInstDead.begin(), m_kVct_pkInstDead.end(), sortFunc);
+    std::sort(m_deadInstances.begin(), m_deadInstances.end(), sortFunc);
 }
 
 void InstanceSceneManager::RenderSortedAliveActorList()
@@ -128,7 +128,7 @@ void InstanceSceneManager::RenderSortedAliveActorList()
 
     SortAliveInstances(pCamera->GetEye());
 
-    for (auto* pkInst : m_kVct_pkInstAlive)
+    for (auto* pkInst : m_aliveInstances)
     {
         if (pkInst)
         {
@@ -146,7 +146,7 @@ void InstanceSceneManager::RenderSortedDeadActorList()
 
     SortDeadInstances(pCamera->GetEye());
 
-    for (auto* pkInst : m_kVct_pkInstDead)
+    for (auto* pkInst : m_deadInstances)
     {
         if (pkInst)
         {
@@ -182,7 +182,7 @@ void InstanceSceneManager::RenderShadowMainInstance(CInstanceBase* pkInstMain)
 
 void InstanceSceneManager::RenderShadowAllInstances()
 {
-    for (auto* pkInst : m_kVct_pkInstAlive)
+    for (auto* pkInst : m_aliveInstances)
     {
         if (pkInst)
         {
@@ -193,7 +193,7 @@ void InstanceSceneManager::RenderShadowAllInstances()
 
 void InstanceSceneManager::RenderCollision()
 {
-    for (auto* pkInst : m_kVct_pkInstAlive)
+    for (auto* pkInst : m_aliveInstances)
     {
         if (pkInst)
         {
@@ -204,7 +204,7 @@ void InstanceSceneManager::RenderCollision()
 
 void InstanceSceneManager::Deform()
 {
-    for (auto* pkInst : m_kVct_pkInstAlive)
+    for (auto* pkInst : m_aliveInstances)
     {
         if (pkInst)
         {
@@ -212,7 +212,7 @@ void InstanceSceneManager::Deform()
         }
     }
 
-    for (auto* pkInst : m_kVct_pkInstDead)
+    for (auto* pkInst : m_deadInstances)
     {
         if (pkInst)
         {
@@ -223,7 +223,7 @@ void InstanceSceneManager::Deform()
 
 void InstanceSceneManager::UpdateDeleting()
 {
-    for (auto itor = m_kVct_pkInstDead.begin(); itor != m_kVct_pkInstDead.end(); )
+    for (auto itor = m_deadInstances.begin(); itor != m_deadInstances.end(); )
     {
         CInstanceBase* pInstance = *itor;
 
@@ -237,26 +237,26 @@ void InstanceSceneManager::UpdateDeleting()
             {
                 CInstanceBase::Delete(pInstance);
             }
-            itor = m_kVct_pkInstDead.erase(itor);
+            itor = m_deadInstances.erase(itor);
         }
     }
 }
 
-bool InstanceSceneManager::IsDead(DWORD dwVID) const
+bool InstanceSceneManager::IsDead(DWORD vid) const
 {
-    for (CInstanceBase* pkInst : m_kVct_pkInstDead)
+    for (CInstanceBase* pkInst : m_deadInstances)
     {
-        if (pkInst && pkInst->GetVirtualID() == dwVID)
+        if (pkInst && pkInst->GetVirtualID() == vid)
             return true;
     }
     return false;
 }
 
-bool InstanceSceneManager::IsAlive(DWORD dwVID) const
+bool InstanceSceneManager::IsAlive(DWORD vid) const
 {
-    for (CInstanceBase* pkInst : m_kVct_pkInstAlive)
+    for (CInstanceBase* pkInst : m_aliveInstances)
     {
-        if (pkInst && pkInst->GetVirtualID() == dwVID)
+        if (pkInst && pkInst->GetVirtualID() == vid)
             return true;
     }
     return false;

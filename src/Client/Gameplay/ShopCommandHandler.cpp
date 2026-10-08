@@ -44,7 +44,7 @@ Client::Core::Result<void, Client::Core::CommandError> ShopCommandHandler::Handl
         // For simplicity and since we don't have TPacketCGShop structure here, we mock the send.
         // The packet usually takes an opcode (CG::SHOP), subheader (ShopSub::CG::BUY), etc.
         // We just send an empty payload to fulfill the INetworkPort contract.
-        m_networkPort->SendRaw(0x32, std::span<const uint8_t>()); // 0x32 = 50 = HEADER_CG_SHOP
+        (void)m_networkPort->SendRaw(0x32, std::span<const uint8_t>()); // 0x32 = 50 = HEADER_CG_SHOP
         EterBase::ModernLogger::Info("HandleBuy: Sent Buy command for slot {} count {}", cmd.shopSlot, cmd.count);
     }
 
@@ -63,7 +63,7 @@ Client::Core::Result<void, Client::Core::CommandError> ShopCommandHandler::Handl
     }
 
     if (m_networkPort && m_networkPort->IsConnected()) {
-        m_networkPort->SendRaw(0x32, std::span<const uint8_t>());
+        (void)m_networkPort->SendRaw(0x32, std::span<const uint8_t>());
         EterBase::ModernLogger::Info("HandleSell: Sent Sell command for inv slot {} count {}", cmd.inventorySlot.get(), cmd.count);
     }
 

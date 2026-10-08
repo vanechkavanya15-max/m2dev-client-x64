@@ -16,8 +16,8 @@ public:
 
     GameSession(const GameSession&) = delete;
     GameSession& operator=(const GameSession&) = delete;
-    GameSession(GameSession&&) noexcept = default;
-    GameSession& operator=(GameSession&&) noexcept = default;
+    GameSession(GameSession&&) = delete;
+    GameSession& operator=(GameSession&&) = delete;
 
     [[nodiscard]] WorldContext& GetWorldContext() noexcept { return m_worldContext; }
     [[nodiscard]] const WorldContext& GetWorldContext() const noexcept { return m_worldContext; }

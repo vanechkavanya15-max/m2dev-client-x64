@@ -11,12 +11,37 @@ namespace Client::Core {
 template <typename Tag, typename Underlying, auto DefaultVal>
 class StrongType {
 public:
+    using UnderlyingType = Underlying;
+
     constexpr StrongType() noexcept : value_{DefaultVal} {}
     constexpr explicit StrongType(Underlying value) noexcept : value_{std::move(value)} {}
+
+    template <typename Other>
+        requires (requires(const Other& o) { { o.value() } -> std::convertible_to<Underlying>; } && !std::same_as<Other, StrongType>)
+    constexpr explicit StrongType(const Other& other) noexcept : value_(static_cast<Underlying>(other.value())) {}
     
     constexpr Underlying get() const noexcept { return value_; }
+    constexpr Underlying value() const noexcept { return value_; }
+    constexpr Underlying Value() const noexcept { return value_; }
+    constexpr Underlying Get() const noexcept { return value_; }
     
     constexpr auto operator<=>(const StrongType&) const = default;
+    constexpr bool operator==(const StrongType&) const = default;
+
+    constexpr bool operator==(Underlying val) const noexcept { return value_ == val; }
+    constexpr auto operator<=>(Underlying val) const noexcept { return value_ <=> val; }
+
+    template <typename Other>
+        requires (requires(const Other& o) { { o.value() } -> std::equality_comparable_with<Underlying>; } && !std::same_as<Other, StrongType>)
+    constexpr bool operator==(const Other& other) const noexcept { return value_ == other.value(); }
+
+    [[nodiscard]] constexpr explicit operator Underlying() const noexcept { return value_; }
+    [[nodiscard]] constexpr explicit operator bool() const noexcept { return value_ != DefaultVal; }
+
+    constexpr StrongType& operator=(Underlying val) noexcept {
+        value_ = val;
+        return *this;
+    }
     
 private:
     Underlying value_;
@@ -31,14 +56,20 @@ using RaceVnum = StrongType<RaceVnumTag, uint32_t, 0>;
 struct ItemVnumTag {};
 using ItemVnum = StrongType<ItemVnumTag, uint32_t, 0>;
 
-struct SkillIdTag {};
-using SkillId = StrongType<SkillIdTag, uint32_t, 0>;
+struct SkillIndexTag {};
+using SkillIndex = StrongType<SkillIndexTag, uint32_t, 0>;
+using SkillId = SkillIndex;
 
 struct GuildIdTag {};
 using GuildId = StrongType<GuildIdTag, uint32_t, 0>;
 
-struct ItemSlotTag {};
-using ItemSlot = StrongType<ItemSlotTag, uint16_t, 0xFFFF>;
+struct SlotIndexTag {};
+using SlotIndex = StrongType<SlotIndexTag, uint16_t, 0xFFFF>;
+using ItemSlot = SlotIndex;
+
+struct Money64Tag {};
+using Money64 = StrongType<Money64Tag, int64_t, 0>;
+using Gold = Money64;
 
 struct MapCoords {
     float x = 0.0f;

@@ -61,5 +61,22 @@ class IAbstractPlayer : public TAbstractSingleton<IAbstractPlayer>
 		virtual void	EndEmotionProcess() = 0;
 
 		virtual CInstanceBase* NEW_GetMainActorPtr() = 0;
+
+		virtual void	SetStatus(DWORD dwType, long lValue) { SetStatus64(dwType, lValue); }
+		virtual void	SetName(const char * name) {}
+		virtual void	Clear() {}
+		virtual void	LinkPartyMember(DWORD dwPID, DWORD dwVID) {}
+		virtual void	UnlinkPartyMember(DWORD dwPID) {}
+		virtual void	AppendPartyMember(DWORD dwPID, const char * c_szName) {}
+		virtual void	ExitParty() {}
+		virtual void	NEW_ClearSkillData(bool bAll = false) {}
+		virtual void	NotifyDeadMainCharacter() {}
+		virtual void	OpenPrivateShop() {}
+		virtual void	ClosePrivateShop() {}
+		virtual bool	GetSkillSlotIndex(DWORD dwSkillIndex, DWORD* pdwSlotIndex) { return false; }
+		virtual void	SetSkill(DWORD dwSlotIndex, DWORD dwSkillIndex) {}
+		virtual void	SetSkillLevel_(DWORD dwSkillIndex, DWORD dwSkillGrade, DWORD dwSkillLevel) {}
+		virtual void	EndSkillCoolTime(DWORD dwSkillIndex) {}
+		virtual void	SetDungeonDestinationPosition(int ix, int iy) {}
 };
 

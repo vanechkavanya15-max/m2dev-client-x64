@@ -23,16 +23,6 @@ namespace Client::Core {
     }
 }
 
-[[nodiscard]] std::string_view to_string(InventoryError error) noexcept {
-    switch (error) {
-        case InventoryError::SlotEmpty: return "InventoryError::SlotEmpty - The target slot contains no item";
-        case InventoryError::SlotOccupied: return "InventoryError::SlotOccupied - The target slot is already occupied";
-        case InventoryError::InvalidVnum: return "InventoryError::InvalidVnum - The item VNUM is invalid";
-        case InventoryError::InsufficientCount: return "InventoryError::InsufficientCount - Not enough item count to perform operation";
-        default: return "InventoryError::Unknown";
-    }
-}
-
 [[nodiscard]] std::string_view to_string(MountError error) noexcept {
     switch (error) {
         case MountError::NoHorseInstance: return "MountError::NoHorseInstance - The current character is not riding a horse/mount";

@@ -14,11 +14,11 @@ Core::Result<uint8_t, Core::CommandError> CombatSequenceGuard::ProcessAttackSequ
     }
 
     m_lastAttackTime = now;
-    m_dwSeq++;
+    m_sequence++;
 
-    // BCRC wyliczane jako reszta z dzielenia przez 256 (bajt)
-    uint8_t bCRC = static_cast<uint8_t>(m_dwSeq % 256);
-    return bCRC;
+    // CRC wyliczane jako reszta z dzielenia przez 256 (bajt)
+    uint8_t crc = static_cast<uint8_t>(m_sequence % 256);
+    return crc;
 }
 
 } // namespace Client::Gameplay

@@ -32,7 +32,7 @@ EterBase::PacketResult<void> ItemSetModernHandler::Handle(CPythonNetworkStream& 
         return true;
     };
 
-    updatePlayerState().and_then([&](bool /*success*/) -> std::optional<bool> {
+    (void)updatePlayerState().and_then([&](bool /*success*/) -> std::optional<bool> {
         ItemSetModernEvent event(
             packet.pos.window_type,
             EterBase::ItemSlot(static_cast<uint16_t>(packet.pos.cell)),

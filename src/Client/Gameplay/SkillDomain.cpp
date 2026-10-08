@@ -1,4 +1,6 @@
 #include "SkillDomain.h"
+#include "Core/EventBus.h"
+#include "UserInterface/Core/EventBus.h"
 #include <algorithm>
 #include <mutex>
 
@@ -148,13 +150,17 @@ namespace Client::Gameplay {
     }
 
     void SkillDomain::StartCooldown(SkillId skillId, std::chrono::milliseconds duration) {
-        std::unique_lock lock(m_mutex);
-        auto it = m_skills.find(skillId);
-        if (it != m_skills.end()) {
-            it->second.isCoolingDown = true;
-            it->second.cooldownEndTime = std::chrono::steady_clock::now() + duration;
+        {
+            std::unique_lock lock(m_mutex);
+            auto it = m_skills.find(skillId);
+            if (it != m_skills.end()) {
+                it->second.isCoolingDown = true;
+                it->second.cooldownEndTime = std::chrono::steady_clock::now() + duration;
+            }
+            m_cooldownTracker.StartCooldown(skillId, duration);
         }
-        m_cooldownTracker.StartCooldown(skillId, duration);
+        ::Client::Core::SkillCooldownStartedEvent ev(skillId, static_cast<uint32_t>(duration.count()));
+        ::UserInterface::Core::EventBus::GetInstance().Publish(ev);
     }
 
     void SkillDomain::StartCooldown(SkillId skillId, uint32_t durationMs) {
@@ -224,6 +230,12 @@ namespace Client::Gameplay {
             state.isCoolingDown = false;
             state.cooldownEndTime = now;
         }
+        m_cooldownTracker.ResetAll();
+    }
+
+    void SkillDomain::Clear() noexcept {
+        std::unique_lock lock(m_mutex);
+        m_skills.clear();
         m_cooldownTracker.ResetAll();
     }
 
@@ -298,4 +310,82 @@ namespace Client::Gameplay {
         return nullptr;
     }
 
+    Client::Core::Result<void, Client::Core::SkillError> SkillDomain::CanCast(SkillId skillId, std::optional<uint32_t> currentSP) const {
+        if (!HasSkill(skillId)) {
+            return std::unexpected(Client::Core::SkillError::SkillNotFound);
+        }
+        if (!IsSkillReady(skillId)) {
+            return std::unexpected(Client::Core::SkillError::OnCooldown);
+        }
+        if (currentSP.has_value()) {
+            uint32_t spCost = CalculateSPCost(skillId);
+            if (*currentSP < spCost) {
+                return std::unexpected(Client::Core::SkillError::NotEnoughSP);
+            }
+        }
+        return {};
+    }
+
+    Client::Core::Result<void, Client::Core::SkillError> SkillDomain::CanCast(SkillId skillId, uint32_t currentSP) const {
+        return CanCast(skillId, std::optional<uint32_t>{currentSP});
+    }
+
+    Client::Core::Result<void, Client::Core::SkillError> SkillDomain::CanUseSkill(SkillId skillId, uint32_t currentSP) const {
+        return CanCast(skillId, currentSP);
+    }
+
+    Client::Core::Result<void, Client::Core::SkillError> SkillDomain::UseSkill(SkillId skillId, uint32_t currentSP, uint32_t cooldownMs) {
+        auto check = CanUseSkill(skillId, currentSP);
+        if (!check) {
+            return check;
+        }
+
+        const auto* data = GetSkillData(skillId);
+        if (data && data->type == SkillType::Toggle) {
+            ToggleSkill(skillId, !IsSkillToggledOn(skillId));
+        }
+
+        if (cooldownMs > 0) {
+            StartCooldown(skillId, cooldownMs);
+        }
+
+        return {};
+    }
+
+    Client::Core::Result<void, Client::Core::SkillError> SkillDomain::StartCooldownResult(SkillId skillId, uint32_t durationMs) {
+        if (!HasSkill(skillId)) {
+            return std::unexpected(Client::Core::SkillError::SkillNotFound);
+        }
+        StartCooldown(skillId, durationMs);
+        return {};
+    }
+
+    Client::Core::Result<uint32_t, Client::Core::SkillError> SkillDomain::CalculateSPCostResult(SkillId skillId) const {
+        if (!HasSkill(skillId)) {
+            return std::unexpected(Client::Core::SkillError::SkillNotFound);
+        }
+        return CalculateSPCost(skillId);
+    }
+
+    Client::Core::Result<void, Client::Core::SkillError> SkillDomain::SetSkillLevelResult(SkillId skillId, SkillLevel level) {
+        if (!HasSkill(skillId)) {
+            return std::unexpected(Client::Core::SkillError::SkillNotFound);
+        }
+        SetSkillLevel(skillId, level);
+        return {};
+    }
+
+    Client::Core::Result<void, Client::Core::SkillError> SkillDomain::ToggleSkillResult(SkillId skillId, bool state) {
+        if (!HasSkill(skillId)) {
+            return std::unexpected(Client::Core::SkillError::SkillNotFound);
+        }
+        const auto* data = GetSkillData(skillId);
+        if (!data || data->type != SkillType::Toggle) {
+            return std::unexpected(Client::Core::SkillError::RequirementNotMet);
+        }
+        ToggleSkill(skillId, state);
+        return {};
+    }
+
 } // namespace Client::Gameplay
+
