@@ -230,6 +230,23 @@ target_link_libraries(test_c26_domain_errors_events PRIVATE
     EterBase
 )
 
+add_executable(test_c26_instance_components 
+    test_c26_instance_components.cpp
+    ${CMAKE_SOURCE_DIR}/src/UserInterface/InstanceComponents/InstanceCombatComponent.cpp
+    ${CMAKE_SOURCE_DIR}/src/UserInterface/AffectFlagContainer.cpp
+)
+target_include_directories(test_c26_instance_components PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/Client
+    ${CMAKE_SOURCE_DIR}/src/UserInterface
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}
+)
+target_link_libraries(test_c26_instance_components PRIVATE
+    Client2026
+    EterBase
+)
+
 enable_testing()
 add_test(NAME StranglerFacadeTest COMMAND test_c26_strangler_facade)
 add_test(NAME PandoraSimulationTest COMMAND test_c26_e2e_pandora_simulation)
@@ -248,4 +265,6 @@ add_test(NAME ZeroCopyRingBufferTest COMMAND test_c26_zero_copy_ring_buffer)
 add_test(NAME SimdCullingTest COMMAND test_c26_simd_culling)
 add_test(NAME WorldContextTest COMMAND test_c26_world_context)
 add_test(NAME DomainErrorsEventsTest COMMAND test_c26_domain_errors_events)
+add_test(NAME InstanceComponentsTest COMMAND test_c26_instance_components)
+
 
