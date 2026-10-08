@@ -1723,6 +1723,7 @@ typedef struct packet_set_item
 	int32_t					alSockets[ITEM_SOCKET_SLOT_MAX_NUM];
     TPlayerItemAttribute	aAttr[ITEM_ATTRIBUTE_SLOT_MAX_NUM];
 } TPacketGCItemSet;
+static_assert(sizeof(TPacketGCItemSet) == 54, "TPacketGCItemSet must be 54 bytes on x64");
 
 typedef struct packet_item_get
 {
@@ -2253,6 +2254,7 @@ typedef struct SPacketGCTime
     uint16_t	length;
     time_t      time;
 } TPacketGCTime;
+static_assert(sizeof(TPacketGCTime) == 12, "TPacketGCTime must be 12 bytes on x64");
 
 enum
 {
