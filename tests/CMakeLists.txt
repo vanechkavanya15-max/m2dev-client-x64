@@ -107,6 +107,28 @@ target_link_libraries(test_c26_render_target_mgr PRIVATE
     EterBase
 )
 
+add_executable(test_c26_skill_cooldown test_c26_skill_cooldown.cpp)
+target_include_directories(test_c26_skill_cooldown PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/Client
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+target_link_libraries(test_c26_skill_cooldown PRIVATE
+    Client2026
+    EterBase
+)
+
+add_executable(test_c26_item_bonus test_c26_item_bonus.cpp)
+target_include_directories(test_c26_item_bonus PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/Client
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+target_link_libraries(test_c26_item_bonus PRIVATE
+    Client2026
+    EterBase
+)
+
 enable_testing()
 add_test(NAME StranglerFacadeTest COMMAND test_c26_strangler_facade)
 add_test(NAME PandoraSimulationTest COMMAND test_c26_e2e_pandora_simulation)
@@ -114,4 +136,7 @@ add_test(NAME StateUnificationTest COMMAND test_c26_state_unification)
 add_test(NAME MemPoolTest COMMAND test_c26_mem_pool)
 add_test(NAME RadixSort64Test COMMAND test_c26_radix_sort)
 add_test(NAME RenderTargetMgrTest COMMAND test_c26_render_target_mgr)
+add_test(NAME SkillCooldownTest COMMAND test_c26_skill_cooldown)
+add_test(NAME ItemBonusTest COMMAND test_c26_item_bonus)
+
 

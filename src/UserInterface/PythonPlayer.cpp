@@ -465,6 +465,12 @@ int CPythonPlayer::GetStatus(DWORD dwType)
 		return 0;
 	}
 
+#if defined(_DEBUG)
+	int64_t legacyPoint = m_playerStatus.GetPoint(dwType);
+	int64_t domainPoint = UserInterface::Services::PlayerStatsService::Instance().GetPoint(dwType);
+	assert(legacyPoint == domainPoint && "Shadow Execution: Stan punktow rozjechal sie miedzy legacy a domena!");
+#endif
+
 	return m_playerStatus.GetPoint(dwType);
 }
 
