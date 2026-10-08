@@ -4,6 +4,9 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string>
+#include <string_view>
+#include <format>
+#include <source_location>
 
 #include "Debug.h"
 #include "Singleton.h"
@@ -133,9 +136,6 @@ static const WORD kConsoleTempTraceBg = BACKGROUND_BLUE | BACKGROUND_INTENSITY |
 
 // Buffered log file writer
 // OPTIMIZATION: Buffered writes with periodic flush instead of per-write fflush()
-// - Collects writes in memory buffer
-// - Flushes when buffer is full OR every 500ms OR on shutdown
-// - Reduces disk I/O from 1000s of syncs to ~2 per second
 class CLogFile : public CSingleton<CLogFile>
 {
     public:
@@ -325,155 +325,6 @@ static void EnsurePacketDumpFiles(bool enablePdlog)
 #endif
 // MR-11: -- END OF -- Separate packet dump log from the main log file
 
-static UINT gs_uLevel = 0;
-
-void SetLogLevel(UINT uLevel)
-{
-    gs_uLevel = uLevel;
-}
-
-void Log(UINT uLevel, const char* c_szMsg)
-{
-    if (uLevel >= gs_uLevel)
-        Trace(c_szMsg);
-}
-
-void Logn(UINT uLevel, const char* c_szMsg)
-{
-    if (uLevel >= gs_uLevel)
-        Tracen(c_szMsg);
-}
-
-void Logf(UINT uLevel, const char* c_szFormat, ...)
-{
-    if (uLevel < gs_uLevel)
-        return;
-
-    char szBuf[DEBUG_STRING_MAX_LEN + 1];
-
-    va_list args;
-    va_start(args, c_szFormat);
-    _vsnprintf_s(szBuf, sizeof(szBuf), _TRUNCATE, c_szFormat, args);
-    va_end(args);
-
-#ifdef _DEBUG
-    DBG_OUT_W_UTF8(szBuf);
-    fputs(szBuf, stdout);
-#endif
-
-    if (isLogFile)
-        LogFile(szBuf);
-}
-
-void Lognf(UINT uLevel, const char* c_szFormat, ...)
-{
-    if (uLevel < gs_uLevel)
-        return;
-
-    char szBuf[DEBUG_STRING_MAX_LEN + 2];
-
-    va_list args;
-    va_start(args, c_szFormat);
-    _vsnprintf_s(szBuf, sizeof(szBuf), _TRUNCATE, c_szFormat, args);
-    va_end(args);
-
-    size_t cur = strnlen(szBuf, sizeof(szBuf));
-    if (cur + 1 < sizeof(szBuf)) {
-        szBuf[cur] = '\n';
-        szBuf[cur + 1] = '\0';
-    }
-    else {
-        szBuf[sizeof(szBuf) - 2] = '\n';
-        szBuf[sizeof(szBuf) - 1] = '\0';
-    }
-
-#ifdef _DEBUG
-    DBG_OUT_W_UTF8(szBuf);
-    fputs(szBuf, stdout);
-#endif
-
-    if (isLogFile)
-        LogFile(szBuf);
-}
-
-void Trace(const char* c_szMsg)
-{
-#ifdef _DEBUG
-    DBG_OUT_W_UTF8(c_szMsg);
-    printf("%s", c_szMsg ? c_szMsg : "");
-#endif
-
-    if (isLogFile)
-        LogFile(c_szMsg ? c_szMsg : "");
-}
-
-void Tracen(const char* c_szMsg)
-{
-#ifdef _DEBUG
-    char szBuf[DEBUG_STRING_MAX_LEN + 2];
-    _snprintf_s(szBuf, sizeof(szBuf), _TRUNCATE, "%s\n", c_szMsg ? c_szMsg : "");
-
-    DBG_OUT_W_UTF8(szBuf);
-
-    fputs(szBuf, stdout);
-
-    if (isLogFile)
-        LogFile(szBuf);
-#else
-    if (isLogFile)
-    {
-        LogFile(c_szMsg ? c_szMsg : "");
-        LogFile("\n");
-    }
-#endif
-}
-
-void Tracenf(const char* c_szFormat, ...)
-{
-    char szBuf[DEBUG_STRING_MAX_LEN + 2];
-
-    va_list args;
-    va_start(args, c_szFormat);
-    _vsnprintf_s(szBuf, sizeof(szBuf), _TRUNCATE, c_szFormat, args);
-    va_end(args);
-
-    size_t cur = strnlen(szBuf, sizeof(szBuf));
-    if (cur + 1 < sizeof(szBuf)) {
-        szBuf[cur] = '\n';
-        szBuf[cur + 1] = '\0';
-    }
-    else {
-        szBuf[sizeof(szBuf) - 2] = '\n';
-        szBuf[sizeof(szBuf) - 1] = '\0';
-    }
-
-#ifdef _DEBUG
-    DBG_OUT_W_UTF8(szBuf);
-    fputs(szBuf, stdout);
-#endif
-
-    if (isLogFile)
-        LogFile(szBuf);
-}
-
-void Tracef(const char* c_szFormat, ...)
-{
-    char szBuf[DEBUG_STRING_MAX_LEN + 1];
-
-    va_list args;
-    va_start(args, c_szFormat);
-    _vsnprintf_s(szBuf, sizeof(szBuf), _TRUNCATE, c_szFormat, args);
-    va_end(args);
-
-#ifdef _DEBUG
-    DBG_OUT_W_UTF8(szBuf);
-    fputs(szBuf, stdout);
-#endif
-
-    if (isLogFile)
-        LogFile(szBuf);
-}
-
 // Buffered stderr writer for syserr (same pattern as CLogFile)
 // OPTIMIZATION: Reduces fflush(stderr) from every call to every 500ms
 static struct TSyserrBuffer
@@ -499,7 +350,7 @@ static struct TSyserrBuffer
         memcpy(buffer + pos, msg, len);
         pos += len;
 
-        // DEBUG: Force flush every write to capture crash traces
+        // Force flush every write to capture crash traces
         Flush();
     }
 
@@ -514,7 +365,7 @@ static struct TSyserrBuffer
     }
 } g_syserrBuffer;
 
-// MR-11: Seperate packet dump log from the main log file
+// MR-11: Separate packet dump log from the main log file
 static void WriteSyserrPlain(const char* msg)
 {
     if (!msg)
@@ -527,316 +378,431 @@ static void WriteSyserrPlain(const char* msg)
     g_syserrBuffer.Write(timestamp, strlen(timestamp));
     g_syserrBuffer.Write(msg, strlen(msg));
 }
-// MR-11: -- END OF -- Seperate packet dump log from the main log file
+// MR-11: -- END OF -- Separate packet dump log from the main log file
 
-void TraceError(const char* c_szFormat, ...)
+static UINT gs_uLevel = 0;
+
+void SetLogLevel(UINT uLevel)
 {
-//#ifndef _DISTRIBUTE
-    char szBuf[DEBUG_STRING_MAX_LEN + 2];
+    gs_uLevel = uLevel;
+}
 
-    strncpy_s(szBuf, sizeof(szBuf), "SYSERR: ", _TRUNCATE);
-    int prefixLen = (int)strlen(szBuf);
+UINT GetLogLevel()
+{
+    return gs_uLevel;
+}
 
-    va_list args;
-    va_start(args, c_szFormat);
-    _vsnprintf_s(szBuf + prefixLen, sizeof(szBuf) - prefixLen, _TRUNCATE, c_szFormat, args);
-    va_end(args);
+// ============================================================================
+// SAFE FORMAT HELPER (ZERO BUFFER OVERFLOW, NO TRUNCATION, STACK FAST PATH)
+// ============================================================================
+namespace {
 
-    size_t cur = strnlen(szBuf, sizeof(szBuf));
-    if (cur + 1 < sizeof(szBuf)) {
-        szBuf[cur] = '\n';
-        szBuf[cur + 1] = '\0';
+std::string VFormatHelper(const char* format, va_list args)
+{
+    if (!format)
+        return {};
+
+    char stackBuf[2048];
+    va_list argsCopy;
+    va_copy(argsCopy, args);
+
+    int needed = vsnprintf(stackBuf, sizeof(stackBuf), format, args);
+    if (needed < 0)
+    {
+        va_end(argsCopy);
+        return {};
     }
-    else {
-        szBuf[sizeof(szBuf) - 2] = '\n';
-        szBuf[sizeof(szBuf) - 1] = '\0';
+
+    if (static_cast<size_t>(needed) < sizeof(stackBuf))
+    {
+        va_end(argsCopy);
+        return std::string(stackBuf, static_cast<size_t>(needed));
     }
+
+    // Dynamic buffer allocation for large outputs without truncation
+    std::string result(static_cast<size_t>(needed), '\0');
+    vsnprintf(result.data(), result.size() + 1, format, argsCopy);
+    va_end(argsCopy);
+    return result;
+}
+
+} // anonymous namespace
+
+// ============================================================================
+// CORE RAW LOGGING IMPLEMENTATIONS (std::string_view)
+// ============================================================================
+
+void TraceRaw(std::string_view msg, bool appendNewline)
+{
+    std::string formatted;
+    const char* pText = nullptr;
+
+    if (appendNewline)
+    {
+        if (msg.empty() || msg.back() != '\n')
+        {
+            formatted.reserve(msg.size() + 1);
+            formatted.assign(msg);
+            formatted.push_back('\n');
+            pText = formatted.c_str();
+        }
+        else
+        {
+            formatted.assign(msg);
+            pText = formatted.c_str();
+        }
+    }
+    else
+    {
+        formatted.assign(msg);
+        pText = formatted.c_str();
+    }
+
+#ifdef _DEBUG
+    DBG_OUT_W_UTF8(pText);
+    fputs(pText, stdout);
+#endif
+
+    if (isLogFile)
+        LogFile(pText);
+}
+
+void TraceErrorRaw(std::string_view msg, bool appendNewline)
+{
+    std::string fullMsg;
+    fullMsg.reserve(8 + msg.size() + (appendNewline ? 1 : 0));
+    fullMsg.append("SYSERR: ");
+    fullMsg.append(msg);
+    if (appendNewline && (fullMsg.empty() || fullMsg.back() != '\n'))
+        fullMsg.push_back('\n');
 
     // OPTIMIZED: Use cached timestamp instead of time()/localtime() per call
     g_cachedTimestamp.Update();
     char timestamp[32];
     g_cachedTimestamp.Format(timestamp, sizeof(timestamp));
 
-    // OPTIMIZED: Write to buffered stderr instead of fprintf+fflush per call
+    // Stderr output: timestamp + message without "SYSERR: " prefix (exact Metin2 behavior)
+    std::string_view msgWithoutPrefix = std::string_view(fullMsg).substr(8);
     g_syserrBuffer.Write(timestamp, strlen(timestamp));
-    g_syserrBuffer.Write(szBuf + 8, strlen(szBuf + 8)); // Skip "SYSERR: " prefix for stderr
+    g_syserrBuffer.Write(msgWithoutPrefix.data(), msgWithoutPrefix.size());
     g_syserrBuffer.Flush();
 
 #ifdef _DEBUG
-    DBG_OUT_W_UTF8(szBuf);
-    WriteConsoleColored(szBuf, kConsoleSyserrRed);
+    DBG_OUT_W_UTF8(fullMsg.c_str());
+    WriteConsoleColored(fullMsg.c_str(), kConsoleSyserrRed);
 #endif
 
     if (isLogFile)
-        LogFile(szBuf);
-//#endif
+        LogFile(fullMsg.c_str());
 }
 
-void TraceErrorWithoutEnter(const char* c_szFormat, ...)
+void LogRaw(UINT uLevel, std::string_view msg, bool appendNewline)
 {
-//#ifndef _DISTRIBUTE
-    char szBuf[DEBUG_STRING_MAX_LEN];
-
-    va_list args;
-    va_start(args, c_szFormat);
-    _vsnprintf_s(szBuf, sizeof(szBuf), _TRUNCATE, c_szFormat, args);
-    va_end(args);
-
-    // OPTIMIZED: Use cached timestamp instead of time()/localtime() per call
-    g_cachedTimestamp.Update();
-    char timestamp[32];
-    g_cachedTimestamp.Format(timestamp, sizeof(timestamp));
-
-    // OPTIMIZED: Write to buffered stderr instead of fprintf+fflush per call
-    g_syserrBuffer.Write(timestamp, strlen(timestamp));
-    g_syserrBuffer.Write(szBuf, strlen(szBuf));
-
-#ifdef _DEBUG
-    DBG_OUT_W_UTF8(szBuf);
-    WriteConsoleColored(szBuf, kConsoleSyserrRed);
-#endif
-
-    if (isLogFile)
-        LogFile(szBuf);
-//#endif
-}
-
-// MR-11: Temporary trace functions for debugging (not for regular logging)
-void TempTrace(const char* c_szMsg, bool errType)
-{
-    if (!c_szMsg)
+    if (uLevel < gs_uLevel)
         return;
 
+    TraceRaw(msg, appendNewline);
+}
+
+void TempTraceRaw(std::string_view msg, bool errType, bool appendNewline)
+{
+    std::string formatted;
+    if (appendNewline && (msg.empty() || msg.back() != '\n'))
+    {
+        formatted.reserve(msg.size() + 1);
+        formatted.append(msg);
+        formatted.push_back('\n');
+    }
+    else
+    {
+        formatted.assign(msg);
+    }
+
 #ifdef _DEBUG
-    DBG_OUT_W_UTF8(c_szMsg);
-    WriteConsoleColored(c_szMsg, kConsoleTempTraceBg);
+    DBG_OUT_W_UTF8(formatted.c_str());
+    WriteConsoleColored(formatted.c_str(), kConsoleTempTraceBg);
 #endif
 
     if (errType)
     {
-        WriteSyserrPlain(c_szMsg);
+        WriteSyserrPlain(formatted.c_str());
         return;
     }
 
     if (isLogFile)
-        LogFile(c_szMsg);
+        LogFile(formatted.c_str());
 }
 
-void TempTracef(const char* c_szFormat, bool errType, ...)
-{
-    char szBuf[DEBUG_STRING_MAX_LEN + 1];
-
-    va_list args;
-    va_start(args, errType);
-    _vsnprintf_s(szBuf, sizeof(szBuf), _TRUNCATE, c_szFormat, args);
-    va_end(args);
-
-#ifdef _DEBUG
-    DBG_OUT_W_UTF8(szBuf);
-    WriteConsoleColored(szBuf, kConsoleTempTraceBg);
-#endif
-
-    if (errType)
-    {
-        WriteSyserrPlain(szBuf);
-        return;
-    }
-
-    if (isLogFile)
-        LogFile(szBuf);
-}
-
-void TempTracen(const char* c_szMsg, bool errType)
-{
-    if (!c_szMsg)
-        return;
-
-    char szBuf[DEBUG_STRING_MAX_LEN + 2];
-    _snprintf_s(szBuf, sizeof(szBuf), _TRUNCATE, "%s\n", c_szMsg);
-
-#ifdef _DEBUG
-    DBG_OUT_W_UTF8(szBuf);
-    WriteConsoleColored(szBuf, kConsoleTempTraceBg);
-#endif
-
-    if (errType)
-    {
-        WriteSyserrPlain(szBuf);
-        return;
-    }
-
-    if (isLogFile)
-        LogFile(szBuf);
-}
-
-void TempTracenf(const char* c_szFormat, bool errType, ...)
-{
-    char szBuf[DEBUG_STRING_MAX_LEN + 2];
-
-    va_list args;
-    va_start(args, errType);
-    _vsnprintf_s(szBuf, sizeof(szBuf), _TRUNCATE, c_szFormat, args);
-    va_end(args);
-
-    size_t cur = strnlen(szBuf, sizeof(szBuf));
-    if (cur + 1 < sizeof(szBuf)) {
-        szBuf[cur] = '\n';
-        szBuf[cur + 1] = '\0';
-    }
-    else {
-        szBuf[sizeof(szBuf) - 2] = '\n';
-        szBuf[sizeof(szBuf) - 1] = '\0';
-    }
-
-#ifdef _DEBUG
-    DBG_OUT_W_UTF8(szBuf);
-    WriteConsoleColored(szBuf, kConsoleTempTraceBg);
-#endif
-
-    if (errType)
-    {
-        WriteSyserrPlain(szBuf);
-        return;
-    }
-
-    if (isLogFile)
-        LogFile(szBuf);
-}
-// MR-11: -- END OF -- Temporary trace functions for debugging (not for regular logging)
-
-// MR-11: Seperate packet dump from the rest of the logs
-void PacketDump(const char* c_szMsg)
+void PacketDumpRaw(std::string_view msg)
 {
 #ifdef _PACKETDUMP
-    if (!c_szMsg)
-        return;
-
-    PacketDumpf("%s", c_szMsg);
-#else
-    (void)c_szMsg;
-#endif
-}
-
-void PacketDumpf(const char* c_szFormat, ...)
-{
-#ifdef _PACKETDUMP
-    char szBuf[DEBUG_STRING_MAX_LEN + 2];
-
-    strncpy_s(szBuf, sizeof(szBuf), "PACKET_DUMP: ", _TRUNCATE);
-    int prefixLen = (int)strlen(szBuf);
-
-    va_list args;
-    va_start(args, c_szFormat);
-    _vsnprintf_s(szBuf + prefixLen, sizeof(szBuf) - prefixLen, _TRUNCATE, c_szFormat, args);
-    va_end(args);
-
-    size_t cur = strnlen(szBuf, sizeof(szBuf));
-    if (cur + 1 < sizeof(szBuf)) {
-        szBuf[cur] = '\n';
-        szBuf[cur + 1] = '\0';
-    }
-    else {
-        szBuf[sizeof(szBuf) - 2] = '\n';
-        szBuf[sizeof(szBuf) - 1] = '\0';
-    }
+    std::string fullMsg;
+    fullMsg.reserve(13 + msg.size() + 1);
+    fullMsg.append("PACKET_DUMP: ");
+    fullMsg.append(msg);
+    if (fullMsg.empty() || fullMsg.back() != '\n')
+        fullMsg.push_back('\n');
 
 #ifdef _DEBUG
-    DBG_OUT_W_UTF8(szBuf);
-    WriteConsoleColored(szBuf, kConsolePacketDumpDim);
+    DBG_OUT_W_UTF8(fullMsg.c_str());
+    WriteConsoleColored(fullMsg.c_str(), kConsolePacketDumpDim);
 #endif
 
     EnsurePacketDumpFiles(g_pdlogRequested);
 
     if (g_packetDumpEnabled)
-        g_packetDumpFile.Write(szBuf);
+        g_packetDumpFile.Write(fullMsg.c_str());
     if (g_pdlogEnabled)
-        g_pdlogFile.Write(szBuf);
+        g_pdlogFile.Write(fullMsg.c_str());
 #else
-    (void)c_szFormat;
+    (void)msg;
 #endif
 }
-// MR-11: -- END OF -- Seperate packet dump from the rest of the logs
 
-void LogBoxf(const char* c_szFormat, ...)
-{
-    va_list args;
-    va_start(args, c_szFormat);
-
-    char szBuf[2048];
-    _vsnprintf_s(szBuf, sizeof(szBuf), _TRUNCATE, c_szFormat, args);
-
-    va_end(args);
-
-    LogBox(szBuf);
-}
-
-void LogBox(const char* c_szMsg, const char* c_szCaption, HWND hWnd)
+void LogBoxRaw(std::string_view msg, std::string_view caption, HWND hWnd)
 {
     if (!hWnd)
         hWnd = g_PopupHwnd;
 
-    std::wstring wMsg = Utf8ToWide(c_szMsg ? c_szMsg : "");
-    std::wstring wCaption = Utf8ToWide(c_szCaption ? c_szCaption : "LOG");
+    std::string sMsg(msg);
+    std::string sCaption(caption.empty() ? "LOG" : caption);
+
+    std::wstring wMsg = Utf8ToWide(sMsg.c_str());
+    std::wstring wCaption = Utf8ToWide(sCaption.c_str());
 
     MessageBoxW(hWnd, wMsg.c_str(), wCaption.c_str(), MB_OK);
 
-    // Logging stays UTF-8
-    Tracen(c_szMsg ? c_szMsg : "");
+    Tracen(sMsg.c_str());
+}
+
+void LogFileRaw(std::string_view msg)
+{
+    std::string sMsg(msg);
+    CLogFile::Instance().Write(sMsg.c_str());
+
+#ifdef _PACKETDUMP
+    if (g_pdlogEnabled)
+        g_pdlogFile.Write(sMsg.c_str());
+#endif
+}
+
+// ============================================================================
+// BACKWARD COMPATIBLE C-STYLE LOGGING FUNCTIONS
+// ============================================================================
+
+void Log(UINT uLevel, const char* c_szMsg)
+{
+    if (uLevel >= gs_uLevel)
+        Trace(c_szMsg);
+}
+
+void Logn(UINT uLevel, const char* c_szMsg)
+{
+    if (uLevel >= gs_uLevel)
+        Tracen(c_szMsg);
+}
+
+void Logf(UINT uLevel, const char* c_szFormat, ...)
+{
+    if (uLevel < gs_uLevel || !c_szFormat)
+        return;
+
+    va_list args;
+    va_start(args, c_szFormat);
+    std::string formatted = VFormatHelper(c_szFormat, args);
+    va_end(args);
+
+    TraceRaw(formatted, false);
+}
+
+void Lognf(UINT uLevel, const char* c_szFormat, ...)
+{
+    if (uLevel < gs_uLevel || !c_szFormat)
+        return;
+
+    va_list args;
+    va_start(args, c_szFormat);
+    std::string formatted = VFormatHelper(c_szFormat, args);
+    va_end(args);
+
+    TraceRaw(formatted, true);
+}
+
+void Trace(const char* c_szMsg)
+{
+    TraceRaw(c_szMsg ? c_szMsg : "", false);
+}
+
+void Tracen(const char* c_szMsg)
+{
+    TraceRaw(c_szMsg ? c_szMsg : "", true);
+}
+
+void Tracef(const char* c_szFormat, ...)
+{
+    if (!c_szFormat)
+        return;
+
+    va_list args;
+    va_start(args, c_szFormat);
+    std::string formatted = VFormatHelper(c_szFormat, args);
+    va_end(args);
+
+    TraceRaw(formatted, false);
+}
+
+void Tracenf(const char* c_szFormat, ...)
+{
+    if (!c_szFormat)
+        return;
+
+    va_list args;
+    va_start(args, c_szFormat);
+    std::string formatted = VFormatHelper(c_szFormat, args);
+    va_end(args);
+
+    TraceRaw(formatted, true);
+}
+
+void TraceError(const char* c_szFormat, ...)
+{
+    if (!c_szFormat)
+        return;
+
+    va_list args;
+    va_start(args, c_szFormat);
+    std::string formatted = VFormatHelper(c_szFormat, args);
+    va_end(args);
+
+    TraceErrorRaw(formatted, true);
+}
+
+void TraceErrorWithoutEnter(const char* c_szFormat, ...)
+{
+    if (!c_szFormat)
+        return;
+
+    va_list args;
+    va_start(args, c_szFormat);
+    std::string formatted = VFormatHelper(c_szFormat, args);
+    va_end(args);
+
+    TraceErrorRaw(formatted, false);
+}
+
+void TempTrace(const char* c_szMsg, bool errType)
+{
+    TempTraceRaw(c_szMsg ? c_szMsg : "", errType, false);
+}
+
+void TempTracen(const char* c_szMsg, bool errType)
+{
+    TempTraceRaw(c_szMsg ? c_szMsg : "", errType, true);
+}
+
+void TempTracef(const char* c_szFormat, bool errType, ...)
+{
+    if (!c_szFormat)
+        return;
+
+    va_list args;
+    va_start(args, errType);
+    std::string formatted = VFormatHelper(c_szFormat, args);
+    va_end(args);
+
+    TempTraceRaw(formatted, errType, false);
+}
+
+void TempTracenf(const char* c_szFormat, bool errType, ...)
+{
+    if (!c_szFormat)
+        return;
+
+    va_list args;
+    va_start(args, errType);
+    std::string formatted = VFormatHelper(c_szFormat, args);
+    va_end(args);
+
+    TempTraceRaw(formatted, errType, true);
+}
+
+void PacketDump(const char* c_szMsg)
+{
+    PacketDumpRaw(c_szMsg ? c_szMsg : "");
+}
+
+void PacketDumpf(const char* c_szFormat, ...)
+{
+    if (!c_szFormat)
+        return;
+
+    va_list args;
+    va_start(args, c_szFormat);
+    std::string formatted = VFormatHelper(c_szFormat, args);
+    va_end(args);
+
+    PacketDumpRaw(formatted);
+}
+
+void LogBox(const char* c_szMsg, const char* c_szCaption, HWND hWnd)
+{
+    LogBoxRaw(c_szMsg ? c_szMsg : "", c_szCaption ? c_szCaption : "LOG", hWnd);
+}
+
+void LogBoxf(const char* c_szFormat, ...)
+{
+    if (!c_szFormat)
+        return;
+
+    va_list args;
+    va_start(args, c_szFormat);
+    std::string formatted = VFormatHelper(c_szFormat, args);
+    va_end(args);
+
+    LogBox(formatted.c_str());
 }
 
 void LogFile(const char* c_szMsg)
 {
-    CLogFile::Instance().Write(c_szMsg);
-
-// MR-11: Separate packet dump log from the main log file
-#ifdef _PACKETDUMP
-    if (g_pdlogEnabled)
-        g_pdlogFile.Write(c_szMsg);
-#endif
-// MR-11: -- END OF -- Separate packet dump log from the main log file
+    LogFileRaw(c_szMsg ? c_szMsg : "");
 }
 
 void LogFilef(const char* c_szMessage, ...)
 {
+    if (!c_szMessage)
+        return;
+
     va_list args;
     va_start(args, c_szMessage);
-
-    char szBuf[DEBUG_STRING_MAX_LEN + 1];
-    _vsnprintf_s(szBuf, sizeof(szBuf), _TRUNCATE, c_szMessage, args);
-
+    std::string formatted = VFormatHelper(c_szMessage, args);
     va_end(args);
 
-    CLogFile::Instance().Write(szBuf);
-
-// MR-11: Separate packet dump log from the main log file
-#ifdef _PACKETDUMP
-    if (g_pdlogEnabled)
-        g_pdlogFile.Write(szBuf);
-#endif
-// MR-11: -- END OF -- Separate packet dump log from the main log file
+    LogFileRaw(formatted);
 }
 
-void OpenLogFile(bool bUseLogFIle)
+void SetupLog(void)
+{
+    // SetupLog initialization hook
+}
+
+void OpenLogFile(bool bUseLogFile)
 {
     if (!std::filesystem::exists("log")) {
         std::filesystem::create_directory("log");
     }
 
-//#ifndef _DISTRIBUTE
     _wfreopen(L"log/syserr.txt", L"w", stderr);
 
-    if (bUseLogFIle)
+    if (bUseLogFile)
     {
         isLogFile = true;
         CLogFile::Instance().Initialize();
     }
 
-// MR-11: Separate packet dump log from the main log file
 #ifdef _PACKETDUMP
-    g_pdlogRequested = bUseLogFIle;
+    g_pdlogRequested = bUseLogFile;
     EnsurePacketDumpFiles(g_pdlogRequested);
 #endif
-// MR-11: -- END OF -- Separate packet dump log from the main log file
 }
 
 void CloseLogFile()
@@ -845,14 +811,12 @@ void CloseLogFile()
     g_syserrBuffer.Flush();
     CLogFile::Instance().Flush();
 
-// MR-11: Separate packet dump log from the main log file
 #ifdef _PACKETDUMP
     if (g_packetDumpEnabled)
         g_packetDumpFile.Flush();
     if (g_pdlogEnabled)
         g_pdlogFile.Flush();
 #endif
-// MR-11: -- END OF -- Separate packet dump log from the main log file
 }
 
 void OpenConsoleWindow()
@@ -862,3 +826,59 @@ void OpenConsoleWindow()
     _wfreopen(L"CONOUT$", L"a", stdout);
     _wfreopen(L"CONIN$", L"r", stdin);
 }
+
+void CloseConsoleWindow()
+{
+    FreeConsole();
+}
+
+// ============================================================================
+// MODERN ASSERTION ENGINE (std::source_location, ZERO throw "ffs")
+// ============================================================================
+namespace EterBase {
+
+bool HandleAssertFailure(const char* expr, const std::source_location& loc)
+{
+    std::string report = std::format(
+        "Assertion Failed: ({}) in function '{}', file '{}:{}'",
+        expr ? expr : "<unknown>",
+        loc.function_name(),
+        loc.file_name(),
+        loc.line()
+    );
+
+    TraceErrorRaw(report, true);
+
+#if defined(_DEBUG)
+    if (IsDebuggerPresent())
+    {
+        __debugbreak();
+    }
+#endif
+
+    return false;
+}
+
+bool HandleAssertFailure(const char* expr, const char* file, int line, const char* function)
+{
+    std::string report = std::format(
+        "Assertion Failed: ({}) in function '{}', file '{}:{}'",
+        expr ? expr : "<unknown>",
+        function ? function : "<unknown>",
+        file ? file : "<unknown>",
+        line
+    );
+
+    TraceErrorRaw(report, true);
+
+#if defined(_DEBUG)
+    if (IsDebuggerPresent())
+    {
+        __debugbreak();
+    }
+#endif
+
+    return false;
+}
+
+} // namespace EterBase
