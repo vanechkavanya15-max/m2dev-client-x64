@@ -147,4 +147,54 @@ std::vector<EterBase::EntityId> SpatialHashGrid::QueryRadius(float center_x, flo
     return result;
 }
 
+std::optional<EterBase::EntityId> SpatialHashGrid::QueryNearest(
+    float center_x,
+    float center_y,
+    float maxRadius,
+    std::optional<EterBase::EntityId> ignoreId
+) const {
+    if (maxRadius <= 0.0f) {
+        return std::nullopt;
+    }
+
+    std::shared_lock lock(m_mutex);
+
+    constexpr float eps = 0.001f;
+    float minX = center_x - maxRadius - eps;
+    float minY = center_y - maxRadius - eps;
+    float maxX = center_x + maxRadius + eps;
+    float maxY = center_y + maxRadius + eps;
+
+    CellCoords minCoords = GetCellCoords(minX, minY);
+    CellCoords maxCoords = GetCellCoords(maxX, maxY);
+
+    float bestDistSq = maxRadius * maxRadius;
+    std::optional<EterBase::EntityId> nearestId = std::nullopt;
+
+    for (int y = minCoords.y; y <= maxCoords.y; ++y) {
+        for (int x = minCoords.x; x <= maxCoords.x; ++x) {
+            auto it = m_cells.find({x, y});
+            if (it != m_cells.end()) {
+                for (EterBase::EntityId id : it->second) {
+                    if (ignoreId.has_value() && id == *ignoreId) {
+                        continue;
+                    }
+                    auto posIt = m_entityPositions.find(id);
+                    if (posIt != m_entityPositions.end()) {
+                        float dx = posIt->second.x - center_x;
+                        float dy = posIt->second.y - center_y;
+                        float distSq = dx * dx + dy * dy;
+                        if (distSq <= bestDistSq) {
+                            bestDistSq = distSq;
+                            nearestId = id;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return nearestId;
+}
+
 } // namespace Client::World

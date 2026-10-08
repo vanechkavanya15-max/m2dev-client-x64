@@ -101,4 +101,56 @@ TEST_CASE("ActorRegistry tests") {
         CHECK_FALSE(registry.GetActor(vid1).has_value());
         CHECK_FALSE(registry.GetActor(vid2).has_value());
     }
+
+    SUBCASE("FindActor pointer lookup without heap allocation") {
+        registry.RegisterActor(record1);
+        const ActorRecord* ptr1 = registry.FindActor(vid1);
+        REQUIRE(ptr1 != nullptr);
+        CHECK(ptr1->vid == vid1);
+        CHECK(ptr1->name == "Actor1");
+        CHECK(ptr1->race == 1);
+
+        const ActorRecord* ptr2 = registry.FindActor(vid2);
+        CHECK(ptr2 == nullptr);
+    }
+
+    SUBCASE("MainActor lifecycle management") {
+        CHECK(registry.GetMainActorVid().value() == 0);
+        CHECK_FALSE(static_cast<bool>(registry.GetMainActorVid()));
+
+        registry.RegisterActor(record1);
+        registry.RegisterActor(record2);
+
+        registry.SetMainActorVid(vid1);
+        CHECK(registry.GetMainActorVid() == vid1);
+        CHECK(static_cast<bool>(registry.GetMainActorVid()));
+
+        // Unregistering main actor resets main actor VID
+        registry.UnregisterActor(vid1);
+        CHECK(registry.GetMainActorVid().value() == 0);
+
+        registry.SetMainActorVid(vid2);
+        CHECK(registry.GetMainActorVid() == vid2);
+
+        registry.Clear();
+        CHECK(registry.GetMainActorVid().value() == 0);
+    }
+
+    SUBCASE("Actor lifecycle IsAlive and IsDead") {
+        // Non-existent actor
+        CHECK_FALSE(registry.IsAlive(vid1));
+        CHECK_FALSE(registry.IsDead(vid1));
+
+        registry.RegisterActor(record1);
+        CHECK(registry.IsAlive(vid1) == true);
+        CHECK(registry.IsDead(vid1) == false);
+
+        registry.SetDead(vid1, true);
+        CHECK(registry.IsAlive(vid1) == false);
+        CHECK(registry.IsDead(vid1) == true);
+
+        registry.SetDead(vid1, false);
+        CHECK(registry.IsAlive(vid1) == true);
+        CHECK(registry.IsDead(vid1) == false);
+    }
 }

@@ -19,6 +19,7 @@ public:
 void test_inventory_command_handler() {
     std::cout << "Starting test_inventory_command_handler..." << std::endl;
     
+    constexpr uint8_t INVENTORY = static_cast<uint8_t>(InventoryWindow::Inventory);
     InventoryDomain domain;
     MockConditionProvider conditions;
     InventoryCommandHandler handler(domain, conditions);

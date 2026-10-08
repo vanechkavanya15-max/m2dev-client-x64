@@ -32,7 +32,7 @@ EterBase::Result<void, CommandError> SafeboxCommandHandler::MoveItemToSafebox(Et
         return std::unexpected(CommandError::NotOpened);
     }
 
-    auto itemRes = m_inventory.GetItem(INVENTORY, inventorySlot);
+    auto itemRes = m_inventory.GetItem(InventoryWindow::Inventory, inventorySlot);
     if (!itemRes.has_value()) {
         EterBase::ModernLogger::Error("SafeboxCommandHandler::MoveItemToSafebox: Item not found in inventory slot {}", inventorySlot.get());
         return std::unexpected(CommandError::ItemNotFound);
@@ -51,7 +51,7 @@ EterBase::Result<void, CommandError> SafeboxCommandHandler::MoveItemToSafebox(Et
         return std::unexpected(CommandError::InvalidSlot);
     }
 
-    auto removeRes = m_inventory.RemoveItem(INVENTORY, inventorySlot);
+    auto removeRes = m_inventory.RemoveItem(InventoryWindow::Inventory, inventorySlot);
     if (!removeRes.has_value()) {
         EterBase::ModernLogger::Error("SafeboxCommandHandler::MoveItemToSafebox: Failed to remove item from inventory slot {}", inventorySlot.get());
         // Attempt rollback
@@ -75,14 +75,14 @@ EterBase::Result<void, CommandError> SafeboxCommandHandler::MoveItemToInventory(
         return std::unexpected(CommandError::ItemNotFound);
     }
 
-    auto inventoryItemRes = m_inventory.GetItem(INVENTORY, inventorySlot);
+    auto inventoryItemRes = m_inventory.GetItem(InventoryWindow::Inventory, inventorySlot);
     if (inventoryItemRes.has_value()) {
         EterBase::ModernLogger::Error("SafeboxCommandHandler::MoveItemToInventory: Target inventory slot {} is already occupied", inventorySlot.get());
         return std::unexpected(CommandError::InventoryFull);
     }
 
     ItemData itemData{safeBoxItem->vnum, safeBoxItem->count, {1, 1}}; // Assuming 1x1 size for simplicity if no specific info available
-    auto setRes = m_inventory.SetItem(INVENTORY, inventorySlot, itemData);
+    auto setRes = m_inventory.SetItem(InventoryWindow::Inventory, inventorySlot, itemData);
     if (!setRes.has_value()) {
         EterBase::ModernLogger::Error("SafeboxCommandHandler::MoveItemToInventory: Failed to set item in inventory slot {}", inventorySlot.get());
         return std::unexpected(CommandError::InvalidSlot);
@@ -92,7 +92,7 @@ EterBase::Result<void, CommandError> SafeboxCommandHandler::MoveItemToInventory(
     if (!removeRes.has_value()) {
         EterBase::ModernLogger::Error("SafeboxCommandHandler::MoveItemToInventory: Failed to remove item from safebox slot {}", safeboxSlot.get());
         // Attempt rollback
-        (void)m_inventory.RemoveItem(INVENTORY, inventorySlot);
+        (void)m_inventory.RemoveItem(InventoryWindow::Inventory, inventorySlot);
         return std::unexpected(CommandError::InvalidSlot);
     }
 

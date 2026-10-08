@@ -269,4 +269,5 @@ private:
 
 namespace Core {
     using EventBus = ::UserInterface::Core::EventBus;
+    using ActorDeadEvent = ::UserInterface::Core::ActorDeadEvent;
 }

@@ -8,6 +8,10 @@ void SkillCooldownTracker::StartCooldown(uint32_t skillVnum, uint32_t durationMs
     StartCooldownWithTimestamp(skillVnum, durationMs, GetCurrentTimeMs());
 }
 
+void SkillCooldownTracker::StartCooldown(uint32_t skillVnum, std::chrono::milliseconds duration) {
+    StartCooldown(skillVnum, static_cast<uint32_t>(duration.count()));
+}
+
 void SkillCooldownTracker::StartCooldownWithTimestamp(uint32_t skillVnum, uint32_t durationMs, uint64_t startTimestampMs) {
     std::unique_lock lock(m_mutex);
     if (durationMs == 0) {
@@ -15,6 +19,14 @@ void SkillCooldownTracker::StartCooldownWithTimestamp(uint32_t skillVnum, uint32
         return;
     }
     m_cooldowns[skillVnum] = CooldownEntry{startTimestampMs, durationMs};
+}
+
+void SkillCooldownTracker::StartCooldownWithTimePoint(uint32_t skillVnum, std::chrono::milliseconds duration, std::chrono::steady_clock::time_point startTime) {
+    StartCooldownWithTimestamp(skillVnum, static_cast<uint32_t>(duration.count()), TimePointToMs(startTime));
+}
+
+bool SkillCooldownTracker::IsOnCooldown(uint32_t skillVnum) const {
+    return IsOnCooldown(skillVnum, GetCurrentTimeMs());
 }
 
 bool SkillCooldownTracker::IsOnCooldown(uint32_t skillVnum, uint64_t currentTimestampMs) const {
@@ -25,6 +37,14 @@ bool SkillCooldownTracker::IsOnCooldown(uint32_t skillVnum, uint64_t currentTime
     }
     const auto& entry = it->second;
     return (currentTimestampMs >= entry.startTimestampMs && currentTimestampMs < entry.startTimestampMs + entry.durationMs);
+}
+
+bool SkillCooldownTracker::IsOnCooldown(uint32_t skillVnum, std::chrono::steady_clock::time_point currentTime) const {
+    return IsOnCooldown(skillVnum, TimePointToMs(currentTime));
+}
+
+uint32_t SkillCooldownTracker::GetRemainingCooldownMs(uint32_t skillVnum) const {
+    return GetRemainingCooldownMs(skillVnum, GetCurrentTimeMs());
 }
 
 uint32_t SkillCooldownTracker::GetRemainingCooldownMs(uint32_t skillVnum, uint64_t currentTimestampMs) const {
@@ -42,6 +62,18 @@ uint32_t SkillCooldownTracker::GetRemainingCooldownMs(uint32_t skillVnum, uint64
         return 0;
     }
     return static_cast<uint32_t>(endTime - currentTimestampMs);
+}
+
+std::chrono::milliseconds SkillCooldownTracker::GetRemainingCooldown(uint32_t skillVnum) const {
+    return std::chrono::milliseconds(GetRemainingCooldownMs(skillVnum));
+}
+
+std::chrono::milliseconds SkillCooldownTracker::GetRemainingCooldown(uint32_t skillVnum, std::chrono::steady_clock::time_point currentTime) const {
+    return std::chrono::milliseconds(GetRemainingCooldownMs(skillVnum, TimePointToMs(currentTime)));
+}
+
+float SkillCooldownTracker::GetCooldownProgress(uint32_t skillVnum) const {
+    return GetCooldownProgress(skillVnum, GetCurrentTimeMs());
 }
 
 float SkillCooldownTracker::GetCooldownProgress(uint32_t skillVnum, uint64_t currentTimestampMs) const {
@@ -62,6 +94,10 @@ float SkillCooldownTracker::GetCooldownProgress(uint32_t skillVnum, uint64_t cur
     }
     uint64_t elapsed = currentTimestampMs - entry.startTimestampMs;
     return std::clamp(static_cast<float>(elapsed) / static_cast<float>(entry.durationMs), 0.0f, 1.0f);
+}
+
+float SkillCooldownTracker::GetCooldownProgress(uint32_t skillVnum, std::chrono::steady_clock::time_point currentTime) const {
+    return GetCooldownProgress(skillVnum, TimePointToMs(currentTime));
 }
 
 void SkillCooldownTracker::ResetCooldown(uint32_t skillVnum) {

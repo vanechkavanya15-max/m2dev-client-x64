@@ -602,8 +602,8 @@ PyObject * playerAffectIndexToSkillIndex(PyObject* poSelf, PyObject* poArgs)
 
 PyObject * playerGetEXP(PyObject* poSelf, PyObject* poArgs)
 {
-	DWORD dwEXP = CPythonPlayer::Instance().GetStatus(POINT_EXP);
-	return Py_BuildValue("l", dwEXP);
+	uint64_t ullEXP = static_cast<uint64_t>(CPythonPlayer::Instance().GetStatus64(POINT_EXP));
+	return Py_BuildValue("K", ullEXP);
 }
 
 PyObject * playerGetStatus(PyObject* poSelf, PyObject* poArgs)
@@ -612,7 +612,7 @@ PyObject * playerGetStatus(PyObject* poSelf, PyObject* poArgs)
 	if (!PyTuple_GetInteger(poArgs, 0, &iType))
 		return Py_BuildException();
 
-	long iValue = CPythonPlayer::Instance().GetStatus(iType);
+	int64_t iValue = CPythonPlayer::Instance().GetStatus64(iType);
 
 	if (POINT_ATT_SPEED == iType)
 	{
@@ -623,7 +623,16 @@ PyObject * playerGetStatus(PyObject* poSelf, PyObject* poArgs)
 		}
 	}
 
-	return Py_BuildValue("i", iValue);
+	if (POINT_EXP == iType || POINT_NEXT_EXP == iType)
+	{
+		return Py_BuildValue("K", static_cast<uint64_t>(iValue));
+	}
+	else if (POINT_GOLD == iType)
+	{
+		return Py_BuildValue("L", iValue);
+	}
+
+	return Py_BuildValue("i", static_cast<int>(iValue));
 }
 
 PyObject * playerSetStatus(PyObject* poSelf, PyObject* poArgs)
@@ -642,7 +651,7 @@ PyObject * playerSetStatus(PyObject* poSelf, PyObject* poArgs)
 
 PyObject * playerGetElk(PyObject* poSelf, PyObject* poArgs)
 {
-	return Py_BuildValue("i", CPythonPlayer::Instance().GetStatus(POINT_GOLD));
+	return Py_BuildValue("L", CPythonPlayer::Instance().GetStatus64(POINT_GOLD));
 }
 
 PyObject * playerGetGuildID(PyObject* poSelf, PyObject* poArgs)

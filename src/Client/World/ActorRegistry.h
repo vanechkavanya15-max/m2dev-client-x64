@@ -42,14 +42,22 @@ public:
     bool RegisterActor(const ActorRecord& record);
     bool UnregisterActor(EntityVid vid);
     std::optional<ActorRecord> GetActor(EntityVid vid) const;
+    [[nodiscard]] const ActorRecord* FindActor(EntityVid vid) const;
     bool UpdatePosition(EntityVid vid, float x, float y, float z, float rotation);
     void SetDead(EntityVid vid, bool isDead);
+    [[nodiscard]] bool IsAlive(EntityVid vid) const;
+    [[nodiscard]] bool IsDead(EntityVid vid) const;
+
+    void SetMainActorVid(EntityVid vid);
+    [[nodiscard]] EntityVid GetMainActorVid() const;
+
     size_t Count() const;
     void Clear();
 
 private:
     mutable std::shared_mutex m_mutex;
     std::unordered_map<EntityVid, ActorRecord> m_actors;
+    EntityVid m_mainActorVid{0};
 };
 
 } // namespace Client::World

@@ -129,6 +129,50 @@ target_link_libraries(test_c26_item_bonus PRIVATE
     EterBase
 )
 
+add_executable(test_c26_skill_domain test_c26_skill_domain.cpp)
+target_include_directories(test_c26_skill_domain PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/Client
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+target_link_libraries(test_c26_skill_domain PRIVATE
+    Client2026
+    EterBase
+)
+
+add_executable(test_c26_inventory_domain test_c26_inventory_domain.cpp)
+target_include_directories(test_c26_inventory_domain PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/Client
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+target_link_libraries(test_c26_inventory_domain PRIVATE
+    Client2026
+    EterBase
+)
+
+add_executable(test_c26_actor_registry test_c26_actor_registry.cpp)
+target_include_directories(test_c26_actor_registry PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/Client
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+target_link_libraries(test_c26_actor_registry PRIVATE
+    Client2026
+    EterBase
+)
+
+add_executable(test_c26_spatial_hash_grid test_c26_spatial_hash_grid.cpp)
+target_include_directories(test_c26_spatial_hash_grid PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/Client
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+target_link_libraries(test_c26_spatial_hash_grid PRIVATE
+    Client2026
+    EterBase
+)
+
 enable_testing()
 add_test(NAME StranglerFacadeTest COMMAND test_c26_strangler_facade)
 add_test(NAME PandoraSimulationTest COMMAND test_c26_e2e_pandora_simulation)
@@ -137,6 +181,10 @@ add_test(NAME MemPoolTest COMMAND test_c26_mem_pool)
 add_test(NAME RadixSort64Test COMMAND test_c26_radix_sort)
 add_test(NAME RenderTargetMgrTest COMMAND test_c26_render_target_mgr)
 add_test(NAME SkillCooldownTest COMMAND test_c26_skill_cooldown)
+add_test(NAME SkillDomainTest COMMAND test_c26_skill_domain)
 add_test(NAME ItemBonusTest COMMAND test_c26_item_bonus)
+add_test(NAME InventoryDomainTest COMMAND test_c26_inventory_domain)
+add_test(NAME ActorRegistryTest COMMAND test_c26_actor_registry)
+add_test(NAME SpatialHashGridTest COMMAND test_c26_spatial_hash_grid)
 
 

@@ -130,8 +130,8 @@ class CPythonPlayer : public CSingleton<CPythonPlayer>, public IAbstractPlayer
 			TSkillInstance		aSkill[SKILL_MAX_NUM];
 			long				lQuickPageIndex;
 
-			void SetPoint(UINT ePoint, long lPoint);
-			long GetPoint(UINT ePoint);
+			void SetPoint(UINT ePoint, int64_t lPoint);
+			int64_t GetPoint(UINT ePoint) const;
 		} TPlayerStatus;
 
 		typedef struct SPartyMemberInfo
@@ -287,7 +287,9 @@ class CPythonPlayer : public CSingleton<CPythonPlayer>, public IAbstractPlayer
 
 		void	SetWeaponPower(DWORD dwMinPower, DWORD dwMaxPower, DWORD dwMinMagicPower, DWORD dwMaxMagicPower, DWORD dwAddPower);
 		void	SetStatus(DWORD dwType, long lValue);
+		void	SetStatus64(DWORD dwType, int64_t lValue);
 		int		GetStatus(DWORD dwType);
+		int64_t	GetStatus64(DWORD dwType) const;
 
 
 		// Item

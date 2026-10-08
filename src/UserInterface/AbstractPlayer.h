@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include "AbstractSingleton.h"
 #include "GameType.h"
 
@@ -16,6 +17,8 @@ class IAbstractPlayer : public TAbstractSingleton<IAbstractPlayer>
 		virtual bool	IsMainCharacterIndex(DWORD dwIndex) = 0;
 
 		virtual int		GetStatus(DWORD dwType) = 0;
+		virtual int64_t	GetStatus64(DWORD dwType) const { return const_cast<IAbstractPlayer*>(this)->GetStatus(dwType); }
+		virtual void	SetStatus64(DWORD dwType, int64_t lValue) {}
 
 		virtual const char *	GetName() = 0;
 

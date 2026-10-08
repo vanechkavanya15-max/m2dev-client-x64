@@ -14,6 +14,9 @@ bool ActorRegistry::RegisterActor(const ActorRecord& record) {
 
 bool ActorRegistry::UnregisterActor(EntityVid vid) {
     std::unique_lock lock(m_mutex);
+    if (m_mainActorVid == vid) {
+        m_mainActorVid = EntityVid{0};
+    }
     return m_actors.erase(vid) > 0;
 }
 
@@ -24,6 +27,15 @@ std::optional<ActorRecord> ActorRegistry::GetActor(EntityVid vid) const {
         return it->second;
     }
     return std::nullopt;
+}
+
+const ActorRecord* ActorRegistry::FindActor(EntityVid vid) const {
+    std::shared_lock lock(m_mutex);
+    auto it = m_actors.find(vid);
+    if (it != m_actors.end()) {
+        return &it->second;
+    }
+    return nullptr;
 }
 
 bool ActorRegistry::UpdatePosition(EntityVid vid, float x, float y, float z, float rotation) {
@@ -47,6 +59,34 @@ void ActorRegistry::SetDead(EntityVid vid, bool isDead) {
     }
 }
 
+bool ActorRegistry::IsAlive(EntityVid vid) const {
+    std::shared_lock lock(m_mutex);
+    auto it = m_actors.find(vid);
+    if (it != m_actors.end()) {
+        return !it->second.isDead;
+    }
+    return false;
+}
+
+bool ActorRegistry::IsDead(EntityVid vid) const {
+    std::shared_lock lock(m_mutex);
+    auto it = m_actors.find(vid);
+    if (it != m_actors.end()) {
+        return it->second.isDead;
+    }
+    return false;
+}
+
+void ActorRegistry::SetMainActorVid(EntityVid vid) {
+    std::unique_lock lock(m_mutex);
+    m_mainActorVid = vid;
+}
+
+EntityVid ActorRegistry::GetMainActorVid() const {
+    std::shared_lock lock(m_mutex);
+    return m_mainActorVid;
+}
+
 size_t ActorRegistry::Count() const {
     std::shared_lock lock(m_mutex);
     return m_actors.size();
@@ -55,6 +95,7 @@ size_t ActorRegistry::Count() const {
 void ActorRegistry::Clear() {
     std::unique_lock lock(m_mutex);
     m_actors.clear();
+    m_mainActorVid = EntityVid{0};
 }
 
 } // namespace Client::World

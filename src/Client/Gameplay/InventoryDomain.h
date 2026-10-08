@@ -5,43 +5,78 @@
 #include <optional>
 #include <expected>
 #include <span>
+#include <array>
+#include <functional>
 
 #include "../../EterBase/StrongTypes.h"
 #include "../../EterBase/Result.h"
 #include "../../EterBase/LogModern.h"
-#include "../../UserInterface/Core/EventBus.h"
-
-#include "../../UserInterface/GameType.h"
 
 namespace Client::Gameplay {
+
+/**
+ * @brief Silnie typowany enum klasowy reprezentujacy okna ekwipunku, calkowicie odciety od UI.
+ */
+enum class InventoryWindow : uint8_t {
+    Reserved = 0,
+    Inventory = 1,
+    Equipment = 2,
+    SafeBox = 3,
+    Mall = 4,
+    DragonSoul = 5,
+    Ground = 6,
+    Belt = 7
+};
 
 /**
  * @brief Represents the dimensions of an item in the inventory grid.
  */
 struct ItemSize {
-    uint8_t width;
-    uint8_t height;
+    uint8_t width{1};
+    uint8_t height{1};
+
+    constexpr bool operator==(const ItemSize& other) const = default;
+};
+
+/**
+ * @brief Pojedynczy atrybut bonusowy przedmiotu.
+ */
+struct ItemAttribute {
+    uint8_t type{0};
+    int16_t value{0};
+
+    constexpr bool operator==(const ItemAttribute& other) const = default;
 };
 
 /**
  * @brief Core data structure representing an item in the combined inventory domain.
+ * Rozszerzona o 4 gniazda kamieni dusz (sockets) oraz 7 atrybutow bonusowych.
  */
 struct ItemData {
-    EterBase::ItemVnum vnum;
-    uint32_t count;
-    ItemSize size; // For anti-overflow validation
+    EterBase::ItemVnum vnum{0};
+    uint32_t count{1};
+    ItemSize size{1, 1}; // For anti-overflow validation
+    std::array<uint32_t, 4> sockets{};
+    std::array<ItemAttribute, 7> attributes{};
+
+    constexpr bool operator==(const ItemData& other) const = default;
 };
 
 /**
- * @brief Event triggered when an inventory slot changes.
+ * @brief Event triggered when an inventory slot changes (decoupled from UI IEvent).
  */
-struct InventorySlotUpdatedEvent : public UserInterface::Core::IEvent {
-    uint8_t windowType;
+struct InventorySlotUpdatedEvent {
+    InventoryWindow windowType;
     EterBase::ItemSlot slotIndex;
 
-    explicit InventorySlotUpdatedEvent(uint8_t windowType, EterBase::ItemSlot slotIndex)
+    explicit InventorySlotUpdatedEvent(InventoryWindow windowType, EterBase::ItemSlot slotIndex)
         : windowType(windowType), slotIndex(slotIndex) {}
+
+    explicit InventorySlotUpdatedEvent(uint8_t windowType, EterBase::ItemSlot slotIndex)
+        : windowType(static_cast<InventoryWindow>(windowType)), slotIndex(slotIndex) {}
 };
+
+using SlotUpdateCallback = std::function<void(const InventorySlotUpdatedEvent&)>;
 
 /**
  * @brief Centralized Domain Model for managing the player's complete inventory state.
@@ -58,52 +93,105 @@ public:
     static constexpr uint16_t INVENTORY_MAX_PAGES = 4;
     static constexpr uint16_t INVENTORY_MAX_NUM = INVENTORY_PAGE_SIZE * INVENTORY_MAX_PAGES;
     
-    // Other window sizes (example sizes, adjust according to actual GameType constants if needed)
+    // Other window sizes
     static constexpr uint16_t BELT_INVENTORY_MAX_NUM = 16;
     static constexpr uint16_t EQUIPMENT_MAX_NUM = 32;
-    static constexpr uint16_t DRAGON_SOUL_INVENTORY_MAX_NUM = 32 * 6 * 2; // Example
+    static constexpr uint16_t DRAGON_SOUL_INVENTORY_MAX_NUM = 32 * 6 * 2;
     static constexpr uint16_t SAFEBOX_MAX_NUM = 135;
 
     InventoryDomain();
     ~InventoryDomain() = default;
 
     /**
+     * @brief Rejestruje delegat powiadamiajacy o aktualizacji slotu w domenie ekwipunku.
+     */
+    void SetSlotUpdateCallback(SlotUpdateCallback callback) {
+        m_slotUpdateCallback = std::move(callback);
+    }
+
+    /**
+     * @brief Znajduje pierwsza wolna komorke w inwentarzu glownym dla przedmiotu 1x1.
+     * @return Indeks slotu lub -1 w przypadku braku miejsca.
+     */
+    [[nodiscard]] int32_t FindEmptyCell() const;
+
+    /**
+     * @brief Znajduje pierwsza wolna komorke w inwentarzu glownym dla zadanego rozmiaru przedmiotu.
+     * @return Indeks slotu lub -1 w przypadku braku miejsca.
+     */
+    [[nodiscard]] int32_t FindEmptyCell(ItemSize size) const;
+
+    /**
+     * @brief Znajduje pierwsza wolna komorke w wybranym oknie ekwipunku dla zadanego rozmiaru.
+     */
+    [[nodiscard]] int32_t FindEmptyCell(InventoryWindow window, ItemSize size = {1, 1}) const;
+
+    /**
+     * @brief Czyste zresetowanie wszystkich slotow we wszystkich oknach inwentarza.
+     */
+    void Clear();
+
+    /**
+     * @brief Resetuje sloty w konkretnym oknie ekwipunku.
+     */
+    void ClearWindow(InventoryWindow window);
+
+    /**
      * @brief Sets an item at the specified slot, validating overlap and bounds.
      */
-    std::expected<void, EterBase::InventoryError> SetItem(uint8_t windowType, EterBase::ItemSlot slot, const ItemData& item);
+    [[nodiscard]] std::expected<void, EterBase::InventoryError> SetItem(InventoryWindow windowType, EterBase::ItemSlot slot, const ItemData& item);
+    [[nodiscard]] std::expected<void, EterBase::InventoryError> SetItem(uint8_t windowType, EterBase::ItemSlot slot, const ItemData& item) {
+        return SetItem(static_cast<InventoryWindow>(windowType), slot, item);
+    }
 
     /**
      * @brief Removes an item from the specified slot.
      */
-    std::expected<void, EterBase::InventoryError> RemoveItem(uint8_t windowType, EterBase::ItemSlot slot);
+    [[nodiscard]] std::expected<void, EterBase::InventoryError> RemoveItem(InventoryWindow windowType, EterBase::ItemSlot slot);
+    [[nodiscard]] std::expected<void, EterBase::InventoryError> RemoveItem(uint8_t windowType, EterBase::ItemSlot slot) {
+        return RemoveItem(static_cast<InventoryWindow>(windowType), slot);
+    }
 
     /**
      * @brief Swaps the items between two slots, validating target slots and sizes.
      */
-    std::expected<void, EterBase::InventoryError> SwapItem(uint8_t windowType, EterBase::ItemSlot srcSlot, uint8_t dstWindowType, EterBase::ItemSlot dstSlot);
+    [[nodiscard]] std::expected<void, EterBase::InventoryError> SwapItem(InventoryWindow windowType, EterBase::ItemSlot srcSlot, InventoryWindow dstWindowType, EterBase::ItemSlot dstSlot);
+    [[nodiscard]] std::expected<void, EterBase::InventoryError> SwapItem(uint8_t windowType, EterBase::ItemSlot srcSlot, uint8_t dstWindowType, EterBase::ItemSlot dstSlot) {
+        return SwapItem(static_cast<InventoryWindow>(windowType), srcSlot, static_cast<InventoryWindow>(dstWindowType), dstSlot);
+    }
 
     /**
      * @brief Splits an item stack, placing the split amount into an empty target slot.
      */
-    std::expected<void, EterBase::InventoryError> SplitItem(uint8_t windowType, EterBase::ItemSlot srcSlot, EterBase::ItemSlot dstSlot, uint32_t splitCount);
+    [[nodiscard]] std::expected<void, EterBase::InventoryError> SplitItem(InventoryWindow windowType, EterBase::ItemSlot srcSlot, EterBase::ItemSlot dstSlot, uint32_t splitCount);
+    [[nodiscard]] std::expected<void, EterBase::InventoryError> SplitItem(uint8_t windowType, EterBase::ItemSlot srcSlot, EterBase::ItemSlot dstSlot, uint32_t splitCount) {
+        return SplitItem(static_cast<InventoryWindow>(windowType), srcSlot, dstSlot, splitCount);
+    }
 
     /**
      * @brief Retrieves the item at the specified slot.
      */
-    std::expected<ItemData, EterBase::InventoryError> GetItem(uint8_t windowType, EterBase::ItemSlot slot) const;
+    [[nodiscard]] std::expected<ItemData, EterBase::InventoryError> GetItem(InventoryWindow windowType, EterBase::ItemSlot slot) const;
+    [[nodiscard]] std::expected<ItemData, EterBase::InventoryError> GetItem(uint8_t windowType, EterBase::ItemSlot slot) const {
+        return GetItem(static_cast<InventoryWindow>(windowType), slot);
+    }
 
 private:
-    std::expected<std::reference_wrapper<std::vector<std::optional<ItemData>>>, EterBase::InventoryError> GetWindowSlots(uint8_t windowType);
-    std::expected<std::reference_wrapper<const std::vector<std::optional<ItemData>>>, EterBase::InventoryError> GetWindowSlots(uint8_t windowType) const;
+    std::expected<std::reference_wrapper<std::vector<std::optional<ItemData>>>, EterBase::InventoryError> GetWindowSlots(InventoryWindow windowType);
+    std::expected<std::reference_wrapper<const std::vector<std::optional<ItemData>>>, EterBase::InventoryError> GetWindowSlots(InventoryWindow windowType) const;
 
-    bool IsValidCell(uint8_t windowType, EterBase::ItemSlot slot, ItemSize size) const;
-    bool IsEmpty(uint8_t windowType, EterBase::ItemSlot slot, ItemSize size, std::optional<EterBase::ItemSlot> ignoreSlot = std::nullopt) const;
+    bool IsValidCell(InventoryWindow windowType, EterBase::ItemSlot slot, ItemSize size) const;
+    bool IsEmpty(InventoryWindow windowType, EterBase::ItemSlot slot, ItemSize size, std::optional<EterBase::ItemSlot> ignoreSlot = std::nullopt) const;
+
+    void NotifySlotUpdated(InventoryWindow windowType, EterBase::ItemSlot slot);
 
     std::vector<std::optional<ItemData>> m_mainInventory;
     std::vector<std::optional<ItemData>> m_beltInventory;
     std::vector<std::optional<ItemData>> m_equipment;
     std::vector<std::optional<ItemData>> m_dragonSoulInventory;
     std::vector<std::optional<ItemData>> m_safeBox;
+
+    SlotUpdateCallback m_slotUpdateCallback;
 };
 
 } // namespace Client::Gameplay

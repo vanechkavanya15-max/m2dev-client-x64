@@ -146,9 +146,16 @@ class CPythonNetworkStream : public CNetworkStream, public CSingleton<CPythonNet
 		void ClearPhaseWindow(UINT ePhaseWnd, PyObject* poPhaseWnd);
 		void SetServerCommandParserWindow(PyObject* poPhaseWnd);
 
+		friend class PhaseGameGuildBridge;
+		friend class PhaseGamePartyBridge;
 		friend class PhaseGameQuestBridge;
 		friend class PhaseGameSkillsBridge;
 		friend class PhaseGameTargetBridge;
+		friend class PhaseGameShopBridge;
+		friend class PhaseGameExchangeBridge;
+		friend class PhaseGameCombatBridge;
+		friend class PhaseGameWorldBridge;
+		friend class PhaseGameRefineBridge;
 
 		bool SendSyncPositionElementPacket(DWORD dwVictimVID, DWORD dwVictimX, DWORD dwVictimY);
 

@@ -46,7 +46,7 @@ void TestItemTransfer() {
     EterBase::ItemSlot safeSlot{0};
     
     ItemData itemData{EterBase::ItemVnum{123}, 1, {1, 1}};
-    auto setRes = inventory.SetItem(INVENTORY, invSlot, itemData);
+    auto setRes = inventory.SetItem(InventoryWindow::Inventory, invSlot, itemData);
     AssertEqual(setRes.has_value(), "TestItemTransfer: Setup inventory item");
 
     // Attempt transfer without opening
@@ -59,14 +59,14 @@ void TestItemTransfer() {
     // Transfer Inv -> Safebox
     auto resInvToSafe = handler.MoveItemToSafebox(invSlot, safeSlot);
     AssertEqual(resInvToSafe.has_value(), "TestItemTransfer: Inv to Safebox success");
-    AssertEqual(!inventory.GetItem(INVENTORY, invSlot).has_value(), "TestItemTransfer: Inv item removed");
+    AssertEqual(!inventory.GetItem(InventoryWindow::Inventory, invSlot).has_value(), "TestItemTransfer: Inv item removed");
     AssertEqual(safebox.GetItem(safeSlot).has_value() && safebox.GetItem(safeSlot)->vnum.get() == 123, "TestItemTransfer: Safebox item added");
 
     // Transfer Safebox -> Inv
     auto resSafeToInv = handler.MoveItemToInventory(safeSlot, invSlot);
     AssertEqual(resSafeToInv.has_value(), "TestItemTransfer: Safebox to Inv success");
     AssertEqual(!safebox.GetItem(safeSlot).has_value(), "TestItemTransfer: Safebox item removed");
-    AssertEqual(inventory.GetItem(INVENTORY, invSlot).has_value() && inventory.GetItem(INVENTORY, invSlot)->vnum.get() == 123, "TestItemTransfer: Inv item added");
+    AssertEqual(inventory.GetItem(InventoryWindow::Inventory, invSlot).has_value() && inventory.GetItem(InventoryWindow::Inventory, invSlot)->vnum.get() == 123, "TestItemTransfer: Inv item added");
 }
 
 void TestCloseSafebox() {

@@ -16,15 +16,37 @@ void TestSkillRegistration() {
     domain.RegisterSkill(1);
     assert(domain.HasSkill(1));
     assert(domain.GetSkillLevel(1) == 0);
+    assert(domain.GetSkillMasterType(1) == 0);
+    assert(domain.GetSkillMasteryLevel(1) == 0);
 
-    // Ustawianie poziomu
+    // Ustawianie poziomu normalnego (10)
     domain.SetSkillLevel(1, 10);
     assert(domain.GetSkillLevel(1) == 10);
+    assert(domain.GetSkillMasterType(1) == 0);
+    assert(domain.GetSkillMasteryLevel(1) == 10);
 
-    // Rejestracja z poziomem
-    domain.RegisterSkill(2, 21); // M1
+    // Rejestracja z poziomem mistrzowskim M2 (21)
+    domain.RegisterSkill(2, 21); // M2
     assert(domain.HasSkill(2));
     assert(domain.GetSkillLevel(2) == 21);
+    assert(domain.GetSkillMasterType(2) == 1);
+    assert(domain.GetSkillMasteryLevel(2) == 2);
+
+    // Jawne ustawianie mistrzostwa G5 (GrandMaster 5)
+    domain.RegisterSkill(3);
+    domain.SetSkillMastery(3, 2, 5);
+    assert(domain.GetSkillMasterType(3) == 2);
+    assert(domain.GetSkillMasteryLevel(3) == 5);
+    assert(domain.GetSkillLevel(3) == 34);
+
+    // Rejestracja ze wszystkimi parametrami P (PerfectMaster 1)
+    domain.RegisterSkill(4, 40, 3, 1);
+    assert(domain.GetSkillMasterType(4) == 3);
+    assert(domain.GetSkillMasteryLevel(4) == 1);
+    const auto* state4 = domain.GetSkillState(4);
+    assert(state4 != nullptr);
+    assert(state4->masterType == 3);
+    assert(state4->masteryLevel == 1);
 
     std::cout << "TestSkillRegistration passed.\n";
 }
@@ -36,27 +58,37 @@ void TestSkillCooldown() {
     // Zaraz po rejestracji (bez aktywnego cooldownu) jest gotowe
     assert(domain.IsSkillReady(5));
     assert(domain.GetRemainingCooldown(5).count() == 0);
+    assert(domain.GetCooldownProgress(5) == 1.0f);
     
     // Ustawiamy cooldown na 100 ms
     domain.StartCooldown(5, std::chrono::milliseconds(100));
     assert(!domain.IsSkillReady(5));
     assert(domain.GetRemainingCooldown(5).count() > 0);
+    assert(domain.GetRemainingCooldownMs(5) > 0);
+    assert(domain.GetCooldownTracker().IsOnCooldown(5));
     
-    // Czekamy na upłynięcie części czasu
+    // Czekamy na uplyniecie czesci czasu
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
     assert(!domain.IsSkillReady(5));
 
-    // Czekamy na upłynięcie reszty
+    // Czekamy na uplyniecie reszty
     std::this_thread::sleep_for(std::chrono::milliseconds(60));
     domain.UpdateCooldowns(); // Opcjonalne do zmiany flag, ale IsSkillReady samo sprawdza czas
     
     assert(domain.IsSkillReady(5));
     assert(domain.GetRemainingCooldown(5).count() == 0);
+    assert(domain.GetCooldownProgress(5) == 1.0f);
     
     // Testowanie resetowania
     domain.StartCooldown(5, std::chrono::milliseconds(1000));
     assert(!domain.IsSkillReady(5));
     domain.ResetCooldown(5);
+    assert(domain.IsSkillReady(5));
+
+    // Testowanie ResetAllCooldowns
+    domain.StartCooldown(5, std::chrono::milliseconds(1000));
+    assert(!domain.IsSkillReady(5));
+    domain.ResetAllCooldowns();
     assert(domain.IsSkillReady(5));
 
     std::cout << "TestSkillCooldown passed.\n";

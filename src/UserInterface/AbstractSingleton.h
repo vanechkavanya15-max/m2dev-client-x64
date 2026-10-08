@@ -23,7 +23,17 @@ public:
 	{
 		assert(ms_singleton!=NULL);
 		return (*ms_singleton);
-	}	
+	}
+
+	__forceinline static T * GetSingletonPtr()
+	{
+		return ms_singleton;
+	}
+
+	__forceinline static bool HasSingleton()
+	{
+		return ms_singleton != nullptr;
+	}
 };
 
 template <typename T> T * TAbstractSingleton <T>::ms_singleton = 0;

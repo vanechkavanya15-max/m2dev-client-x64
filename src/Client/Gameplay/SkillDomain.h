@@ -4,6 +4,7 @@
 #include <chrono>
 #include <string>
 #include <shared_mutex>
+#include "SkillCooldownTracker.h"
 
 namespace Client::Gameplay {
 
@@ -44,16 +45,28 @@ namespace Client::Gameplay {
     using SkillId = uint32_t;
     
     /**
-     * @brief Przechowuje aktualny stan i metadane danej umiejętności u gracza.
+     * @brief Definiuje stopien zaawansowania (mistrzostwa) umiejetnosci.
+     */
+    enum class SkillMasterType : uint8_t {
+        Normal = 0,         ///< Zwykly (poziomy 1-19)
+        Master = 1,         ///< Master (M1 - M10, poziomy 20-29)
+        GrandMaster = 2,    ///< Grand Master (G1 - G10, poziomy 30-39)
+        PerfectMaster = 3   ///< Perfect Master (P, poziom 40+)
+    };
+
+    /**
+     * @brief Przechowuje aktualny stan i metadane danej umiejetnosci u gracza.
      * 
-     * Każda umiejętność posiadana przez gracza ma swój unikalny stan, 
-     * określający poziom zaawansowania oraz czasy odnawiania.
+     * Kazda umiejetnosc posiadana przez gracza ma swoj unikalny stan, 
+     * okreslajacy poziom zaawansowania, stopien mistrzostwa oraz czasy odnawiania.
      */
     struct SkillState {
-        SkillLevel level{0};                                  ///< Obecny poziom zaawansowania umiejętności (np. 1-40).
-        std::chrono::steady_clock::time_point cooldownEndTime; ///< Absolutny czas, w którym zakończy się odnawianie.
-        bool isCoolingDown{false};                            ///< Flaga wskazująca, czy umiejętność jest aktualnie odnawiana.
-        bool isToggledOn{false};                              ///< Flaga określająca, czy umiejętność typu Toggle jest włączona.
+        SkillLevel level{0};                                  ///< Obecny calkowity poziom zaawansowania umiejetnosci (np. 1-40).
+        uint8_t masterType{0};                                ///< Jawne pole typu mistrzostwa: 0=Normal, 1=Master, 2=GrandMaster, 3=PerfectMaster.
+        uint8_t masteryLevel{0};                              ///< Poziom w ramach obecnego mistrzostwa (np. 1-10 dla M/G/P).
+        std::chrono::steady_clock::time_point cooldownEndTime; ///< Absolutny czas, w ktorym zakonczy sie odnawianie.
+        bool isCoolingDown{false};                            ///< Flaga wskazujaca, czy umiejetnosc jest aktualnie odnawiana.
+        bool isToggledOn{false};                              ///< Flaga okreslajaca, czy umiejetnosc typu Toggle jest wlaczona.
     };
 
     /**
@@ -113,6 +126,7 @@ namespace Client::Gameplay {
          * @param initialLevel Początkowy poziom (0 oznacza brak znajomości/aktywności).
          */
         void RegisterSkill(SkillId skillId, SkillLevel initialLevel = 0);
+        void RegisterSkill(SkillId skillId, SkillLevel level, uint8_t masterType, uint8_t masteryLevel);
         
         /**
          * @brief Weryfikuje, czy gracz posiada zadaną umiejętność w swoich zasobach.
@@ -140,6 +154,30 @@ namespace Client::Gameplay {
         void SetSkillLevel(SkillId skillId, SkillLevel level);
 
         /**
+         * @brief Modyfikuje bezpośrednio stopien mistrzostwa oraz poziom w mistrzostwie.
+         * 
+         * @param skillId Identyfikator umiejetnosci.
+         * @param masterType Typ mistrzostwa (0=Normal, 1=Master, 2=GrandMaster, 3=PerfectMaster).
+         * @param masteryLevel Poziom w ramach danego mistrzostwa (np. 1-10).
+         */
+        void SetSkillMastery(SkillId skillId, uint8_t masterType, uint8_t masteryLevel);
+
+        /**
+         * @brief Zwraca typ mistrzostwa dla danej umiejetnosci.
+         */
+        uint8_t GetSkillMasterType(SkillId skillId) const;
+
+        /**
+         * @brief Zwraca poziom w ramach mistrzostwa dla danej umiejetnosci.
+         */
+        uint8_t GetSkillMasteryLevel(SkillId skillId) const;
+
+        /**
+         * @brief Pobiera wskaznik na pelny stan umiejetnosci gracza lub nullptr w przypadku braku.
+         */
+        const SkillState* GetSkillState(SkillId skillId) const;
+
+        /**
          * @brief Uruchamia zegar odnawiania (cooldown) dla podanej umiejętności.
          * 
          * Gdy umiejętność jest odnawiana, nie może zostać ponownie aktywowana
@@ -149,6 +187,7 @@ namespace Client::Gameplay {
          * @param duration Długość trwania odnawiania w milisekundach.
          */
         void StartCooldown(SkillId skillId, std::chrono::milliseconds duration);
+        void StartCooldown(SkillId skillId, uint32_t durationMs);
 
         /**
          * @brief Weryfikuje gotowość danej umiejętności do aktywacji na podstawie jej cooldownu.
@@ -172,6 +211,12 @@ namespace Client::Gameplay {
          * @return std::chrono::milliseconds Pozostały czas lub 0, jeśli umiejętność jest gotowa.
          */
         std::chrono::milliseconds GetRemainingCooldown(SkillId skillId) const;
+        uint32_t GetRemainingCooldownMs(SkillId skillId) const;
+
+        /**
+         * @brief Zwraca postep odnawiania w zakresie [0.0f, 1.0f] (1.0f oznacza pelna gotowosc).
+         */
+        float GetCooldownProgress(SkillId skillId) const;
 
         /**
          * @brief Natychmiastowo zdejmuje obciążenie odnawiania dla danej umiejętności.
@@ -179,6 +224,14 @@ namespace Client::Gameplay {
          * @param skillId Identyfikator odnawianej umiejętności.
          */
         void ResetCooldown(SkillId skillId);
+
+        /**
+         * @brief Resetuje czasy odnawiania dla wszystkich umiejetnosci gracza.
+         */
+        void ResetAllCooldowns();
+
+        [[nodiscard]] const SkillCooldownTracker& GetCooldownTracker() const noexcept { return m_cooldownTracker; }
+        [[nodiscard]] SkillCooldownTracker& GetCooldownTracker() noexcept { return m_cooldownTracker; }
 
         /**
          * @brief Główny algorytm wyliczający koszt użycia umiejętności w punktach SP.
@@ -228,6 +281,11 @@ namespace Client::Gameplay {
          * @brief Stany poszczególnych umiejętności gracza. Zawierają poziom i aktualny cooldown.
          */
         std::unordered_map<SkillId, SkillState> m_skills;
+
+        /**
+         * @brief Wbudowany tracker zarzadzania cooldownami umiejetnosci.
+         */
+        SkillCooldownTracker m_cooldownTracker;
     };
 
 } // namespace Client::Gameplay

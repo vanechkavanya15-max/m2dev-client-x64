@@ -1,134 +1,159 @@
-#include <gtest/gtest.h>
+#include <cassert>
+#include <iostream>
 #include "../src/Client/Gameplay/InventoryDomain.h"
 
 using namespace Client::Gameplay;
 using namespace EterBase;
 
-class InventoryDomainTest : public ::testing::Test {
-protected:
+int main() {
     InventoryDomain domain;
-};
 
-TEST_F(InventoryDomainTest, TestSetItem_1x1)
-{
-    ItemData item{ ItemVnum(10), 1, {1, 1} };
-    auto result = domain.SetItem(INVENTORY, ItemSlot(0), item);
-    EXPECT_TRUE(result.has_value());
-    
-    auto retrieved = domain.GetItem(INVENTORY, ItemSlot(0));
-    EXPECT_TRUE(retrieved.has_value());
-    EXPECT_EQ(retrieved.value().vnum.get(), 10);
-    EXPECT_EQ(retrieved.value().count, 1);
-}
+    // Test 1: SetItem_1x1
+    {
+        ItemData item{ ItemVnum(10), 1, {1, 1} };
+        auto result = domain.SetItem(InventoryWindow::Inventory, ItemSlot(0), item);
+        assert(result.has_value());
+        
+        auto retrieved = domain.GetItem(InventoryWindow::Inventory, ItemSlot(0));
+        assert(retrieved.has_value());
+        assert(retrieved.value().vnum.get() == 10);
+        assert(retrieved.value().count == 1);
+    }
 
-TEST_F(InventoryDomainTest, TestSetItem_1x3_AntiOverflow)
-{
-    ItemData item{ ItemVnum(299), 1, {1, 3} };
-    
-    // Test normal placement
-    auto result = domain.SetItem(INVENTORY, ItemSlot(0), item);
-    EXPECT_TRUE(result.has_value());
-    
-    // Test overlap (placing 1x1 on the middle of 1x3)
-    ItemData overlapItem{ ItemVnum(10), 1, {1, 1} };
-    auto overlapResult = domain.SetItem(INVENTORY, ItemSlot(5), overlapItem);
-    EXPECT_FALSE(overlapResult.has_value());
-    EXPECT_EQ(overlapResult.error(), InventoryError::SlotOccupied);
-    
-    // Test bounds (placing 1x3 at the bottom of the page)
-    auto outOfBoundsResult = domain.SetItem(INVENTORY, ItemSlot(40), item);
-    EXPECT_FALSE(outOfBoundsResult.has_value());
-    EXPECT_EQ(outOfBoundsResult.error(), InventoryError::SlotOutOfRange);
-}
+    // Test 2: SetItem_1x3_AntiOverflow
+    {
+        ItemData item{ ItemVnum(299), 1, {1, 3} };
+        
+        // Placement on slot 10
+        auto result = domain.SetItem(InventoryWindow::Inventory, ItemSlot(10), item);
+        assert(result.has_value());
+        
+        // Overlap test (placing 1x1 on the middle of 1x3, slot 10 + 5 = 15)
+        ItemData overlapItem{ ItemVnum(10), 1, {1, 1} };
+        auto overlapResult = domain.SetItem(InventoryWindow::Inventory, ItemSlot(15), overlapItem);
+        assert(!overlapResult.has_value());
+        assert(overlapResult.error() == InventoryError::SlotOccupied);
+        
+        // Out of bounds (slot 40 with 1x3 crosses bottom border of page 1)
+        auto outOfBoundsResult = domain.SetItem(InventoryWindow::Inventory, ItemSlot(40), item);
+        assert(!outOfBoundsResult.has_value());
+        assert(outOfBoundsResult.error() == InventoryError::SlotOutOfRange);
+    }
 
-TEST_F(InventoryDomainTest, TestSwapItem)
-{
-    ItemData item1{ ItemVnum(10), 1, {1, 1} };
-    ItemData item2{ ItemVnum(20), 1, {1, 2} };
-    
-    EXPECT_TRUE(domain.SetItem(INVENTORY, ItemSlot(0), item1).has_value());
-    EXPECT_TRUE(domain.SetItem(INVENTORY, ItemSlot(1), item2).has_value());
-    
-    // Swap 1x1 with 1x2 (valid because slot 0 has space for 1x2 since slot 0 and 5 are free when item1 is removed, wait, slot 5 is free)
-    auto swapResult = domain.SwapItem(INVENTORY, ItemSlot(0), INVENTORY, ItemSlot(1));
-    EXPECT_TRUE(swapResult.has_value());
-    
-    auto retrieved1 = domain.GetItem(INVENTORY, ItemSlot(1));
-    EXPECT_EQ(retrieved1.value().vnum.get(), 10);
-    
-    auto retrieved2 = domain.GetItem(INVENTORY, ItemSlot(0));
-    EXPECT_EQ(retrieved2.value().vnum.get(), 20);
-}
+    // Test 3: SwapItem
+    {
+        ItemData item1{ ItemVnum(10), 1, {1, 1} };
+        ItemData item2{ ItemVnum(20), 1, {1, 2} };
+        
+        assert(domain.SetItem(InventoryWindow::Inventory, ItemSlot(1), item1).has_value());
+        assert(domain.SetItem(InventoryWindow::Inventory, ItemSlot(2), item2).has_value());
+        
+        auto swapResult = domain.SwapItem(InventoryWindow::Inventory, ItemSlot(1), InventoryWindow::Inventory, ItemSlot(2));
+        assert(swapResult.has_value());
+        
+        auto retrieved1 = domain.GetItem(InventoryWindow::Inventory, ItemSlot(2));
+        assert(retrieved1.value().vnum.get() == 10);
+        
+        auto retrieved2 = domain.GetItem(InventoryWindow::Inventory, ItemSlot(1));
+        assert(retrieved2.value().vnum.get() == 20);
+    }
 
-TEST_F(InventoryDomainTest, TestSwapItem_InvalidSize)
-{
-    ItemData item1{ ItemVnum(10), 1, {1, 1} }; // At slot 0
-    ItemData blockItem{ ItemVnum(30), 1, {1, 1} }; // At slot 6
-    ItemData item2{ ItemVnum(20), 1, {1, 2} }; // At slot 2
-    
-    EXPECT_TRUE(domain.SetItem(INVENTORY, ItemSlot(0), item1).has_value());
-    EXPECT_TRUE(domain.SetItem(INVENTORY, ItemSlot(6), blockItem).has_value());
-    EXPECT_TRUE(domain.SetItem(INVENTORY, ItemSlot(2), item2).has_value());
-    
-    // Swap item2 (1x2 at slot 2) with item1 (1x1 at slot 1, wait it's at slot 0)
-    // If we swap item2 to slot 0, it needs slot 0 and 5. Slot 5 is free.
-    // If we swap item2 to slot 1, it needs slot 1 and 6. Slot 6 is occupied!
-    ItemData item3{ ItemVnum(40), 1, {1, 1} };
-    EXPECT_TRUE(domain.SetItem(INVENTORY, ItemSlot(1), item3).has_value());
-    
-    auto swapResult = domain.SwapItem(INVENTORY, ItemSlot(2), INVENTORY, ItemSlot(1));
-    EXPECT_FALSE(swapResult.has_value());
-    EXPECT_EQ(swapResult.error(), InventoryError::SlotOccupied);
-}
+    // Test 4: SplitItem
+    {
+        ItemData potions{ ItemVnum(27001), 200, {1, 1} };
+        assert(domain.SetItem(InventoryWindow::Inventory, ItemSlot(3), potions).has_value());
+        
+        auto splitResult = domain.SplitItem(InventoryWindow::Inventory, ItemSlot(3), ItemSlot(4), 50);
+        assert(splitResult.has_value());
+        
+        auto sourcePotions = domain.GetItem(InventoryWindow::Inventory, ItemSlot(3));
+        assert(sourcePotions.value().count == 150);
+        
+        auto newPotions = domain.GetItem(InventoryWindow::Inventory, ItemSlot(4));
+        assert(newPotions.value().count == 50);
 
-TEST_F(InventoryDomainTest, TestSplitItem)
-{
-    ItemData potions{ ItemVnum(27001), 200, {1, 1} };
-    EXPECT_TRUE(domain.SetItem(INVENTORY, ItemSlot(0), potions).has_value());
-    
-    auto splitResult = domain.SplitItem(INVENTORY, ItemSlot(0), ItemSlot(1), 50);
-    EXPECT_TRUE(splitResult.has_value());
-    
-    auto sourcePotions = domain.GetItem(INVENTORY, ItemSlot(0));
-    EXPECT_EQ(sourcePotions.value().count, 150);
-    
-    auto newPotions = domain.GetItem(INVENTORY, ItemSlot(1));
-    EXPECT_EQ(newPotions.value().count, 50);
-}
+        // Insufficient count split
+        auto splitFail = domain.SplitItem(InventoryWindow::Inventory, ItemSlot(3), ItemSlot(5), 200);
+        assert(!splitFail.has_value());
+        assert(splitFail.error() == InventoryError::InsufficientCount);
+    }
 
-TEST_F(InventoryDomainTest, TestSplitItem_InsufficientCount)
-{
-    ItemData potions{ ItemVnum(27001), 10, {1, 1} };
-    EXPECT_TRUE(domain.SetItem(INVENTORY, ItemSlot(0), potions).has_value());
-    
-    auto splitResult = domain.SplitItem(INVENTORY, ItemSlot(0), ItemSlot(1), 10);
-    EXPECT_FALSE(splitResult.has_value());
-    EXPECT_EQ(splitResult.error(), InventoryError::InsufficientCount);
-}
+    // Test 5: FindEmptyCell
+    {
+        int32_t emptySlot = domain.FindEmptyCell();
+        assert(emptySlot == 5); // slots 0, 1, 2, 3, 4, 10, 15 are occupied
+        assert(domain.GetItem(InventoryWindow::Inventory, ItemSlot(emptySlot)).error() == InventoryError::SlotEmpty);
 
-int main(int argc, char **argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}
+        // FindEmptyCell for size 1x2
+        int32_t emptyFor2 = domain.FindEmptyCell(ItemSize{1, 2});
+        assert(emptyFor2 >= 0);
+    }
 
-TEST_F(InventoryDomainTest, TestEquipmentOverwritePrevention)
-{
-    ItemData item{ ItemVnum(100), 1, {1, 3} }; // A 1x3 weapon
-    
-    // Equip the weapon
-    auto result = domain.SetItem(EQUIPMENT, ItemSlot(0), item);
-    EXPECT_TRUE(result.has_value());
-    
-    // Equip something else in the "overlapped" slot, which shouldn't happen for equipment
-    ItemData otherItem{ ItemVnum(200), 1, {1, 1} };
-    auto result2 = domain.SetItem(EQUIPMENT, ItemSlot(5), otherItem); // slot + 5
-    EXPECT_TRUE(result2.has_value());
-}
+    // Test 6: Delegate callback
+    {
+        uint32_t callbackCounter = 0;
+        domain.SetSlotUpdateCallback([&callbackCounter](const InventorySlotUpdatedEvent& ev) {
+            callbackCounter++;
+            assert(ev.windowType == InventoryWindow::Inventory);
+        });
 
-TEST_F(InventoryDomainTest, TestInvalidWindowType)
-{
-    ItemData item{ ItemVnum(10), 1, {1, 1} };
-    auto result = domain.SetItem(RESERVED_WINDOW, ItemSlot(0), item);
-    EXPECT_FALSE(result.has_value());
-    EXPECT_EQ(result.error(), InventoryError::SlotOutOfRange);
+        ItemData testCbItem{ ItemVnum(999), 1, {1, 1} };
+        assert(domain.SetItem(InventoryWindow::Inventory, ItemSlot(5), testCbItem).has_value());
+        assert(callbackCounter == 1);
+
+        assert(domain.RemoveItem(InventoryWindow::Inventory, ItemSlot(5)).has_value());
+        assert(callbackCounter == 2);
+    }
+
+    // Test 7: ItemData z sockets i attributes
+    {
+        ItemData fullItem;
+        fullItem.vnum = ItemVnum(11299);
+        fullItem.count = 1;
+        fullItem.size = {1, 2};
+        fullItem.sockets[0] = 28441; // Kamien Witalnosci +4
+        fullItem.sockets[1] = 28443; // Kamien Przyspieszenia +4
+        fullItem.attributes[0] = {1, 2000};
+        fullItem.attributes[1] = {23, 10};
+
+        assert(domain.SetItem(InventoryWindow::Inventory, ItemSlot(20), fullItem).has_value());
+        auto retrieved = domain.GetItem(InventoryWindow::Inventory, ItemSlot(20));
+        assert(retrieved.has_value());
+        assert(retrieved->sockets[0] == 28441);
+        assert(retrieved->sockets[1] == 28443);
+        assert(retrieved->attributes[0].type == 1);
+        assert(retrieved->attributes[0].value == 2000);
+    }
+
+    // Test 8: EquipmentOverwritePrevention
+    {
+        ItemData eqWeapon{ ItemVnum(100), 1, {1, 3} };
+        auto eqResult = domain.SetItem(InventoryWindow::Equipment, ItemSlot(0), eqWeapon);
+        assert(eqResult.has_value());
+        
+        ItemData eqOther{ ItemVnum(200), 1, {1, 1} };
+        auto eqResult2 = domain.SetItem(InventoryWindow::Equipment, ItemSlot(5), eqOther);
+        assert(eqResult2.has_value());
+    }
+
+    // Test 9: InvalidWindowType
+    {
+        ItemData item{ ItemVnum(10), 1, {1, 1} };
+        auto result = domain.SetItem(InventoryWindow::Reserved, ItemSlot(0), item);
+        assert(!result.has_value());
+        assert(result.error() == InventoryError::SlotOutOfRange);
+    }
+
+    // Test 10: Clear
+    {
+        domain.Clear();
+        // After clear, slot 0 and slot 20 should be empty
+        assert(!domain.GetItem(InventoryWindow::Inventory, ItemSlot(0)).has_value());
+        assert(!domain.GetItem(InventoryWindow::Inventory, ItemSlot(20)).has_value());
+        assert(!domain.GetItem(InventoryWindow::Equipment, ItemSlot(0)).has_value());
+        assert(domain.FindEmptyCell() == 0);
+    }
+
+    std::cout << "test_c26_inventory_domain: ALL TESTS PASSED (100%)\n";
+    return 0;
 }

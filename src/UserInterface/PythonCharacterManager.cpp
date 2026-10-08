@@ -7,6 +7,7 @@
 
 #include "EterLib/Camera.h"
 #include "ECS/ECSWorldRegistry.h"
+#include "Core/EventBus.h"
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Frame Process
@@ -647,11 +648,28 @@ void CPythonCharacterManager::DeleteInstance(DWORD dwDelVID)
 
 void CPythonCharacterManager::__DeleteBlendOutInstance(CInstanceBase* pkInstDel)
 {
+	if (!pkInstDel)
+		return;
+
 	pkInstDel->DeleteBlendOut();
 	m_kDeadInstList.push_back(pkInstDel);	
 
-	IAbstractPlayer& rkPlayer=IAbstractPlayer::GetSingleton();
-	rkPlayer.NotifyCharacterDead(pkInstDel->GetVirtualID());
+	const DWORD deadVid = pkInstDel->GetVirtualID();
+
+	// Bezpieczne rozgloszenie zdarzenia smierci aktora przez EventBus (decoupling C++23)
+	UserInterface::Core::EventBus::GetInstance().Publish(UserInterface::Core::ActorDeadEvent(deadVid));
+
+	// Bezpieczna delegacja (callback dla testow / zewnetrznych listenerow)
+	if (m_pfnCharacterDeadCallback)
+	{
+		m_pfnCharacterDeadCallback(deadVid);
+	}
+
+	// Bezpieczne powiadomienie IAbstractPlayer z asercja/sprawdzeniem istnienia singletonu
+	if (IAbstractPlayer::GetSingletonPtr())
+	{
+		IAbstractPlayer::GetSingleton().NotifyCharacterDead(deadVid);
+	}
 }
 
 void CPythonCharacterManager::DeleteInstanceByFade(DWORD dwVID)
@@ -991,6 +1009,7 @@ void CPythonCharacterManager::__Initialize()
 	m_pkInstBind = NULL;
 	m_pkInstPick = NULL;
 	m_v2PickedInstProjPos = D3DXVECTOR2(0.0f, 0.0f);
+	m_pfnCharacterDeadCallback = nullptr;
 }
 
 

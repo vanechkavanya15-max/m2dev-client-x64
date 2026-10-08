@@ -65,4 +65,32 @@ TEST_CASE("SpatialHashGrid Basic Operations") {
         CHECK(found4);
         CHECK(found5);
     }
+
+    SUBCASE("QueryNearest Nearest Entity Search") {
+        EterBase::EntityId id10{10};
+        EterBase::EntityId id20{20};
+        EterBase::EntityId id30{30};
+
+        grid.Insert(id10, 100.0f, 100.0f);
+        grid.Insert(id20, 120.0f, 100.0f); // distance = 20
+        grid.Insert(id30, 200.0f, 100.0f); // distance = 100
+
+        // Nearest to (100, 100) within 50.0f should be id10 (dist 0)
+        auto nearest = grid.QueryNearest(100.0f, 100.0f, 50.0f);
+        REQUIRE(nearest.has_value());
+        CHECK(*nearest == id10);
+
+        // Nearest ignoring id10 should be id20 (dist 20)
+        nearest = grid.QueryNearest(100.0f, 100.0f, 50.0f, id10);
+        REQUIRE(nearest.has_value());
+        CHECK(*nearest == id20);
+
+        // Nearest ignoring id10 with radius 10.0f should find nothing
+        nearest = grid.QueryNearest(100.0f, 100.0f, 10.0f, id10);
+        CHECK_FALSE(nearest.has_value());
+
+        // Zero or negative radius
+        CHECK_FALSE(grid.QueryNearest(100.0f, 100.0f, 0.0f).has_value());
+        CHECK_FALSE(grid.QueryNearest(100.0f, 100.0f, -50.0f).has_value());
+    }
 }

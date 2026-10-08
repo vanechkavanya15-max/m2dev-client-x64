@@ -28,15 +28,15 @@ enum
 	MAIN_RACE_MAX_NUM,
 };
 
-void CPythonPlayer::SPlayerStatus::SetPoint(UINT ePoint, long lPoint)
+void CPythonPlayer::SPlayerStatus::SetPoint(UINT ePoint, int64_t lPoint)
 {
 	Client::Bridge::StranglerFacade::Instance().GetWorldContext().SetPoint(ePoint, lPoint);
 	UserInterface::Services::PlayerStatsService::Instance().SetPoint(ePoint, lPoint);
 }
 
-long CPythonPlayer::SPlayerStatus::GetPoint(UINT ePoint)
+int64_t CPythonPlayer::SPlayerStatus::GetPoint(UINT ePoint) const
 {
-	return static_cast<long>(Client::Bridge::StranglerFacade::Instance().GetWorldContext().GetPoint(ePoint));
+	return Client::Bridge::StranglerFacade::Instance().GetWorldContext().GetPoint(ePoint);
 }
 
 bool CPythonPlayer::AffectIndexToSkillIndex(DWORD dwAffectIndex, DWORD * pdwSkillIndex)
@@ -414,10 +414,15 @@ void CPythonPlayer::__UpdateBattleStatus()
 
 void CPythonPlayer::SetStatus(DWORD dwType, long lValue)
 {
+	SetStatus64(dwType, static_cast<int64_t>(lValue));
+}
+
+void CPythonPlayer::SetStatus64(DWORD dwType, int64_t lValue)
+{
 	if (dwType >= POINT_MAX_NUM)
 	{
-		assert(!" CPythonPlayer::SetStatus - Strange Status Type!");
-		Tracef("CPythonPlayer::SetStatus - Set Status Type Error\n");
+		assert(!" CPythonPlayer::SetStatus64 - Strange Status Type!");
+		Tracef("CPythonPlayer::SetStatus64 - Set Status Type Error\n");
 		return;
 	}
 
@@ -427,10 +432,9 @@ void CPythonPlayer::SetStatus(DWORD dwType, long lValue)
 
 		if (pkPlayer)
 		{
-			pkPlayer->SetLevel(lValue);
-			pkPlayer->UpdateTextTailLevel(lValue);
+			pkPlayer->SetLevel(static_cast<DWORD>(lValue));
+			pkPlayer->UpdateTextTailLevel(static_cast<DWORD>(lValue));
 		}
-
 	}
 
 	switch (dwType)
@@ -456,12 +460,12 @@ void CPythonPlayer::SetStatus(DWORD dwType, long lValue)
 	UserInterface::Services::PlayerStatsService::Instance().SetPoint(dwType, lValue);
 }
 
-int CPythonPlayer::GetStatus(DWORD dwType)
+int64_t CPythonPlayer::GetStatus64(DWORD dwType) const
 {
 	if (dwType >= POINT_MAX_NUM)
 	{
-		assert(!" CPythonPlayer::GetStatus - Strange Status Type!");
-		Tracef("CPythonPlayer::GetStatus - Get Status Type Error\n");
+		assert(!" CPythonPlayer::GetStatus64 - Strange Status Type!");
+		Tracef("CPythonPlayer::GetStatus64 - Get Status Type Error\n");
 		return 0;
 	}
 
@@ -472,6 +476,11 @@ int CPythonPlayer::GetStatus(DWORD dwType)
 #endif
 
 	return m_playerStatus.GetPoint(dwType);
+}
+
+int CPythonPlayer::GetStatus(DWORD dwType)
+{
+	return static_cast<int>(GetStatus64(dwType));
 }
 
 const char* CPythonPlayer::GetName()
@@ -779,6 +788,39 @@ void CPythonPlayer::SetItemCount(TItemPos Cell, BYTE byCount)
 		return;
 
 	(const_cast <TItemData *>(GetItemData(Cell)))->count = byCount;
+
+	if (Cell.window_type == INVENTORY)
+	{
+		EterBase::ItemSlot slot(Cell.cell);
+		auto optItem = UserInterface::Services::InventoryService::Instance().GetItem(slot);
+		if (optItem.has_value())
+		{
+			optItem->count = byCount;
+			(void)UserInterface::Services::InventoryService::Instance().SetItem(slot, *optItem);
+		}
+		else
+		{
+			const TItemData * pItem = GetItemData(Cell);
+			if (pItem && pItem->vnum != 0)
+			{
+				UserInterface::Services::InventoryItemView itemView{};
+				itemView.slot = slot;
+				itemView.vnum = EterBase::ItemVnum(pItem->vnum);
+				itemView.count = byCount;
+				for (size_t i = 0; i < ITEM_SOCKET_SLOT_MAX_NUM; ++i)
+				{
+					itemView.sockets[i] = pItem->alSockets[i];
+				}
+				for (size_t i = 0; i < ITEM_ATTRIBUTE_SLOT_MAX_NUM; ++i)
+				{
+					itemView.attrTypes[i] = pItem->aAttr[i].bType;
+					itemView.attrValues[i] = pItem->aAttr[i].sValue;
+				}
+				(void)UserInterface::Services::InventoryService::Instance().SetItem(slot, itemView);
+			}
+		}
+	}
+
 	PyCallClassMemberFunc(m_ppyGameWindow, "RefreshInventory", Py_BuildValue("()"));	
 }
 
@@ -790,6 +832,41 @@ void CPythonPlayer::SetItemMetinSocket(TItemPos Cell, DWORD dwMetinSocketIndex, 
 		return;
 
 	(const_cast <TItemData *>(GetItemData(Cell)))->alSockets[dwMetinSocketIndex] = dwMetinNumber;
+
+	if (Cell.window_type == INVENTORY)
+	{
+		EterBase::ItemSlot slot(Cell.cell);
+		auto optItem = UserInterface::Services::InventoryService::Instance().GetItem(slot);
+		if (optItem.has_value())
+		{
+			if (dwMetinSocketIndex < sizeof(optItem->sockets) / sizeof(optItem->sockets[0]))
+			{
+				optItem->sockets[dwMetinSocketIndex] = dwMetinNumber;
+			}
+			(void)UserInterface::Services::InventoryService::Instance().SetItem(slot, *optItem);
+		}
+		else
+		{
+			const TItemData * pItem = GetItemData(Cell);
+			if (pItem && pItem->vnum != 0)
+			{
+				UserInterface::Services::InventoryItemView itemView{};
+				itemView.slot = slot;
+				itemView.vnum = EterBase::ItemVnum(pItem->vnum);
+				itemView.count = pItem->count;
+				for (size_t i = 0; i < ITEM_SOCKET_SLOT_MAX_NUM; ++i)
+				{
+					itemView.sockets[i] = pItem->alSockets[i];
+				}
+				for (size_t i = 0; i < ITEM_ATTRIBUTE_SLOT_MAX_NUM; ++i)
+				{
+					itemView.attrTypes[i] = pItem->aAttr[i].bType;
+					itemView.attrValues[i] = pItem->aAttr[i].sValue;
+				}
+				(void)UserInterface::Services::InventoryService::Instance().SetItem(slot, itemView);
+			}
+		}
+	}
 }
 
 void CPythonPlayer::SetItemAttribute(TItemPos Cell, DWORD dwAttrIndex, BYTE byType, short sValue)
@@ -801,6 +878,42 @@ void CPythonPlayer::SetItemAttribute(TItemPos Cell, DWORD dwAttrIndex, BYTE byTy
 
 	(const_cast <TItemData *>(GetItemData(Cell)))->aAttr[dwAttrIndex].bType = byType;
 	(const_cast <TItemData *>(GetItemData(Cell)))->aAttr[dwAttrIndex].sValue = sValue;
+
+	if (Cell.window_type == INVENTORY)
+	{
+		EterBase::ItemSlot slot(Cell.cell);
+		auto optItem = UserInterface::Services::InventoryService::Instance().GetItem(slot);
+		if (optItem.has_value())
+		{
+			if (dwAttrIndex < sizeof(optItem->attrTypes) / sizeof(optItem->attrTypes[0]))
+			{
+				optItem->attrTypes[dwAttrIndex] = byType;
+				optItem->attrValues[dwAttrIndex] = sValue;
+			}
+			(void)UserInterface::Services::InventoryService::Instance().SetItem(slot, *optItem);
+		}
+		else
+		{
+			const TItemData * pItem = GetItemData(Cell);
+			if (pItem && pItem->vnum != 0)
+			{
+				UserInterface::Services::InventoryItemView itemView{};
+				itemView.slot = slot;
+				itemView.vnum = EterBase::ItemVnum(pItem->vnum);
+				itemView.count = pItem->count;
+				for (size_t i = 0; i < ITEM_SOCKET_SLOT_MAX_NUM; ++i)
+				{
+					itemView.sockets[i] = pItem->alSockets[i];
+				}
+				for (size_t i = 0; i < ITEM_ATTRIBUTE_SLOT_MAX_NUM; ++i)
+				{
+					itemView.attrTypes[i] = pItem->aAttr[i].bType;
+					itemView.attrValues[i] = pItem->aAttr[i].sValue;
+				}
+				(void)UserInterface::Services::InventoryService::Instance().SetItem(slot, itemView);
+			}
+		}
+	}
 }
 
 int CPythonPlayer::GetQuickPage()

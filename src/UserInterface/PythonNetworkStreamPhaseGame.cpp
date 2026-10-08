@@ -27,6 +27,16 @@
 
 #include "ProcessCRC.h"
 #include "Client/Bridge/StranglerFacade.h"
+#include "PythonNetworkStreamPhaseGameGuild.h"
+#include "PythonNetworkStreamPhaseGameParty.h"
+#include "PythonNetworkStreamPhaseGameQuest.h"
+#include "PythonNetworkStreamPhaseGameSkills.h"
+#include "PythonNetworkStreamPhaseGameTarget.h"
+#include "PythonNetworkStreamPhaseGameShop.h"
+#include "PythonNetworkStreamPhaseGameExchange.h"
+#include "PythonNetworkStreamPhaseGameCombat.h"
+#include "PythonNetworkStreamPhaseGameWorld.h"
+#include "PythonNetworkStreamPhaseGameRefine.h"
 
 BOOL gs_bEmpireLanuageEnable = TRUE;
 
@@ -1206,25 +1216,7 @@ bool CPythonNetworkStream::RecvDeadPacket()
 		return false;
 	}
 
-	CPythonCharacterManager& rkChrMgr=CPythonCharacterManager::Instance();
-	CInstanceBase * pkChrInstSel = rkChrMgr.GetInstancePtr(DeadPacket.vid);
-	if (pkChrInstSel)
-	{
-		CInstanceBase* pkInstMain=rkChrMgr.GetMainInstancePtr();
-		if (pkInstMain==pkChrInstSel)
-		{
-			Tracenf("주인공 사망");
-			if (false == pkInstMain->GetDuelMode())
-			{
-				PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "OnGameOver", Py_BuildValue("()"));
-			}
-			CPythonPlayer::Instance().NotifyDeadMainCharacter();
-		}
-
-		pkChrInstSel->Die();
-	}
-
-	return true;
+	return PhaseGameCombatBridge::HandleDead(this, DeadPacket);
 }
 
 bool CPythonNetworkStream::SendCharacterPositionPacket(BYTE iPosition)
@@ -1312,122 +1304,59 @@ bool CPythonNetworkStream::RecvShopPacket()
 			return false;
 	}
 
-	static const std::unordered_map<uint8_t, bool (CPythonNetworkStream::*)(const std::vector<char>&)> handlers = {
-		{ ShopSub::GC::START,              &CPythonNetworkStream::RecvShopSub_Start },
-		{ ShopSub::GC::START_EX,           &CPythonNetworkStream::RecvShopSub_StartEx },
-		{ ShopSub::GC::END,                &CPythonNetworkStream::RecvShopSub_End },
-		{ ShopSub::GC::UPDATE_ITEM,        &CPythonNetworkStream::RecvShopSub_UpdateItem },
-		{ ShopSub::GC::UPDATE_PRICE,       &CPythonNetworkStream::RecvShopSub_UpdatePrice },
-		{ ShopSub::GC::NOT_ENOUGH_MONEY,   &CPythonNetworkStream::RecvShopSub_NotEnoughMoney },
-		{ ShopSub::GC::NOT_ENOUGH_MONEY_EX,&CPythonNetworkStream::RecvShopSub_NotEnoughMoneyEx },
-		{ ShopSub::GC::SOLDOUT,            &CPythonNetworkStream::RecvShopSub_Soldout },
-		{ ShopSub::GC::INVENTORY_FULL,     &CPythonNetworkStream::RecvShopSub_InventoryFull },
-		{ ShopSub::GC::INVALID_POS,        &CPythonNetworkStream::RecvShopSub_InvalidPos },
-	};
-
-	auto it = handlers.find(packet_shop.subheader);
-	if (it == handlers.end())
-	{
-		TraceError("RecvShopPacket: unknown subheader %d", packet_shop.subheader);
-		return true;
-	}
-	return (this->*(it->second))(buf);
+	return PhaseGameShopBridge::HandleShop(this, packet_shop, buf);
 }
 
 bool CPythonNetworkStream::RecvShopSub_Start(const std::vector<char>& buf)
 {
-	CPythonShop::Instance().Clear();
-
-	DWORD dwVID = *(DWORD *)&buf[0];
-
-	TPacketGCShopStart * pShopStartPacket = (TPacketGCShopStart *)&buf[4];
-	for (BYTE iItemIndex = 0; iItemIndex < SHOP_HOST_ITEM_MAX_NUM; ++iItemIndex)
-	{
-		CPythonShop::Instance().SetItemData(iItemIndex, pShopStartPacket->items[iItemIndex]);
-	}
-
-	PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "StartShop", Py_BuildValue("(i)", dwVID));
-	return true;
+	return PhaseGameShopBridge::HandleShopStart(this, buf);
 }
 
 bool CPythonNetworkStream::RecvShopSub_StartEx(const std::vector<char>& buf)
 {
-	CPythonShop::Instance().Clear();
-
-	TPacketGCShopStartEx * pShopStartPacket = (TPacketGCShopStartEx *)&buf[0];
-	size_t read_point = sizeof(TPacketGCShopStartEx);
-
-	DWORD dwVID = pShopStartPacket->owner_vid;
-	BYTE shop_tab_count = pShopStartPacket->shop_tab_count;
-
-	CPythonShop::instance().SetTabCount(shop_tab_count);
-
-	for (unsigned char i = 0; i < shop_tab_count; i++)
-	{
-		TPacketGCShopStartEx::TSubPacketShopTab* pPackTab = (TPacketGCShopStartEx::TSubPacketShopTab*)&buf[read_point];
-		read_point += sizeof(TPacketGCShopStartEx::TSubPacketShopTab);
-
-		CPythonShop::instance().SetTabCoinType(i, pPackTab->coin_type);
-		CPythonShop::instance().SetTabName(i, pPackTab->name);
-
-		struct packet_shop_item* item = &pPackTab->items[0];
-
-		for (BYTE j = 0; j < SHOP_HOST_ITEM_MAX_NUM; j++)
-		{
-			TShopItemData* itemData = (item + j);
-			CPythonShop::Instance().SetItemData(i, j, *itemData);
-		}
-	}
-
-	PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "StartShop", Py_BuildValue("(i)", dwVID));
-	return true;
+	return PhaseGameShopBridge::HandleShopStartEx(this, buf);
 }
 
 bool CPythonNetworkStream::RecvShopSub_End(const std::vector<char>& buf)
 {
-	PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "EndShop", Py_BuildValue("()"));
-	return true;
+	return PhaseGameShopBridge::HandleShopEnd(this, buf);
 }
 
 bool CPythonNetworkStream::RecvShopSub_UpdateItem(const std::vector<char>& buf)
 {
-	TPacketGCShopUpdateItem * pShopUpdateItemPacket = (TPacketGCShopUpdateItem *)&buf[0];
-	CPythonShop::Instance().SetItemData(pShopUpdateItemPacket->pos, pShopUpdateItemPacket->item);
-	PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "RefreshShop", Py_BuildValue("()"));
-	return true;
+	return PhaseGameShopBridge::HandleShopUpdateItem(this, buf);
 }
 
 bool CPythonNetworkStream::RecvShopSub_UpdatePrice(const std::vector<char>& buf)
 {
-	PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "SetShopSellingPrice", Py_BuildValue("(i)", *(int *)&buf[0]));
-	return true;
+	return PhaseGameShopBridge::HandleShopUpdatePrice(this, buf);
 }
 
-bool CPythonNetworkStream::RecvShopSub_NotEnoughMoney(const std::vector<char>& buf)
+bool CPythonNetworkStream::RecvShopSub_NotEnoughMoney(const std::vector<char>& /*buf*/)
 {
 	PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "OnShopError", Py_BuildValue("(s)", "NOT_ENOUGH_MONEY"));
 	return true;
 }
 
-bool CPythonNetworkStream::RecvShopSub_NotEnoughMoneyEx(const std::vector<char>& buf)
+bool CPythonNetworkStream::RecvShopSub_NotEnoughMoneyEx(const std::vector<char>& /*buf*/)
 {
 	PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "OnShopError", Py_BuildValue("(s)", "NOT_ENOUGH_MONEY_EX"));
 	return true;
 }
 
-bool CPythonNetworkStream::RecvShopSub_Soldout(const std::vector<char>& buf)
+bool CPythonNetworkStream::RecvShopSub_Soldout(const std::vector<char>& /*buf*/)
 {
 	PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "OnShopError", Py_BuildValue("(s)", "SOLDOUT"));
 	return true;
 }
 
-bool CPythonNetworkStream::RecvShopSub_InventoryFull(const std::vector<char>& buf)
+bool CPythonNetworkStream::RecvShopSub_InventoryFull(const std::vector<char>& /*buf*/)
 {
 	PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "OnShopError", Py_BuildValue("(s)", "INVENTORY_FULL"));
 	return true;
 }
 
-bool CPythonNetworkStream::RecvShopSub_InvalidPos(const std::vector<char>& buf)
+bool CPythonNetworkStream::RecvShopSub_InvalidPos(const std::vector<char>& /*buf*/)
 {
 	PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "OnShopError", Py_BuildValue("(s)", "INVALID_POS"));
 	return true;
@@ -1440,127 +1369,47 @@ bool CPythonNetworkStream::RecvExchangePacket()
 	if (!Recv(sizeof(exchange_packet), &exchange_packet))
 		return false;
 
-	static const std::unordered_map<uint8_t, bool (CPythonNetworkStream::*)(const TPacketGCExchange&)> handlers = {
-		{ ExchangeSub::GC::START,    &CPythonNetworkStream::RecvExchangeSub_Start },
-		{ ExchangeSub::GC::ITEM_ADD, &CPythonNetworkStream::RecvExchangeSub_ItemAdd },
-		{ ExchangeSub::GC::ITEM_DEL, &CPythonNetworkStream::RecvExchangeSub_ItemDel },
-		{ ExchangeSub::GC::ELK_ADD,  &CPythonNetworkStream::RecvExchangeSub_ElkAdd },
-		{ ExchangeSub::GC::ACCEPT,   &CPythonNetworkStream::RecvExchangeSub_Accept },
-		{ ExchangeSub::GC::END,      &CPythonNetworkStream::RecvExchangeSub_End },
-		{ ExchangeSub::GC::ALREADY,  &CPythonNetworkStream::RecvExchangeSub_Already },
-		{ ExchangeSub::GC::LESS_ELK, &CPythonNetworkStream::RecvExchangeSub_LessElk },
-	};
-
-	auto it = handlers.find(exchange_packet.subheader);
-	if (it == handlers.end())
-	{
-		TraceError("RecvExchangePacket: unknown subheader %d", exchange_packet.subheader);
-		return true;
-	}
-	return (this->*(it->second))(exchange_packet);
+	return PhaseGameExchangeBridge::HandleExchange(this, exchange_packet);
 }
 
 bool CPythonNetworkStream::RecvExchangeSub_Start(const TPacketGCExchange& pack)
 {
-	CPythonExchange::Instance().Clear();
-	CPythonExchange::Instance().Start();
-	CPythonExchange::Instance().SetSelfName(CPythonPlayer::Instance().GetName());
-
-	{
-		CInstanceBase * pCharacterInstance = CPythonCharacterManager::Instance().GetInstancePtr(pack.arg1);
-
-		if (pCharacterInstance)
-			CPythonExchange::Instance().SetTargetName(pCharacterInstance->GetNameString());
-	}
-
-	PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "StartExchange", Py_BuildValue("()"));
-	return true;
+	return PhaseGameExchangeBridge::HandleExchangeSub_Start(this, pack);
 }
 
 bool CPythonNetworkStream::RecvExchangeSub_ItemAdd(const TPacketGCExchange& pack)
 {
-	if (pack.is_me)
-	{
-		int iSlotIndex = pack.arg2.cell;
-		CPythonExchange::Instance().SetItemToSelf(iSlotIndex, pack.arg1, (BYTE) pack.arg3);
-		for (int i = 0; i < ITEM_SOCKET_SLOT_MAX_NUM; ++i)
-			CPythonExchange::Instance().SetItemMetinSocketToSelf(iSlotIndex, i, pack.alValues[i]);
-		for (int j = 0; j < ITEM_ATTRIBUTE_SLOT_MAX_NUM; ++j)
-			CPythonExchange::Instance().SetItemAttributeToSelf(iSlotIndex, j, pack.aAttr[j].bType, pack.aAttr[j].sValue);
-	}
-	else
-	{
-		int iSlotIndex = pack.arg2.cell;
-		CPythonExchange::Instance().SetItemToTarget(iSlotIndex, pack.arg1, (BYTE) pack.arg3);
-		for (int i = 0; i < ITEM_SOCKET_SLOT_MAX_NUM; ++i)
-			CPythonExchange::Instance().SetItemMetinSocketToTarget(iSlotIndex, i, pack.alValues[i]);
-		for (int j = 0; j < ITEM_ATTRIBUTE_SLOT_MAX_NUM; ++j)
-			CPythonExchange::Instance().SetItemAttributeToTarget(iSlotIndex, j, pack.aAttr[j].bType, pack.aAttr[j].sValue);
-	}
-
-	__RefreshExchangeWindow();
-	__RefreshInventoryWindow();
-	return true;
+	return PhaseGameExchangeBridge::HandleExchangeSub_ItemAdd(this, pack);
 }
 
 bool CPythonNetworkStream::RecvExchangeSub_ItemDel(const TPacketGCExchange& pack)
 {
-	if (pack.is_me)
-	{
-		CPythonExchange::Instance().DelItemOfSelf((BYTE) pack.arg1);
-	}
-	else
-	{
-		CPythonExchange::Instance().DelItemOfTarget((BYTE) pack.arg1);
-	}
-	__RefreshExchangeWindow();
-	__RefreshInventoryWindow();
-	return true;
+	return PhaseGameExchangeBridge::HandleExchangeSub_ItemDel(this, pack);
 }
 
 bool CPythonNetworkStream::RecvExchangeSub_ElkAdd(const TPacketGCExchange& pack)
 {
-	if (pack.is_me)
-		CPythonExchange::Instance().SetElkToSelf(pack.arg1);
-	else
-		CPythonExchange::Instance().SetElkToTarget(pack.arg1);
-
-	__RefreshExchangeWindow();
-	return true;
+	return PhaseGameExchangeBridge::HandleExchangeSub_ElkAdd(this, pack);
 }
 
 bool CPythonNetworkStream::RecvExchangeSub_Accept(const TPacketGCExchange& pack)
 {
-	if (pack.is_me)
-	{
-		CPythonExchange::Instance().SetAcceptToSelf((BYTE) pack.arg1);
-	}
-	else
-	{
-		CPythonExchange::Instance().SetAcceptToTarget((BYTE) pack.arg1);
-	}
-	__RefreshExchangeWindow();
-	return true;
+	return PhaseGameExchangeBridge::HandleExchangeSub_Accept(this, pack);
 }
 
 bool CPythonNetworkStream::RecvExchangeSub_End(const TPacketGCExchange& pack)
 {
-	PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "EndExchange", Py_BuildValue("()"));
-	__RefreshInventoryWindow();
-	CPythonExchange::Instance().End();
-	return true;
+	return PhaseGameExchangeBridge::HandleExchangeSub_End(this, pack);
 }
 
 bool CPythonNetworkStream::RecvExchangeSub_Already(const TPacketGCExchange& pack)
 {
-	Tracef("trade_already");
-	return true;
+	return PhaseGameExchangeBridge::HandleExchangeSub_Already(this, pack);
 }
 
 bool CPythonNetworkStream::RecvExchangeSub_LessElk(const TPacketGCExchange& pack)
 {
-	Tracef("trade_less_elk");
-	return true;
+	return PhaseGameExchangeBridge::HandleExchangeSub_LessElk(this, pack);
 }
 
 bool CPythonNetworkStream::RecvQuestInfoPacket()
@@ -1581,127 +1430,7 @@ bool CPythonNetworkStream::RecvQuestInfoPacket()
 
 	Recv(sizeof(TPacketGCQuestInfo));
 
-	const BYTE & c_rFlag = QuestInfo.flag;
-
-	enum
-	{
-		QUEST_PACKET_TYPE_NONE,
-		QUEST_PACKET_TYPE_BEGIN,
-		QUEST_PACKET_TYPE_UPDATE,
-		QUEST_PACKET_TYPE_END,
-	};
-
-	BYTE byQuestPacketType = QUEST_PACKET_TYPE_NONE;
-
-	if (0 != (c_rFlag & QUEST_SEND_IS_BEGIN))
-	{
-		BYTE isBegin;
-		if (!Recv(sizeof(isBegin), &isBegin))
-			return false;
-
-		if (isBegin)
-			byQuestPacketType = QUEST_PACKET_TYPE_BEGIN;
-		else
-			byQuestPacketType = QUEST_PACKET_TYPE_END;
-	}
-	else
-	{
-		byQuestPacketType = QUEST_PACKET_TYPE_UPDATE;
-	}
-
-	// Recv Data Start
-	char szTitle[30 + 1] = "";
-	char szClockName[16 + 1] = "";
-	int iClockValue = 0;
-	char szCounterName[16 + 1] = "";
-	int iCounterValue = 0;
-	char szIconFileName[24 + 1] = "";
-
-	if (0 != (c_rFlag & QUEST_SEND_TITLE))
-	{
-		if (!Recv(sizeof(szTitle), &szTitle))
-			return false;
-
-		szTitle[30]='\0';
-	}
-	if (0 != (c_rFlag & QUEST_SEND_CLOCK_NAME))
-	{
-		if (!Recv(sizeof(szClockName), &szClockName))
-			return false;
-
-		szClockName[16]='\0';
-	}
-	if (0 != (c_rFlag & QUEST_SEND_CLOCK_VALUE))
-	{
-		if (!Recv(sizeof(iClockValue), &iClockValue))
-			return false;
-	}
-	if (0 != (c_rFlag & QUEST_SEND_COUNTER_NAME))
-	{
-		if (!Recv(sizeof(szCounterName), &szCounterName))
-			return false;
-
-		szCounterName[16]='\0';
-	}
-	if (0 != (c_rFlag & QUEST_SEND_COUNTER_VALUE))
-	{
-		if (!Recv(sizeof(iCounterValue), &iCounterValue))
-			return false;
-	}
-	if (0 != (c_rFlag & QUEST_SEND_ICON_FILE))
-	{
-		if (!Recv(sizeof(szIconFileName), &szIconFileName))
-			return false;
-
-		szIconFileName[24]='\0';
-	}
-	// Recv Data End
-
-	CPythonQuest& rkQuest=CPythonQuest::Instance();
-
-	// Process Start
-	if (QUEST_PACKET_TYPE_END == byQuestPacketType)
-	{
-		rkQuest.DeleteQuestInstance(QuestInfo.index);
-		PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "BINARY_ClearQuest", Py_BuildValue("(i)", QuestInfo.index));
-	}
-	else if (QUEST_PACKET_TYPE_UPDATE == byQuestPacketType)
-	{
-		if (!rkQuest.IsQuest(QuestInfo.index))
-		{
-			rkQuest.MakeQuest(QuestInfo.index);
-		}
-
-		if (strlen(szTitle) > 0)
-			rkQuest.SetQuestTitle(QuestInfo.index, szTitle);
-		if (strlen(szClockName) > 0)
-			rkQuest.SetQuestClockName(QuestInfo.index, szClockName);
-		if (strlen(szCounterName) > 0)
-			rkQuest.SetQuestCounterName(QuestInfo.index, szCounterName);
-		if (strlen(szIconFileName) > 0)
-			rkQuest.SetQuestIconFileName(QuestInfo.index, szIconFileName);
-
-		if (c_rFlag & QUEST_SEND_CLOCK_VALUE)
-			rkQuest.SetQuestClockValue(QuestInfo.index, iClockValue);
-		if (c_rFlag & QUEST_SEND_COUNTER_VALUE)
-			rkQuest.SetQuestCounterValue(QuestInfo.index, iCounterValue);
-	}
-	else if (QUEST_PACKET_TYPE_BEGIN == byQuestPacketType)
-	{
-		CPythonQuest::SQuestInstance QuestInstance;
-		QuestInstance.dwIndex = QuestInfo.index;
-		QuestInstance.strTitle = szTitle;
-		QuestInstance.strClockName = szClockName;
-		QuestInstance.iClockValue = iClockValue;
-		QuestInstance.strCounterName = szCounterName;
-		QuestInstance.iCounterValue = iCounterValue;
-		QuestInstance.strIconFileName = szIconFileName;
-		CPythonQuest::Instance().RegisterQuestInstance(QuestInstance);
-	}
-	// Process Start End
-
-	PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "RefreshQuest", Py_BuildValue("()"));
-	return true;
+	return PhaseGameQuestBridge::HandleQuestInfo(this, QuestInfo);
 }
 
 bool CPythonNetworkStream::RecvQuestConfirmPacket()
@@ -1713,9 +1442,7 @@ bool CPythonNetworkStream::RecvQuestConfirmPacket()
 		return false;
 	}
 
-	PyObject * poArg = Py_BuildValue("(sii)", kQuestConfirmPacket.msg, kQuestConfirmPacket.timeout, kQuestConfirmPacket.requestPID);
- 	PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "BINARY_OnQuestConfirm", poArg);
-	return true;
+	return PhaseGameQuestBridge::HandleQuestConfirm(this, kQuestConfirmPacket);
 }
 
 bool CPythonNetworkStream::RecvRequestMakeGuild()
@@ -2020,39 +1747,20 @@ bool CPythonNetworkStream::RecvSkillCoolTimeEnd()
 		return false;
 	}
 
-	CPythonPlayer::Instance().EndSkillCoolTime(kPacketSkillCoolTimeEnd.bSkill);
-
-	return true;
+	return PhaseGameSkillsBridge::HandleSkillCooltimeEnd(this, kPacketSkillCoolTimeEnd);
 }
 
 bool CPythonNetworkStream::RecvSkillLevel()
 {
-	assert(!"CPythonNetworkStream::RecvSkillLevel - 사용하지 않는 함수");
-
 	TPacketGCSkillLevel packet;
 
 	if (!Recv(sizeof(TPacketGCSkillLevel), &packet))
 	{
 		Tracen("CPythonNetworkStream::RecvSkillLevel - RecvError");
-
 		return false;
 	}
 
-	DWORD dwSlotIndex;
-	CPythonPlayer& rkPlayer = CPythonPlayer::Instance();
-
-	for (int i = 0; i < SKILL_MAX_NUM; ++i)
-	{
-		if (rkPlayer.GetSkillSlotIndex(i, &dwSlotIndex))
-			rkPlayer.SetSkillLevel(dwSlotIndex, packet.abSkillLevels[i]);
-	}
-
-	__RefreshSkillWindow();
-	__RefreshStatus();
-
-	Tracef(" >> RecvSkillLevel\n");
-
-	return true;
+	return PhaseGameSkillsBridge::HandleSkillLevel(this, packet);
 }
 
 bool CPythonNetworkStream::RecvSkillLevelNew()
@@ -2065,30 +1773,8 @@ bool CPythonNetworkStream::RecvSkillLevelNew()
 		return false;
 	}
 
-	CPythonPlayer& rkPlayer = CPythonPlayer::Instance();
-
-	rkPlayer.SetSkill(7, 0);
-	rkPlayer.SetSkill(8, 0);
-
-	for (int i = 0; i < SKILL_MAX_NUM; ++i)
-	{
-		TPlayerSkill & rPlayerSkill = packet.skills[i];
-
-		if (i >= 112 && i <= 115 && rPlayerSkill.bLevel)
-			rkPlayer.SetSkill(7, i);
-
-		if (i >= 116 && i <= 119 && rPlayerSkill.bLevel)
-			rkPlayer.SetSkill(8, i);
-
-		rkPlayer.SetSkillLevel_(i, rPlayerSkill.bMasterType, rPlayerSkill.bLevel);
-	}
-
-	__RefreshSkillWindow();
-	__RefreshStatus();
-	//Tracef(" >> RecvSkillLevelNew\n");
-	return true;
+	return PhaseGameSkillsBridge::HandleSkillLevelNew(this, packet);
 }
-
 
 bool CPythonNetworkStream::RecvDamageInfoPacket()
 {
@@ -2100,16 +1786,7 @@ bool CPythonNetworkStream::RecvDamageInfoPacket()
 		return false;
 	}
 
-	CInstanceBase * pInstTarget = CPythonCharacterManager::Instance().GetInstancePtr(DamageInfoPacket.dwVID);
-	bool bSelf = (pInstTarget == CPythonCharacterManager::Instance().GetMainInstancePtr());
-	bool bTarget = (pInstTarget==m_pInstTarget);
-	if (pInstTarget)
-	{
-		if(DamageInfoPacket.damage >= 0)
-			pInstTarget->AddDamageEffect(DamageInfoPacket.damage,DamageInfoPacket.flag,bSelf,bTarget);
-	}
-
-	return true;
+	return PhaseGameCombatBridge::HandleDamageInfo(this, DamageInfoPacket);
 }
 
 bool CPythonNetworkStream::RecvTargetPacket()
@@ -2380,17 +2057,7 @@ bool CPythonNetworkStream::RecvCreateFlyPacket()
 	if (!Recv(sizeof(TPacketGCCreateFly), &kPacket))
 		return false;
 
-	CFlyingManager& rkFlyMgr = CFlyingManager::Instance();
-	CPythonCharacterManager & rkChrMgr = CPythonCharacterManager::Instance();
-
-	CInstanceBase * pkStartInst = rkChrMgr.GetInstancePtr(kPacket.dwStartVID);
-	CInstanceBase * pkEndInst = rkChrMgr.GetInstancePtr(kPacket.dwEndVID);
-	if (!pkStartInst || !pkEndInst)
-		return true;
-
-	rkFlyMgr.CreateIndexedFly(kPacket.bType, pkStartInst->GetGraphicThingInstancePtr(), pkEndInst->GetGraphicThingInstancePtr());
-
-	return true;
+	return PhaseGameTargetBridge::HandleCreateFly(this, kPacket);
 }
 
 bool CPythonNetworkStream::SendTargetPacket(DWORD dwVID)
@@ -2429,87 +2096,11 @@ bool CPythonNetworkStream::SendSyncPositionElementPacket(DWORD dwVictimVID, DWOR
 
 bool CPythonNetworkStream::RecvMessenger()
 {
-    TPacketGCMessenger p;
+	TPacketGCMessenger p;
 	if (!Recv(sizeof(p), &p))
 		return false;
 
-	int iSize = p.length - sizeof(p);
-	char char_name[24+1];
-
-	switch (p.subheader)
-	{
-		case MessengerSub::GC::LIST:
-		{
-			TPacketGCMessengerListOnline on;
-			while(iSize)
-			{
-				if (!Recv(sizeof(TPacketGCMessengerListOffline),&on))
-					return false;
-
-				if (!Recv(on.length, char_name))
-					return false;
-
-				char_name[on.length] = 0;
-
-				if (on.connected & MESSENGER_CONNECTED_STATE_ONLINE)
-					CPythonMessenger::Instance().OnFriendLogin(char_name);
-				else
-					CPythonMessenger::Instance().OnFriendLogout(char_name);
-
-				iSize -= sizeof(TPacketGCMessengerListOffline);
-				iSize -= on.length;
-			}
-			break;
-		}
-
-		case MessengerSub::GC::LOGIN:
-		{
-			TPacketGCMessengerLogin p;
-			if (!Recv(sizeof(p),&p))
-				return false;
-			if (!Recv(p.length, char_name))
-				return false;
-			char_name[p.length] = 0;
-			CPythonMessenger::Instance().OnFriendLogin(char_name);
-			__RefreshTargetBoardByName(char_name);
-			break;
-		}
-
-		case MessengerSub::GC::LOGOUT:
-		{
-			TPacketGCMessengerLogout logout;
-			if (!Recv(sizeof(logout),&logout))
-				return false;
-			if (!Recv(logout.length, char_name))
-				return false;
-			char_name[logout.length] = 0;
-			CPythonMessenger::Instance().OnFriendLogout(char_name);
-			break;
-		}
-
-		case MessengerSub::GC::REMOVE_FRIEND:
-		{
-			BYTE bLength;
-
-			if (!Recv(sizeof(bLength), &bLength))
-				return false;
-
-			if (!Recv(bLength, char_name))
-				return false;
-
-			char_name[bLength] = 0;
-
-			CPythonMessenger::Instance().RemoveFriend(char_name);
-			__RefreshTargetBoardByName(char_name);
-
-			break;
-		}
-
-		default:
-			TraceError("RecvMessenger: unknown subheader %d", p.subheader);
-			break;
-	}
-	return true;
+	return PhaseGameRefineBridge::HandleMessenger(this, p);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2627,17 +2218,7 @@ bool CPythonNetworkStream::RecvPartyInvite()
 	if (!Recv(sizeof(kPartyInvitePacket), &kPartyInvitePacket))
 		return false;
 
-	CInstanceBase * pInstance = CPythonCharacterManager::Instance().GetInstancePtr(kPartyInvitePacket.leader_pid);
-	if (!pInstance)
-	{
-		TraceError(" CPythonNetworkStream::RecvPartyInvite - Failed to find leader instance [%d]\n", kPartyInvitePacket.leader_pid);
-		return true;
-	}
-
-	PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "RecvPartyInviteQuestion", Py_BuildValue("(is)", kPartyInvitePacket.leader_pid, pInstance->GetNameString()));
-	Tracef(" >> RecvPartyInvite : %d, %s\n", kPartyInvitePacket.leader_pid, pInstance->GetNameString());
-
-	return true;
+	return PhaseGamePartyBridge::HandlePartyInvite(this, kPartyInvitePacket);
 }
 
 bool CPythonNetworkStream::RecvPartyAdd()
@@ -2646,11 +2227,7 @@ bool CPythonNetworkStream::RecvPartyAdd()
 	if (!Recv(sizeof(kPartyAddPacket), &kPartyAddPacket))
 		return false;
 
-	CPythonPlayer::Instance().AppendPartyMember(kPartyAddPacket.pid, kPartyAddPacket.name);
-	PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "AddPartyMember", Py_BuildValue("(is)", kPartyAddPacket.pid, kPartyAddPacket.name));
-	Tracef(" >> RecvPartyAdd : %d, %s\n", kPartyAddPacket.pid, kPartyAddPacket.name);
-
-	return true;
+	return PhaseGamePartyBridge::HandlePartyAdd(this, kPartyAddPacket);
 }
 
 bool CPythonNetworkStream::RecvPartyUpdate()
@@ -2659,31 +2236,7 @@ bool CPythonNetworkStream::RecvPartyUpdate()
 	if (!Recv(sizeof(kPartyUpdatePacket), &kPartyUpdatePacket))
 		return false;
 
-	CPythonPlayer::TPartyMemberInfo * pPartyMemberInfo;
-	if (!CPythonPlayer::Instance().GetPartyMemberPtr(kPartyUpdatePacket.pid, &pPartyMemberInfo))
-		return true;
-
-	BYTE byOldState = pPartyMemberInfo->byState;
-
-	CPythonPlayer::Instance().UpdatePartyMemberInfo(kPartyUpdatePacket.pid, kPartyUpdatePacket.state, kPartyUpdatePacket.percent_hp);
-	for (int i = 0; i < PARTY_AFFECT_SLOT_MAX_NUM; ++i)
-	{
-		CPythonPlayer::Instance().UpdatePartyMemberAffect(kPartyUpdatePacket.pid, i, kPartyUpdatePacket.affects[i]);
-	}
-
-	PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "UpdatePartyMemberInfo", Py_BuildValue("(i)", kPartyUpdatePacket.pid));
-
-	// 만약 리더가 바뀌었다면, TargetBoard 의 버튼을 업데이트 한다.
-	DWORD dwVID;
-	if (CPythonPlayer::Instance().PartyMemberPIDToVID(kPartyUpdatePacket.pid, &dwVID))
-	if (byOldState != kPartyUpdatePacket.state)
-	{
-		__RefreshTargetBoardByVID(dwVID);
-	}
-
-// 	Tracef(" >> RecvPartyUpdate : %d, %d, %d\n", kPartyUpdatePacket.pid, kPartyUpdatePacket.state, kPartyUpdatePacket.percent_hp);
-
-	return true;
+	return PhaseGamePartyBridge::HandlePartyUpdate(this, kPartyUpdatePacket);
 }
 
 bool CPythonNetworkStream::RecvPartyRemove()
@@ -2692,10 +2245,7 @@ bool CPythonNetworkStream::RecvPartyRemove()
 	if (!Recv(sizeof(kPartyRemovePacket), &kPartyRemovePacket))
 		return false;
 
-	PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "RemovePartyMember", Py_BuildValue("(i)", kPartyRemovePacket.pid));
-	Tracef(" >> RecvPartyRemove : %d\n", kPartyRemovePacket.pid);
-
-	return true;
+	return PhaseGamePartyBridge::HandlePartyRemove(this, kPartyRemovePacket);
 }
 
 bool CPythonNetworkStream::RecvPartyLink()
@@ -2739,10 +2289,7 @@ bool CPythonNetworkStream::RecvPartyParameter()
 	if (!Recv(sizeof(kPartyParameterPacket), &kPartyParameterPacket))
 		return false;
 
-	PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "ChangePartyParameter", Py_BuildValue("(i)", kPartyParameterPacket.bDistributeMode));
-	Tracef(" >> RecvPartyParameter : %d\n", kPartyParameterPacket.bDistributeMode);
-
-	return true;
+	return PhaseGamePartyBridge::HandlePartyParameter(this, kPartyParameterPacket);
 }
 
 // Party
@@ -3238,21 +2785,9 @@ bool CPythonNetworkStream::RecvGuildSub_Info(const TPacketGCGuild& pack)
 	if (!Recv(sizeof(GuildInfo), &GuildInfo))
 		return false;
 
-	CPythonGuild::Instance().EnableGuild();
-	CPythonGuild::TGuildInfo & rGuildInfo = CPythonGuild::Instance().GetGuildInfoRef();
-	strncpy(rGuildInfo.szGuildName, GuildInfo.name, GUILD_NAME_MAX_LEN);
-	rGuildInfo.szGuildName[GUILD_NAME_MAX_LEN] = '\0';
+	if (!PhaseGameGuildBridge::HandleGuildSub_Info(GuildInfo))
+		return false;
 
-	rGuildInfo.dwGuildID = GuildInfo.guild_id;
-	rGuildInfo.dwMasterPID = GuildInfo.master_pid;
-	rGuildInfo.dwGuildLevel = GuildInfo.level;
-	rGuildInfo.dwCurrentExperience = GuildInfo.exp;
-	rGuildInfo.dwCurrentMemberCount = GuildInfo.member_count;
-	rGuildInfo.dwMaxMemberCount = GuildInfo.max_member_count;
-	rGuildInfo.dwGuildMoney = GuildInfo.gold;
-	rGuildInfo.bHasLand = GuildInfo.hasLand;
-
-	//Tracef(" <Info> %s, %d, %d : %d\n", GuildInfo.name, GuildInfo.master_pid, GuildInfo.level, rGuildInfo.bHasLand);
 	__RefreshGuildWindowInfoPage();
 	return true;
 }
@@ -3580,75 +3115,7 @@ bool CPythonNetworkStream::RecvFishing()
 	if (!Recv(sizeof(FishingPacket), &FishingPacket))
 		return false;
 
-	CInstanceBase * pFishingInstance = NULL;
-	if (FishingSub::GC::FISH != FishingPacket.subheader)
-	{
-		pFishingInstance = CPythonCharacterManager::Instance().GetInstancePtr(FishingPacket.info);
-		if (!pFishingInstance)
-			return true;
-	}
-
-	switch (FishingPacket.subheader)
-	{
-		case FishingSub::GC::START:
-			pFishingInstance->StartFishing(float(FishingPacket.dir) * 5.0f);
-			break;
-		case FishingSub::GC::STOP:
-			if (pFishingInstance->IsFishing())
-				pFishingInstance->StopFishing();
-			break;
-		case FishingSub::GC::REACT:
-			if (pFishingInstance->IsFishing())
-			{
-				pFishingInstance->SetFishEmoticon(); // Fish Emoticon
-				pFishingInstance->ReactFishing();
-			}
-			break;
-		case FishingSub::GC::SUCCESS:
-			pFishingInstance->CatchSuccess();
-			break;
-		case FishingSub::GC::FAIL:
-			pFishingInstance->CatchFail();
-			if (pFishingInstance == CPythonCharacterManager::Instance().GetMainInstancePtr())
-			{
-				PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "OnFishingFailure", Py_BuildValue("()"));
-			}
-			break;
-		case FishingSub::GC::FISH:
-		{
-			DWORD dwFishID = FishingPacket.info;
-
-			if (0 == FishingPacket.info)
-			{
-				PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "OnFishingNotifyUnknown", Py_BuildValue("()"));
-				return true;
-			}
-
-			CItemData * pItemData;
-			if (!CItemManager::Instance().GetItemDataPointer(dwFishID, &pItemData))
-				return true;
-
-			CInstanceBase * pMainInstance = CPythonCharacterManager::Instance().GetMainInstancePtr();
-			if (!pMainInstance)
-				return true;
-
-			if (pMainInstance->IsFishing())
-			{
-				PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "OnFishingNotify", Py_BuildValue("(is)", CItemData::ITEM_TYPE_FISH == pItemData->GetType(), pItemData->GetName()));
-			}
-			else
-			{
-				PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "OnFishingSuccess", Py_BuildValue("(is)", CItemData::ITEM_TYPE_FISH == pItemData->GetType(), pItemData->GetName()));
-			}
-			break;
-		}
-
-		default:
-			TraceError("RecvFishing: unknown subheader %d", FishingPacket.subheader);
-			break;
-	}
-
-	return true;
+	return PhaseGameWorldBridge::HandleFishing(this, FishingPacket);
 }
 // Fishing
 /////////////////////////////////////////////////////////////////////////
@@ -3661,30 +3128,7 @@ bool CPythonNetworkStream::RecvDungeon()
 	if (!Recv(sizeof(DungeonPacket), &DungeonPacket))
 		return false;
 
-	switch (DungeonPacket.subheader)
-	{
-		case DungeonSub::GC::TIME_ATTACK_START:
-		{
-			break;
-		}
-		case DungeonSub::GC::DESTINATION_POSITION:
-		{
-			unsigned long ulx, uly;
-			if (!Recv(sizeof(ulx), &ulx))
-				return false;
-			if (!Recv(sizeof(uly), &uly))
-				return false;
-
-			CPythonPlayer::Instance().SetDungeonDestinationPosition(ulx, uly);
-			break;
-		}
-
-		default:
-			TraceError("RecvDungeon: unknown subheader %d", DungeonPacket.subheader);
-			break;
-	}
-
-	return true;
+	return PhaseGameWorldBridge::HandleDungeon(this, DungeonPacket);
 }
 // Dungeon
 /////////////////////////////////////////////////////////////////////////
@@ -3717,30 +3161,7 @@ bool CPythonNetworkStream::RecvShopSignPacket()
 	if (!Recv(sizeof(TPacketGCShopSign), &p))
 		return false;
 
-	CPythonPlayer& rkPlayer=CPythonPlayer::Instance();
-	
-	if (0 == strlen(p.szSign))
-	{
-		PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], 
-			"BINARY_PrivateShop_Disappear", 
-			Py_BuildValue("(i)", p.dwVID)
-		);
-
-		if (rkPlayer.IsMainCharacterIndex(p.dwVID))
-			rkPlayer.ClosePrivateShop();
-	}
-	else
-	{
-		PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], 
-			"BINARY_PrivateShop_Appear", 
-			Py_BuildValue("(is)", p.dwVID, p.szSign)
-		);
-
-		if (rkPlayer.IsMainCharacterIndex(p.dwVID))
-			rkPlayer.OpenPrivateShop();
-	}
-
-	return true;
+	return PhaseGameShopBridge::HandleShopSign(this, p);
 }
 /////////////////////////////////////////////////////////////////////////
 
@@ -3750,10 +3171,7 @@ bool CPythonNetworkStream::RecvTimePacket()
 	if (!Recv(sizeof(TimePacket), &TimePacket))
 		return false;
 
-	IAbstractApplication& rkApp=IAbstractApplication::GetSingleton();
-	rkApp.SetServerTime(TimePacket.time);
-
-	return true;
+	return PhaseGameWorldBridge::HandleTime(this, TimePacket);
 }
 
 bool CPythonNetworkStream::RecvWalkModePacket()
@@ -3832,29 +3250,7 @@ bool CPythonNetworkStream::RecvRefineInformationPacket()
 	if (!Recv(sizeof(kRefineInfoPacket), &kRefineInfoPacket))
 		return false;
 
-	TRefineTable & rkRefineTable = kRefineInfoPacket.refine_table;
-	PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], 
-		"OpenRefineDialog", 
-		Py_BuildValue("(iiii)", 
-			kRefineInfoPacket.pos, 
-			kRefineInfoPacket.refine_table.result_vnum, 
-			rkRefineTable.cost, 
-			rkRefineTable.prob));
-
-	for (int i = 0; i < rkRefineTable.material_count; ++i)
-	{
-		PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "AppendMaterialToRefineDialog", Py_BuildValue("(ii)", rkRefineTable.materials[i].vnum, rkRefineTable.materials[i].count));
-	}
-
-#ifdef _DEBUG
-	Tracef(" >> RecvRefineInformationPacket(pos=%d, result_vnum=%d, cost=%d, prob=%d)\n",
-														kRefineInfoPacket.pos,
-														kRefineInfoPacket.refine_table.result_vnum,
-														rkRefineTable.cost,
-														rkRefineTable.prob);
-#endif
-
-	return true;
+	return PhaseGameRefineBridge::HandleRefineInformation(this, kRefineInfoPacket);
 }
 
 bool CPythonNetworkStream::RecvRefineInformationPacketNew()
@@ -3863,32 +3259,7 @@ bool CPythonNetworkStream::RecvRefineInformationPacketNew()
 	if (!Recv(sizeof(kRefineInfoPacket), &kRefineInfoPacket))
 		return false;
 
-	TRefineTable & rkRefineTable = kRefineInfoPacket.refine_table;
-	PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], 
-		"OpenRefineDialog", 
-		Py_BuildValue("(iiiii)", 
-			kRefineInfoPacket.pos, 
-			kRefineInfoPacket.refine_table.result_vnum, 
-			rkRefineTable.cost, 
-			rkRefineTable.prob, 
-			kRefineInfoPacket.type)
-		);
-
-	for (int i = 0; i < rkRefineTable.material_count; ++i)
-	{
-		PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "AppendMaterialToRefineDialog", Py_BuildValue("(ii)", rkRefineTable.materials[i].vnum, rkRefineTable.materials[i].count));
-	}
-
-#ifdef _DEBUG
-	Tracef(" >> RecvRefineInformationPacketNew(pos=%d, result_vnum=%d, cost=%d, prob=%d, type=%d)\n",
-														kRefineInfoPacket.pos,
-														kRefineInfoPacket.refine_table.result_vnum,
-														rkRefineTable.cost,
-														rkRefineTable.prob,
-														kRefineInfoPacket.type);
-#endif
-
-	return true;
+	return PhaseGameRefineBridge::HandleRefineInformationNew(this, kRefineInfoPacket);
 }
 
 // RecvNPCList moved to Network/Handlers/NpcPositionHandler.cpp
@@ -3952,9 +3323,7 @@ bool CPythonNetworkStream::RecvChannelPacket()
 	if (!Recv(sizeof(kChannelPacket), &kChannelPacket))
 		return false;
 
-	//Tracef(" >> CPythonNetworkStream::RecvChannelPacket(channel=%d)\n", kChannelPacket.channel);
-
-	return true;
+	return PhaseGameWorldBridge::HandleChannel(this, kChannelPacket);
 }
 
 bool CPythonNetworkStream::RecvViewEquipPacket()
@@ -4033,18 +3402,7 @@ bool CPythonNetworkStream::RecvTargetCreatePacket()
 	if (!Recv(sizeof(kTargetCreate), &kTargetCreate))
 		return false;
 
-	CPythonMiniMap & rkpyMiniMap = CPythonMiniMap::Instance();
-	rkpyMiniMap.CreateTarget(kTargetCreate.lID, kTargetCreate.szTargetName);
-
-//#ifdef _DEBUG
-//	char szBuf[256+1];
-//	_snprintf(szBuf, sizeof(szBuf), "타겟이 생성 되었습니다 [%d:%s]", kTargetCreate.lID, kTargetCreate.szTargetName);
-//	CPythonChat::Instance().AppendChat(CHAT_TYPE_NOTICE, szBuf);
-//	Tracef(" >> RecvTargetCreatePacket %d : %s\n", kTargetCreate.lID, kTargetCreate.szTargetName);
-//#endif
-
-	PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "BINARY_OpenAtlasWindow", Py_BuildValue("()"));
-	return true;
+	return PhaseGameTargetBridge::HandleTargetCreate(this, kTargetCreate);
 }
 
 bool CPythonNetworkStream::RecvTargetCreatePacketNew()
@@ -4082,20 +3440,7 @@ bool CPythonNetworkStream::RecvTargetUpdatePacket()
 	if (!Recv(sizeof(kTargetUpdate), &kTargetUpdate))
 		return false;
 
-	CPythonMiniMap & rkpyMiniMap = CPythonMiniMap::Instance();
-	rkpyMiniMap.UpdateTarget(kTargetUpdate.lID, kTargetUpdate.lX, kTargetUpdate.lY);
-
-	CPythonBackground & rkpyBG = CPythonBackground::Instance();
-	rkpyBG.CreateTargetEffect(kTargetUpdate.lID, kTargetUpdate.lX, kTargetUpdate.lY);
-
-//#ifdef _DEBUG
-//	char szBuf[256+1];
-//	_snprintf(szBuf, sizeof(szBuf), "타겟의 위치가 갱신 되었습니다 [%d:%d/%d]", kTargetUpdate.lID, kTargetUpdate.lX, kTargetUpdate.lY);
-//	CPythonChat::Instance().AppendChat(CHAT_TYPE_NOTICE, szBuf);
-//	Tracef(" >> RecvTargetUpdatePacket %d : %d, %d\n", kTargetUpdate.lID, kTargetUpdate.lX, kTargetUpdate.lY);
-//#endif
-
-	return true;
+	return PhaseGameTargetBridge::HandleTargetUpdate(this, kTargetUpdate);
 }
 
 bool CPythonNetworkStream::RecvTargetDeletePacket()
@@ -4104,17 +3449,7 @@ bool CPythonNetworkStream::RecvTargetDeletePacket()
 	if (!Recv(sizeof(kTargetDelete), &kTargetDelete))
 		return false;
 
-	CPythonMiniMap & rkpyMiniMap = CPythonMiniMap::Instance();
-	rkpyMiniMap.DeleteTarget(kTargetDelete.lID);
-
-	CPythonBackground & rkpyBG = CPythonBackground::Instance();
-	rkpyBG.DeleteTargetEffect(kTargetDelete.lID);
-
-//#ifdef _DEBUG
-//	Tracef(" >> RecvTargetDeletePacket %d\n", kTargetDelete.lID);
-//#endif
-
-	return true;
+	return PhaseGameTargetBridge::HandleTargetDelete(this, kTargetDelete);
 }
 
 bool CPythonNetworkStream::RecvLoverInfoPacket()
@@ -4123,11 +3458,7 @@ bool CPythonNetworkStream::RecvLoverInfoPacket()
 	if (!Recv(sizeof(kLoverInfo), &kLoverInfo))
 		return false;
 
-	PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "BINARY_LoverInfo", Py_BuildValue("(si)", kLoverInfo.szName, kLoverInfo.byLovePoint));
-#ifdef _DEBUG
-	Tracef("RECV LOVER INFO : %s, %d\n", kLoverInfo.szName, kLoverInfo.byLovePoint);
-#endif
-	return true;
+	return PhaseGameRefineBridge::HandleLoverInfo(this, kLoverInfo);
 }
 
 bool CPythonNetworkStream::RecvLovePointUpdatePacket()

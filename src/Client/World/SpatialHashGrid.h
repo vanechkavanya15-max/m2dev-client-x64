@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <cmath>
 #include <shared_mutex>
+#include <optional>
 
 #include "../../EterBase/StrongTypes.h"
 
@@ -23,6 +24,7 @@ public:
     [[nodiscard]] size_t Count() const;
 
     [[nodiscard]] std::vector<EterBase::EntityId> QueryRadius(float center_x, float center_y, float radius) const;
+    [[nodiscard]] std::optional<EterBase::EntityId> QueryNearest(float center_x, float center_y, float maxRadius, std::optional<EterBase::EntityId> ignoreId = std::nullopt) const;
 
 private:
     struct Position {

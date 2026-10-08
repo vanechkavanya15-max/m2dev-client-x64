@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include "AbstractCharacterManager.h"
 #include "InstanceBase.h"
 #include "GameLib/PhysicsObject.h"
@@ -10,6 +11,9 @@ class CPythonCharacterManager : public CSingleton<CPythonCharacterManager>, publ
 		// Character List
 		typedef std::list<CInstanceBase *>			TCharacterInstanceList;
 		typedef std::map<DWORD, CInstanceBase *>	TCharacterInstanceMap;
+
+		using TCharacterDeadCallback = std::function<void(DWORD)>;
+		void SetCharacterDeadCallback(TCharacterDeadCallback callback) { m_pfnCharacterDeadCallback = callback; }
 
 		class CharacterIterator;
 
@@ -123,6 +127,8 @@ class CPythonCharacterManager : public CSingleton<CPythonCharacterManager>, publ
 		std::vector<CInstanceBase*>			m_kVct_pkInstPicked;
 
 		DWORD								m_adwPointEffect[POINT_MAX_NUM];
+
+		TCharacterDeadCallback				m_pfnCharacterDeadCallback;
 
 	public:
 		class CharacterIterator
