@@ -58,6 +58,8 @@ struct ItemData {
     ItemSize size{1, 1}; // For anti-overflow validation
     std::array<uint32_t, 4> sockets{};
     std::array<ItemAttribute, 7> attributes{};
+    uint32_t flags{0};
+    uint32_t anti_flags{0};
 
     constexpr bool operator==(const ItemData& other) const = default;
 };

@@ -203,7 +203,7 @@ typedef struct SItemPos
   //      cell = _cell;
   //      return cell;
   //  }
-	bool IsValidCell()
+	bool IsValidCell() const
 	{
 		switch (window_type)
 		{
@@ -220,7 +220,7 @@ typedef struct SItemPos
 			return false;
 		}
 	}
-	bool IsEquipCell()
+	bool IsEquipCell() const
 	{
 		switch (window_type)
 		{
@@ -240,7 +240,7 @@ typedef struct SItemPos
 	}
 
 #ifdef ENABLE_NEW_EQUIPMENT_SYSTEM
-	bool IsBeltInventoryCell()
+	bool IsBeltInventoryCell() const
 	{
 		bool bResult = c_Belt_Inventory_Slot_Start <= cell && c_Belt_Inventory_Slot_End > cell;
 		return bResult;

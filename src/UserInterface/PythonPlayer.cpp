@@ -605,10 +605,116 @@ void CPythonPlayer::ResetHorseSkillCoolTime(DWORD dwSkillIndex, DWORD dwVisualSl
         dwVisualSlotIndex);
 }
 
+TItemData* CPythonPlayer::GetCompatItemPtr(const TItemPos& Cell) const
+{
+	switch (Cell.window_type)
+	{
+	case INVENTORY:
+	case EQUIPMENT:
+#ifdef ENABLE_NEW_EQUIPMENT_SYSTEM
+	case BELT_INVENTORY:
+#endif
+		if (Cell.cell < c_Inventory_Count)
+			return &m_itemDataCompat[Cell.cell];
+		return nullptr;
+	case DRAGON_SOUL_INVENTORY:
+		if (Cell.cell < c_DragonSoul_Inventory_Count)
+			return &m_dsItemDataCompat[Cell.cell];
+		return nullptr;
+	default:
+		return nullptr;
+	}
+}
+
+std::optional<std::pair<Client::Gameplay::InventoryWindow, EterBase::ItemSlot>> CPythonPlayer::MapItemPosToDomain(const TItemPos& Cell) const
+{
+	if (!Cell.IsValidCell())
+		return std::nullopt;
+
+	switch (Cell.window_type)
+	{
+	case INVENTORY:
+#ifdef ENABLE_NEW_EQUIPMENT_SYSTEM
+		if (Cell.IsBeltInventoryCell())
+		{
+			uint16_t beltSlot = Cell.cell - c_Belt_Inventory_Slot_Start;
+			if (beltSlot < Client::Gameplay::InventoryDomain::BELT_INVENTORY_MAX_NUM)
+				return std::make_pair(Client::Gameplay::InventoryWindow::Belt, EterBase::ItemSlot(beltSlot));
+			return std::nullopt;
+		}
+#endif
+		if (Cell.IsEquipCell())
+		{
+			uint16_t eqSlot = Cell.cell - c_Equipment_Start;
+			if (eqSlot < Client::Gameplay::InventoryDomain::EQUIPMENT_MAX_NUM)
+				return std::make_pair(Client::Gameplay::InventoryWindow::Equipment, EterBase::ItemSlot(eqSlot));
+			return std::nullopt;
+		}
+		if (Cell.cell < Client::Gameplay::InventoryDomain::INVENTORY_MAX_NUM)
+		{
+			return std::make_pair(Client::Gameplay::InventoryWindow::Inventory, EterBase::ItemSlot(Cell.cell));
+		}
+		return std::nullopt;
+
+	case EQUIPMENT:
+	{
+		uint16_t eqSlot = (Cell.cell >= c_Equipment_Start) ? (Cell.cell - c_Equipment_Start) : Cell.cell;
+		if (eqSlot < Client::Gameplay::InventoryDomain::EQUIPMENT_MAX_NUM)
+			return std::make_pair(Client::Gameplay::InventoryWindow::Equipment, EterBase::ItemSlot(eqSlot));
+		return std::nullopt;
+	}
+
+	case DRAGON_SOUL_INVENTORY:
+		if (Cell.cell < Client::Gameplay::InventoryDomain::DRAGON_SOUL_INVENTORY_MAX_NUM)
+			return std::make_pair(Client::Gameplay::InventoryWindow::DragonSoul, EterBase::ItemSlot(Cell.cell));
+		return std::nullopt;
+
+#ifdef ENABLE_NEW_EQUIPMENT_SYSTEM
+	case BELT_INVENTORY:
+	{
+		uint16_t beltSlot = (Cell.cell >= c_Belt_Inventory_Slot_Start) ? (Cell.cell - c_Belt_Inventory_Slot_Start) : Cell.cell;
+		if (beltSlot < Client::Gameplay::InventoryDomain::BELT_INVENTORY_MAX_NUM)
+			return std::make_pair(Client::Gameplay::InventoryWindow::Belt, EterBase::ItemSlot(beltSlot));
+		return std::nullopt;
+	}
+#endif
+
+	default:
+		return std::nullopt;
+	}
+}
+
+void CPythonPlayer::UpdateCompatItem(const TItemPos& Cell, const TItemData& item)
+{
+	TItemData* pCompat = GetCompatItemPtr(Cell);
+	if (pCompat)
+	{
+		*pCompat = item;
+	}
+}
+
 void CPythonPlayer::MoveItemData(TItemPos SrcCell, TItemPos DstCell)
 {
 	if (!SrcCell.IsValidCell() || !DstCell.IsValidCell())
 		return;
+
+	auto mappedSrc = MapItemPosToDomain(SrcCell);
+	auto mappedDst = MapItemPosToDomain(DstCell);
+	if (mappedSrc.has_value() && mappedDst.has_value())
+	{
+		auto swapRes = m_inventoryDomain.SwapItem(mappedSrc->first, mappedSrc->second, mappedDst->first, mappedDst->second);
+		if (!swapRes.has_value())
+		{
+			auto srcItemRes = m_inventoryDomain.GetItem(mappedSrc->first, mappedSrc->second);
+			auto dstItemRes = m_inventoryDomain.GetItem(mappedDst->first, mappedDst->second);
+			if (srcItemRes.has_value() && !dstItemRes.has_value())
+			{
+				auto item = srcItemRes.value();
+				(void)m_inventoryDomain.RemoveItem(mappedSrc->first, mappedSrc->second);
+				(void)m_inventoryDomain.SetItem(mappedDst->first, mappedDst->second, item);
+			}
+		}
+	}
 
 	TItemData src_item(*GetItemData(SrcCell));
 	TItemData dst_item(*GetItemData(DstCell));
@@ -621,31 +727,46 @@ const TItemData * CPythonPlayer::GetItemData(TItemPos Cell) const
 	if (!Cell.IsValidCell())
 		return NULL;
 
-	switch (Cell.window_type)
+	auto mapped = MapItemPosToDomain(Cell);
+	if (!mapped.has_value())
+		return NULL;
+
+	TItemData* pCompat = GetCompatItemPtr(Cell);
+	if (!pCompat)
+		return NULL;
+
+	auto itemRes = m_inventoryDomain.GetItem(mapped->first, mapped->second);
+	if (itemRes.has_value())
 	{
-	case INVENTORY:
-#if defined(_DEBUG)
-		if (Cell.cell < c_ItemSlot_Count)
+		const auto& item = itemRes.value();
+		pCompat->vnum = item.vnum.get();
+		pCompat->count = static_cast<uint8_t>(item.count);
+		pCompat->flags = item.flags;
+		pCompat->anti_flags = item.anti_flags;
+		for (size_t i = 0; i < ITEM_SOCKET_SLOT_MAX_NUM; ++i)
 		{
-			auto optItem = UserInterface::Services::InventoryService::Instance().GetItem(EterBase::ItemSlot(Cell.cell));
-			if (optItem.has_value())
+			pCompat->alSockets[i] = (i < item.sockets.size()) ? static_cast<int32_t>(item.sockets[i]) : 0;
+		}
+		for (size_t i = 0; i < ITEM_ATTRIBUTE_SLOT_MAX_NUM; ++i)
+		{
+			if (i < item.attributes.size())
 			{
-				assert(m_playerStatus.aItem[Cell.cell].vnum == optItem->vnum.value() && "Shadow Execution: Rozbieznosc VNUM inwentarza!");
+				pCompat->aAttr[i].bType = item.attributes[i].type;
+				pCompat->aAttr[i].sValue = item.attributes[i].value;
 			}
 			else
 			{
-				assert(m_playerStatus.aItem[Cell.cell].vnum == 0 && "Shadow Execution: Rozbieznosc pustego slotu inwentarza!");
+				pCompat->aAttr[i].bType = 0;
+				pCompat->aAttr[i].sValue = 0;
 			}
 		}
-#endif
-		return &m_playerStatus.aItem[Cell.cell];
-	case EQUIPMENT:
-		return &m_playerStatus.aItem[Cell.cell];
-	case DRAGON_SOUL_INVENTORY:
-		return &m_playerStatus.aDSItem[Cell.cell];
-	default:
-		return NULL;
 	}
+	else
+	{
+		memset(pCompat, 0, sizeof(TItemData));
+	}
+
+	return pCompat;
 }
 
 void CPythonPlayer::SetItemData(TItemPos Cell, const TItemData & c_rkItemInst)
@@ -663,52 +784,90 @@ void CPythonPlayer::SetItemData(TItemPos Cell, const TItemData & c_rkItemInst)
 		}
 	}
 
-	switch (Cell.window_type)
+	auto mapped = MapItemPosToDomain(Cell);
+	if (mapped.has_value())
 	{
-	case INVENTORY:
-	case EQUIPMENT:
-		m_playerStatus.aItem[Cell.cell] = c_rkItemInst;
-		if (Cell.window_type == INVENTORY && c_rkItemInst.vnum != 0)
+		auto [window, slot] = mapped.value();
+		if (c_rkItemInst.vnum != 0)
 		{
-			UserInterface::Core::EventBus::GetInstance().Publish(
-				UserInterface::Core::InventoryEvents::ItemAcquired(
-					EterBase::ItemVnum(c_rkItemInst.vnum),
-					EterBase::ItemSlot(Cell.cell),
-					c_rkItemInst.count
-				)
-			);
-		}
+			Client::Gameplay::ItemData domainItem;
+			domainItem.vnum = EterBase::ItemVnum(c_rkItemInst.vnum);
+			domainItem.count = (c_rkItemInst.count > 0) ? c_rkItemInst.count : 1;
+			domainItem.flags = c_rkItemInst.flags;
+			domainItem.anti_flags = c_rkItemInst.anti_flags;
 
-		if (Cell.window_type == INVENTORY)
-		{
-			EterBase::ItemSlot slot(Cell.cell);
-			UserInterface::Services::InventoryItemView itemView{};
-			itemView.slot = slot;
-			itemView.vnum = EterBase::ItemVnum(c_rkItemInst.vnum);
-			itemView.count = c_rkItemInst.count;
-			for (size_t i = 0; i < ITEM_SOCKET_SLOT_MAX_NUM; ++i)
+			CItemData* pItemData = nullptr;
+			if (CItemManager::Instance().GetItemDataPointer(c_rkItemInst.vnum, &pItemData) && pItemData)
 			{
-				itemView.sockets[i] = c_rkItemInst.alSockets[i];
-			}
-			for (size_t i = 0; i < ITEM_ATTRIBUTE_SLOT_MAX_NUM; ++i)
-			{
-				itemView.attrTypes[i] = c_rkItemInst.aAttr[i].bType;
-				itemView.attrValues[i] = c_rkItemInst.aAttr[i].sValue;
-			}
-
-			if (c_rkItemInst.vnum != 0)
-			{
-				(void)UserInterface::Services::InventoryService::Instance().SetItem(slot, itemView);
+				BYTE bHeight = pItemData->GetSize();
+				domainItem.size = {1, (bHeight > 0 ? bHeight : static_cast<uint8_t>(1))};
 			}
 			else
 			{
-				(void)UserInterface::Services::InventoryService::Instance().RemoveItem(slot);
+				domainItem.size = {1, 1};
+			}
+
+			for (size_t i = 0; i < ITEM_SOCKET_SLOT_MAX_NUM && i < domainItem.sockets.size(); ++i)
+			{
+				domainItem.sockets[i] = static_cast<uint32_t>(c_rkItemInst.alSockets[i]);
+			}
+			for (size_t i = 0; i < ITEM_ATTRIBUTE_SLOT_MAX_NUM && i < domainItem.attributes.size(); ++i)
+			{
+				domainItem.attributes[i].type = c_rkItemInst.aAttr[i].bType;
+				domainItem.attributes[i].value = c_rkItemInst.aAttr[i].sValue;
+			}
+
+			(void)m_inventoryDomain.RemoveItem(window, slot);
+			auto setRes = m_inventoryDomain.SetItem(window, slot, domainItem);
+			if (!setRes.has_value())
+			{
+				TraceError("CPythonPlayer::SetItemData m_inventoryDomain.SetItem error: %d\n", static_cast<int>(setRes.error()));
 			}
 		}
-		break;
-	case DRAGON_SOUL_INVENTORY:
-		m_playerStatus.aDSItem[Cell.cell] = c_rkItemInst;
-		break;
+		else
+		{
+			(void)m_inventoryDomain.RemoveItem(window, slot);
+		}
+	}
+
+	UpdateCompatItem(Cell, c_rkItemInst);
+
+	if (Cell.window_type == INVENTORY && c_rkItemInst.vnum != 0)
+	{
+		UserInterface::Core::EventBus::GetInstance().Publish(
+			UserInterface::Core::InventoryEvents::ItemAcquired(
+				EterBase::ItemVnum(c_rkItemInst.vnum),
+				EterBase::ItemSlot(Cell.cell),
+				c_rkItemInst.count
+			)
+		);
+	}
+
+	if (Cell.window_type == INVENTORY)
+	{
+		EterBase::ItemSlot slot(Cell.cell);
+		UserInterface::Services::InventoryItemView itemView{};
+		itemView.slot = slot;
+		itemView.vnum = EterBase::ItemVnum(c_rkItemInst.vnum);
+		itemView.count = c_rkItemInst.count;
+		for (size_t i = 0; i < ITEM_SOCKET_SLOT_MAX_NUM; ++i)
+		{
+			itemView.sockets[i] = c_rkItemInst.alSockets[i];
+		}
+		for (size_t i = 0; i < ITEM_ATTRIBUTE_SLOT_MAX_NUM; ++i)
+		{
+			itemView.attrTypes[i] = c_rkItemInst.aAttr[i].bType;
+			itemView.attrValues[i] = c_rkItemInst.aAttr[i].sValue;
+		}
+
+		if (c_rkItemInst.vnum != 0)
+		{
+			(void)UserInterface::Services::InventoryService::Instance().SetItem(slot, itemView);
+		}
+		else
+		{
+			(void)UserInterface::Services::InventoryService::Instance().RemoveItem(slot);
+		}
 	}
 }
 
@@ -717,54 +876,77 @@ DWORD CPythonPlayer::GetItemIndex(TItemPos Cell)
 	if (!Cell.IsValidCell())
 		return 0;
 
-	return GetItemData(Cell)->vnum;
+	auto mapped = MapItemPosToDomain(Cell);
+	if (!mapped.has_value())
+		return 0;
+
+	auto itemRes = m_inventoryDomain.GetItem(mapped->first, mapped->second);
+	if (!itemRes.has_value())
+		return 0;
+
+	return itemRes->vnum.get();
 }
 
 DWORD CPythonPlayer::GetItemFlags(TItemPos Cell)
 {
 	if (!Cell.IsValidCell())
 		return 0;
-	const TItemData * pItem = GetItemData(Cell);
-	assert (pItem != NULL);
-	return pItem->flags;
+
+	auto mapped = MapItemPosToDomain(Cell);
+	if (!mapped.has_value())
+		return 0;
+
+	auto itemRes = m_inventoryDomain.GetItem(mapped->first, mapped->second);
+	if (!itemRes.has_value())
+		return 0;
+
+	return itemRes->flags;
 }
 
 DWORD CPythonPlayer::GetItemCount(TItemPos Cell)
 {
 	if (!Cell.IsValidCell())
 		return 0;
-	const TItemData * pItem = GetItemData(Cell);
-	if (pItem == NULL)
+
+	auto mapped = MapItemPosToDomain(Cell);
+	if (!mapped.has_value())
 		return 0;
-	else
-		return pItem->count;
+
+	auto itemRes = m_inventoryDomain.GetItem(mapped->first, mapped->second);
+	if (!itemRes.has_value())
+		return 0;
+
+	return itemRes->count;
 }
 
 DWORD CPythonPlayer::GetItemCountByVnum(DWORD dwVnum)
 {
 	DWORD dwCount = 0;
-
-	for (int i = 0; i < c_Inventory_Count; ++i)
+	for (uint16_t i = 0; i < Client::Gameplay::InventoryDomain::INVENTORY_MAX_NUM; ++i)
 	{
-		const TItemData & c_rItemData = m_playerStatus.aItem[i];
-		if (c_rItemData.vnum == dwVnum)
+		auto itemRes = m_inventoryDomain.GetItem(Client::Gameplay::InventoryWindow::Inventory, EterBase::ItemSlot(i));
+		if (itemRes.has_value() && itemRes->vnum.get() == dwVnum)
 		{
-			dwCount += c_rItemData.count;
+			dwCount += itemRes->count;
 		}
 	}
-
 	return dwCount;
 }
 
 DWORD CPythonPlayer::GetItemMetinSocket(TItemPos Cell, DWORD dwMetinSocketIndex)
 {
-	if (!Cell.IsValidCell())
+	if (!Cell.IsValidCell() || dwMetinSocketIndex >= ITEM_SOCKET_SLOT_MAX_NUM)
 		return 0;
 
-	if (dwMetinSocketIndex >= ITEM_SOCKET_SLOT_MAX_NUM)
+	auto mapped = MapItemPosToDomain(Cell);
+	if (!mapped.has_value())
 		return 0;
 
-	return GetItemData(Cell)->alSockets[dwMetinSocketIndex];
+	auto itemRes = m_inventoryDomain.GetItem(mapped->first, mapped->second);
+	if (!itemRes.has_value() || dwMetinSocketIndex >= itemRes->sockets.size())
+		return 0;
+
+	return itemRes->sockets[dwMetinSocketIndex];
 }
 
 void CPythonPlayer::GetItemAttribute(TItemPos Cell, DWORD dwAttrSlotIndex, BYTE * pbyType, short * psValue)
@@ -772,14 +954,19 @@ void CPythonPlayer::GetItemAttribute(TItemPos Cell, DWORD dwAttrSlotIndex, BYTE 
 	*pbyType = 0;
 	*psValue = 0;
 
-	if (!Cell.IsValidCell())
+	if (!Cell.IsValidCell() || dwAttrSlotIndex >= ITEM_ATTRIBUTE_SLOT_MAX_NUM)
 		return;
 
-	if (dwAttrSlotIndex >= ITEM_ATTRIBUTE_SLOT_MAX_NUM)
+	auto mapped = MapItemPosToDomain(Cell);
+	if (!mapped.has_value())
 		return;
 
-	*pbyType = GetItemData(Cell)->aAttr[dwAttrSlotIndex].bType;
-	*psValue = GetItemData(Cell)->aAttr[dwAttrSlotIndex].sValue;
+	auto itemRes = m_inventoryDomain.GetItem(mapped->first, mapped->second);
+	if (!itemRes.has_value() || dwAttrSlotIndex >= itemRes->attributes.size())
+		return;
+
+	*pbyType = itemRes->attributes[dwAttrSlotIndex].type;
+	*psValue = itemRes->attributes[dwAttrSlotIndex].value;
 }
 
 void CPythonPlayer::SetItemCount(TItemPos Cell, BYTE byCount)
@@ -787,7 +974,23 @@ void CPythonPlayer::SetItemCount(TItemPos Cell, BYTE byCount)
 	if (!Cell.IsValidCell())
 		return;
 
-	(const_cast <TItemData *>(GetItemData(Cell)))->count = byCount;
+	auto mapped = MapItemPosToDomain(Cell);
+	if (mapped.has_value())
+	{
+		auto [window, slot] = mapped.value();
+		auto itemRes = m_inventoryDomain.GetItem(window, slot);
+		if (itemRes.has_value())
+		{
+			auto item = itemRes.value();
+			item.count = byCount;
+			(void)m_inventoryDomain.RemoveItem(window, slot);
+			(void)m_inventoryDomain.SetItem(window, slot, item);
+		}
+	}
+
+	TItemData* pCompat = GetCompatItemPtr(Cell);
+	if (pCompat)
+		pCompat->count = byCount;
 
 	if (Cell.window_type == INVENTORY)
 	{
@@ -798,27 +1001,6 @@ void CPythonPlayer::SetItemCount(TItemPos Cell, BYTE byCount)
 			optItem->count = byCount;
 			(void)UserInterface::Services::InventoryService::Instance().SetItem(slot, *optItem);
 		}
-		else
-		{
-			const TItemData * pItem = GetItemData(Cell);
-			if (pItem && pItem->vnum != 0)
-			{
-				UserInterface::Services::InventoryItemView itemView{};
-				itemView.slot = slot;
-				itemView.vnum = EterBase::ItemVnum(pItem->vnum);
-				itemView.count = byCount;
-				for (size_t i = 0; i < ITEM_SOCKET_SLOT_MAX_NUM; ++i)
-				{
-					itemView.sockets[i] = pItem->alSockets[i];
-				}
-				for (size_t i = 0; i < ITEM_ATTRIBUTE_SLOT_MAX_NUM; ++i)
-				{
-					itemView.attrTypes[i] = pItem->aAttr[i].bType;
-					itemView.attrValues[i] = pItem->aAttr[i].sValue;
-				}
-				(void)UserInterface::Services::InventoryService::Instance().SetItem(slot, itemView);
-			}
-		}
 	}
 
 	PyCallClassMemberFunc(m_ppyGameWindow, "RefreshInventory", Py_BuildValue("()"));	
@@ -826,12 +1008,29 @@ void CPythonPlayer::SetItemCount(TItemPos Cell, BYTE byCount)
 
 void CPythonPlayer::SetItemMetinSocket(TItemPos Cell, DWORD dwMetinSocketIndex, DWORD dwMetinNumber)
 {
-	if (!Cell.IsValidCell())
-		return;
-	if (dwMetinSocketIndex >= ITEM_SOCKET_SLOT_MAX_NUM)
+	if (!Cell.IsValidCell() || dwMetinSocketIndex >= ITEM_SOCKET_SLOT_MAX_NUM)
 		return;
 
-	(const_cast <TItemData *>(GetItemData(Cell)))->alSockets[dwMetinSocketIndex] = dwMetinNumber;
+	auto mapped = MapItemPosToDomain(Cell);
+	if (mapped.has_value())
+	{
+		auto [window, slot] = mapped.value();
+		auto itemRes = m_inventoryDomain.GetItem(window, slot);
+		if (itemRes.has_value())
+		{
+			auto item = itemRes.value();
+			if (dwMetinSocketIndex < item.sockets.size())
+			{
+				item.sockets[dwMetinSocketIndex] = dwMetinNumber;
+				(void)m_inventoryDomain.RemoveItem(window, slot);
+				(void)m_inventoryDomain.SetItem(window, slot, item);
+			}
+		}
+	}
+
+	TItemData* pCompat = GetCompatItemPtr(Cell);
+	if (pCompat && dwMetinSocketIndex < ITEM_SOCKET_SLOT_MAX_NUM)
+		pCompat->alSockets[dwMetinSocketIndex] = dwMetinNumber;
 
 	if (Cell.window_type == INVENTORY)
 	{
@@ -845,39 +1044,38 @@ void CPythonPlayer::SetItemMetinSocket(TItemPos Cell, DWORD dwMetinSocketIndex, 
 			}
 			(void)UserInterface::Services::InventoryService::Instance().SetItem(slot, *optItem);
 		}
-		else
-		{
-			const TItemData * pItem = GetItemData(Cell);
-			if (pItem && pItem->vnum != 0)
-			{
-				UserInterface::Services::InventoryItemView itemView{};
-				itemView.slot = slot;
-				itemView.vnum = EterBase::ItemVnum(pItem->vnum);
-				itemView.count = pItem->count;
-				for (size_t i = 0; i < ITEM_SOCKET_SLOT_MAX_NUM; ++i)
-				{
-					itemView.sockets[i] = pItem->alSockets[i];
-				}
-				for (size_t i = 0; i < ITEM_ATTRIBUTE_SLOT_MAX_NUM; ++i)
-				{
-					itemView.attrTypes[i] = pItem->aAttr[i].bType;
-					itemView.attrValues[i] = pItem->aAttr[i].sValue;
-				}
-				(void)UserInterface::Services::InventoryService::Instance().SetItem(slot, itemView);
-			}
-		}
 	}
 }
 
 void CPythonPlayer::SetItemAttribute(TItemPos Cell, DWORD dwAttrIndex, BYTE byType, short sValue)
 {
-	if (!Cell.IsValidCell())
-		return;
-	if (dwAttrIndex >= ITEM_ATTRIBUTE_SLOT_MAX_NUM)
+	if (!Cell.IsValidCell() || dwAttrIndex >= ITEM_ATTRIBUTE_SLOT_MAX_NUM)
 		return;
 
-	(const_cast <TItemData *>(GetItemData(Cell)))->aAttr[dwAttrIndex].bType = byType;
-	(const_cast <TItemData *>(GetItemData(Cell)))->aAttr[dwAttrIndex].sValue = sValue;
+	auto mapped = MapItemPosToDomain(Cell);
+	if (mapped.has_value())
+	{
+		auto [window, slot] = mapped.value();
+		auto itemRes = m_inventoryDomain.GetItem(window, slot);
+		if (itemRes.has_value())
+		{
+			auto item = itemRes.value();
+			if (dwAttrIndex < item.attributes.size())
+			{
+				item.attributes[dwAttrIndex].type = byType;
+				item.attributes[dwAttrIndex].value = sValue;
+				(void)m_inventoryDomain.RemoveItem(window, slot);
+				(void)m_inventoryDomain.SetItem(window, slot, item);
+			}
+		}
+	}
+
+	TItemData* pCompat = GetCompatItemPtr(Cell);
+	if (pCompat && dwAttrIndex < ITEM_ATTRIBUTE_SLOT_MAX_NUM)
+	{
+		pCompat->aAttr[dwAttrIndex].bType = byType;
+		pCompat->aAttr[dwAttrIndex].sValue = sValue;
+	}
 
 	if (Cell.window_type == INVENTORY)
 	{
@@ -892,92 +1090,47 @@ void CPythonPlayer::SetItemAttribute(TItemPos Cell, DWORD dwAttrIndex, BYTE byTy
 			}
 			(void)UserInterface::Services::InventoryService::Instance().SetItem(slot, *optItem);
 		}
-		else
-		{
-			const TItemData * pItem = GetItemData(Cell);
-			if (pItem && pItem->vnum != 0)
-			{
-				UserInterface::Services::InventoryItemView itemView{};
-				itemView.slot = slot;
-				itemView.vnum = EterBase::ItemVnum(pItem->vnum);
-				itemView.count = pItem->count;
-				for (size_t i = 0; i < ITEM_SOCKET_SLOT_MAX_NUM; ++i)
-				{
-					itemView.sockets[i] = pItem->alSockets[i];
-				}
-				for (size_t i = 0; i < ITEM_ATTRIBUTE_SLOT_MAX_NUM; ++i)
-				{
-					itemView.attrTypes[i] = pItem->aAttr[i].bType;
-					itemView.attrValues[i] = pItem->aAttr[i].sValue;
-				}
-				(void)UserInterface::Services::InventoryService::Instance().SetItem(slot, itemView);
-			}
-		}
 	}
 }
 
 int CPythonPlayer::GetQuickPage()
 {
-	return m_playerStatus.lQuickPageIndex;
+	return m_quickslotManager.GetQuickPage();
 }
 
 void CPythonPlayer::SetQuickPage(int nQuickPageIndex)
 {
-	if (nQuickPageIndex<0)
-		m_playerStatus.lQuickPageIndex=QUICKSLOT_MAX_LINE+nQuickPageIndex;	
-	else if (nQuickPageIndex>=QUICKSLOT_MAX_LINE)
-		m_playerStatus.lQuickPageIndex=nQuickPageIndex%QUICKSLOT_MAX_LINE;	
-	else
-		m_playerStatus.lQuickPageIndex=nQuickPageIndex;	
-
-	PyCallClassMemberFunc(m_ppyGameWindow, "RefreshInventory", Py_BuildValue("()"));
+	m_quickslotManager.SetQuickPage(nQuickPageIndex);
 }
 
-DWORD	CPythonPlayer::LocalQuickSlotIndexToGlobalQuickSlotIndex(DWORD dwLocalSlotIndex)
+DWORD CPythonPlayer::LocalQuickSlotIndexToGlobalQuickSlotIndex(DWORD dwLocalSlotIndex)
 {
-	return m_playerStatus.lQuickPageIndex*QUICKSLOT_MAX_COUNT_PER_LINE+dwLocalSlotIndex;	
+	return m_quickslotManager.LocalQuickSlotIndexToGlobalQuickSlotIndex(dwLocalSlotIndex);
 }
 
-void	CPythonPlayer::GetGlobalQuickSlotData(DWORD dwGlobalSlotIndex, DWORD* pdwWndType, DWORD* pdwWndItemPos)
+void CPythonPlayer::GetGlobalQuickSlotData(DWORD dwGlobalSlotIndex, DWORD* pdwWndType, DWORD* pdwWndItemPos)
 {
-	TQuickSlot& rkQuickSlot=__RefGlobalQuickSlot(dwGlobalSlotIndex);
-	*pdwWndType=rkQuickSlot.Type;
-	*pdwWndItemPos=rkQuickSlot.Position;
+	m_quickslotManager.GetGlobalQuickSlotData(dwGlobalSlotIndex, pdwWndType, pdwWndItemPos);
 }
 
-void	CPythonPlayer::GetLocalQuickSlotData(DWORD dwSlotPos, DWORD* pdwWndType, DWORD* pdwWndItemPos)
+void CPythonPlayer::GetLocalQuickSlotData(DWORD dwSlotPos, DWORD* pdwWndType, DWORD* pdwWndItemPos)
 {
-	TQuickSlot& rkQuickSlot=__RefLocalQuickSlot(dwSlotPos);
-	*pdwWndType=rkQuickSlot.Type;
-	*pdwWndItemPos=rkQuickSlot.Position;
+	m_quickslotManager.GetLocalQuickSlotData(dwSlotPos, pdwWndType, pdwWndItemPos);
 }
 
 TQuickSlot & CPythonPlayer::__RefLocalQuickSlot(int SlotIndex)
 {
-	return __RefGlobalQuickSlot(LocalQuickSlotIndexToGlobalQuickSlotIndex(SlotIndex));
+	return m_quickslotManager.RefLocalQuickSlot(SlotIndex);
 }
 
 TQuickSlot & CPythonPlayer::__RefGlobalQuickSlot(int SlotIndex)
 {
-	if (SlotIndex < 0 || SlotIndex >= QUICKSLOT_MAX_NUM)
-	{
-		static TQuickSlot s_kQuickSlot;
-		s_kQuickSlot.Type = 0;
-		s_kQuickSlot.Position = 0;
-		return s_kQuickSlot;
-	}
-
-	return m_playerStatus.aQuickSlot[SlotIndex];
+	return m_quickslotManager.RefGlobalQuickSlot(SlotIndex);
 }
 
 void CPythonPlayer::RemoveQuickSlotByValue(int iType, int iPosition)
 {
-	for (BYTE i = 0; i < QUICKSLOT_MAX_NUM; ++i)
-	{
-		if (iType == m_playerStatus.aQuickSlot[i].Type)
-			if (iPosition == m_playerStatus.aQuickSlot[i].Position)
-				CPythonNetworkStream::Instance().SendQuickSlotDelPacket(i);
-	}
+	m_quickslotManager.RemoveQuickSlotByValue(iType, iPosition);
 }
 
 char CPythonPlayer::IsItem(TItemPos Cell)
@@ -985,120 +1138,52 @@ char CPythonPlayer::IsItem(TItemPos Cell)
 	if (!Cell.IsValidCell())
 		return 0;
 
-	return 0 != GetItemData(Cell)->vnum;
+	auto mapped = MapItemPosToDomain(Cell);
+	if (!mapped.has_value())
+		return 0;
+
+	auto itemRes = m_inventoryDomain.GetItem(mapped->first, mapped->second);
+	return (itemRes.has_value() && itemRes->vnum.get() != 0) ? 1 : 0;
 }
 
 void CPythonPlayer::RequestMoveGlobalQuickSlotToLocalQuickSlot(DWORD dwGlobalSrcSlotIndex, DWORD dwLocalDstSlotIndex)
 {
-	//DWORD dwGlobalSrcSlotIndex=LocalQuickSlotIndexToGlobalQuickSlotIndex(dwLocalSrcSlotIndex);
-	DWORD dwGlobalDstSlotIndex=LocalQuickSlotIndexToGlobalQuickSlotIndex(dwLocalDstSlotIndex);
-
-	CPythonNetworkStream& rkNetStream=CPythonNetworkStream::Instance();
-	rkNetStream.SendQuickSlotMovePacket((BYTE) dwGlobalSrcSlotIndex, (BYTE)dwGlobalDstSlotIndex);
+	m_quickslotManager.RequestMoveGlobalQuickSlotToLocalQuickSlot(dwGlobalSrcSlotIndex, dwLocalDstSlotIndex);
 }
 
 void CPythonPlayer::RequestAddLocalQuickSlot(DWORD dwLocalSlotIndex, DWORD dwWndType, DWORD dwWndItemPos)
 {
-	if (dwLocalSlotIndex>=QUICKSLOT_MAX_COUNT_PER_LINE)
-		return;
-
-	DWORD dwGlobalSlotIndex=LocalQuickSlotIndexToGlobalQuickSlotIndex(dwLocalSlotIndex);
-
-	CPythonNetworkStream& rkNetStream=CPythonNetworkStream::Instance();
-	rkNetStream.SendQuickSlotAddPacket((BYTE)dwGlobalSlotIndex, (BYTE)dwWndType, (BYTE)dwWndItemPos);
+	m_quickslotManager.RequestAddLocalQuickSlot(dwLocalSlotIndex, dwWndType, dwWndItemPos);
 }
 
 void CPythonPlayer::RequestAddToEmptyLocalQuickSlot(DWORD dwWndType, DWORD dwWndItemPos)
 {
-    for (int i = 0; i < QUICKSLOT_MAX_COUNT_PER_LINE; ++i)
-    {
-        TQuickSlot& rkQuickSlot=__RefLocalQuickSlot(i);
-
-        if (0 == rkQuickSlot.Type)
-        {
-            DWORD dwGlobalQuickSlotIndex=LocalQuickSlotIndexToGlobalQuickSlotIndex(i);
-            CPythonNetworkStream& rkNetStream=CPythonNetworkStream::Instance();
-            rkNetStream.SendQuickSlotAddPacket((BYTE)dwGlobalQuickSlotIndex, (BYTE)dwWndType, (BYTE)dwWndItemPos);
-            return;
-        }
-    }
-
+	m_quickslotManager.RequestAddToEmptyLocalQuickSlot(dwWndType, dwWndItemPos);
 }
 
 void CPythonPlayer::RequestDeleteGlobalQuickSlot(DWORD dwGlobalSlotIndex)
 {
-	if (dwGlobalSlotIndex>=QUICKSLOT_MAX_COUNT)
-		return;
-
-	//if (dwLocalSlotIndex>=QUICKSLOT_MAX_SLOT_PER_LINE)
-	//	return;
-
-	//DWORD dwGlobalSlotIndex=LocalQuickSlotIndexToGlobalQuickSlotIndex(dwLocalSlotIndex);
-
-	CPythonNetworkStream& rkNetStream=CPythonNetworkStream::Instance();
-	rkNetStream.SendQuickSlotDelPacket((BYTE)dwGlobalSlotIndex);
+	m_quickslotManager.RequestDeleteGlobalQuickSlot(dwGlobalSlotIndex);
 }
 
 void CPythonPlayer::RequestUseLocalQuickSlot(DWORD dwLocalSlotIndex)
 {
-	if (dwLocalSlotIndex>=QUICKSLOT_MAX_COUNT_PER_LINE)
-		return;
-
-	DWORD dwRegisteredType;
-	DWORD dwRegisteredItemPos;
-	GetLocalQuickSlotData(dwLocalSlotIndex, &dwRegisteredType, &dwRegisteredItemPos);
-
-	switch (dwRegisteredType)
-	{
-		case SLOT_TYPE_INVENTORY:
-		{
-			CPythonNetworkStream& rkNetStream=CPythonNetworkStream::Instance();
-			rkNetStream.SendItemUsePacket(TItemPos(INVENTORY, (WORD)dwRegisteredItemPos));
-			break;
-		}
-		case SLOT_TYPE_SKILL:
-		{
-			ClickSkillSlot(dwRegisteredItemPos);
-			break;
-		}
-		case SLOT_TYPE_EMOTION:
-		{
-			PyCallClassMemberFunc(m_ppyGameWindow, "BINARY_ActEmotion", Py_BuildValue("(i)", dwRegisteredItemPos));
-			break;
-		}
-	}
+	m_quickslotManager.RequestUseLocalQuickSlot(dwLocalSlotIndex);
 }
 
 void CPythonPlayer::AddQuickSlot(int QuickSlotIndex, char IconType, char IconPosition)
 {
-	if (QuickSlotIndex < 0 || QuickSlotIndex >= QUICKSLOT_MAX_NUM)
-		return;
-
-	m_playerStatus.aQuickSlot[QuickSlotIndex].Type = IconType;
-	m_playerStatus.aQuickSlot[QuickSlotIndex].Position = IconPosition;
+	m_quickslotManager.AddQuickSlot(QuickSlotIndex, IconType, IconPosition);
 }
 
 void CPythonPlayer::DeleteQuickSlot(int QuickSlotIndex)
 {
-	if (QuickSlotIndex < 0 || QuickSlotIndex >= QUICKSLOT_MAX_NUM)
-		return;
-
-	m_playerStatus.aQuickSlot[QuickSlotIndex].Type = 0;
-	m_playerStatus.aQuickSlot[QuickSlotIndex].Position = 0;
+	m_quickslotManager.DeleteQuickSlot(QuickSlotIndex);
 }
 
 void CPythonPlayer::MoveQuickSlot(int Source, int Target)
 {
-	if (Source < 0 || Source >= QUICKSLOT_MAX_NUM)
-		return;
-
-	if (Target < 0 || Target >= QUICKSLOT_MAX_NUM)
-		return;
-
-	TQuickSlot& rkSrcSlot=__RefGlobalQuickSlot(Source);
-	TQuickSlot& rkDstSlot=__RefGlobalQuickSlot(Target);
-
-	std::swap(rkSrcSlot, rkDstSlot);
+	m_quickslotManager.MoveQuickSlot(Source, Target);
 }
 
 #ifdef ENABLE_NEW_EQUIPMENT_SYSTEM
@@ -1881,6 +1966,10 @@ void CPythonPlayer::ClearSkillDict()
 void CPythonPlayer::Clear()
 {
 	memset(&m_playerStatus, 0, sizeof(m_playerStatus));
+	m_inventoryDomain.Clear();
+	m_quickslotManager.Clear();
+	memset(m_itemDataCompat, 0, sizeof(m_itemDataCompat));
+	memset(m_dsItemDataCompat, 0, sizeof(m_dsItemDataCompat));
 	Client::Bridge::StranglerFacade::Instance().GetWorldContext().Reset();
 	UserInterface::Services::PlayerStatsService::Instance().Clear();
 	NEW_ClearSkillData(true);
@@ -1992,6 +2081,18 @@ CPythonPlayer::CPythonPlayer(void)
 	m_ixDestPos = 0;
 	m_iyDestPos = 0;
 	m_iLastAlarmTime = 0;
+
+	m_quickslotManager.SetSkillClickHandler([this](DWORD skillIndex) {
+		ClickSkillSlot(skillIndex);
+	});
+	m_quickslotManager.SetEmotionActHandler([this](DWORD emotionIndex) {
+		if (m_ppyGameWindow)
+			PyCallClassMemberFunc(m_ppyGameWindow, "BINARY_ActEmotion", Py_BuildValue("(i)", emotionIndex));
+	});
+	m_quickslotManager.SetPageChangeHandler([this]() {
+		if (m_ppyGameWindow)
+			PyCallClassMemberFunc(m_ppyGameWindow, "RefreshInventory", Py_BuildValue("()"));
+	});
 
 	Clear();
 }

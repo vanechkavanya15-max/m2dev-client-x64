@@ -3,6 +3,8 @@
 #include "AbstractPlayer.h"
 #include "Packet.h"
 #include "PythonSkill.h"
+#include "Client/Gameplay/InventoryDomain.h"
+#include "QuickslotManager.h"
 
 class CInstanceBase;
 
@@ -124,11 +126,7 @@ class CPythonPlayer : public CSingleton<CPythonPlayer>, public IAbstractPlayer
 
 		typedef struct SPlayerStatus
 		{		    
-			TItemData			aItem[c_Inventory_Count];
-			TItemData			aDSItem[c_DragonSoul_Inventory_Count];
-			TQuickSlot			aQuickSlot[QUICKSLOT_MAX_NUM];
 			TSkillInstance		aSkill[SKILL_MAX_NUM];
-			long				lQuickPageIndex;
 
 			void SetPoint(UINT ePoint, int64_t lPoint);
 			int64_t GetPoint(UINT ePoint) const;
@@ -192,6 +190,10 @@ class CPythonPlayer : public CSingleton<CPythonPlayer>, public IAbstractPlayer
 		UserInterface::Services::IInventoryService& GetInventoryService();
 		UserInterface::Services::IPlayerStatsService& GetPlayerStatsService();
 		UserInterface::Services::ISkillService& GetSkillService();
+		Client::Gameplay::InventoryDomain& GetInventoryDomain() noexcept { return m_inventoryDomain; }
+		const Client::Gameplay::InventoryDomain& GetInventoryDomain() const noexcept { return m_inventoryDomain; }
+		QuickslotManager& GetQuickslotManager() noexcept { return m_quickslotManager; }
+		const QuickslotManager& GetQuickslotManager() const noexcept { return m_quickslotManager; }
 
 		void	PickCloseMoney();
 		void	PickCloseItem();
@@ -442,6 +444,10 @@ class CPythonPlayer : public CSingleton<CPythonPlayer>, public IAbstractPlayer
 		TQuickSlot &	__RefLocalQuickSlot(int SlotIndex);
 		TQuickSlot &	__RefGlobalQuickSlot(int SlotIndex);
 
+		TItemData*	GetCompatItemPtr(const TItemPos& Cell) const;
+		std::optional<std::pair<Client::Gameplay::InventoryWindow, EterBase::ItemSlot>> MapItemPosToDomain(const TItemPos& Cell) const;
+		void		UpdateCompatItem(const TItemPos& Cell, const TItemData& item);
+
 
 		DWORD	__GetLevelAtk();
 		DWORD	__GetStatAtk();
@@ -617,7 +623,11 @@ class CPythonPlayer : public CSingleton<CPythonPlayer>, public IAbstractPlayer
 
 		float					m_fCmrRotSpd;
 
-		TPlayerStatus			m_playerStatus;
+		TPlayerStatus						m_playerStatus;
+		Client::Gameplay::InventoryDomain	m_inventoryDomain;
+		QuickslotManager					m_quickslotManager;
+		mutable TItemData					m_itemDataCompat[c_Inventory_Count];
+		mutable TItemData					m_dsItemDataCompat[c_DragonSoul_Inventory_Count];
 
 		UINT					m_iComboOld;
 		DWORD					m_dwVIDReserved;
