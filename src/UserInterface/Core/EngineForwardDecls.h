@@ -7,13 +7,15 @@
 
 #include "Client/Core/StrongTypes.h"
 
-// Forward declarations dla struktur DirectX
-struct D3DXVECTOR3;
-struct D3DXMATRIX;
-struct _D3DCOLOR;
+#include <d3d9.h>
+#include <d3dx9math.h>
 
-// Forward declarations dla struktur graficznych i silnika
-struct TPixelPosition;
+// Forward declarations dla struktur DirectX
+// D3DXVECTOR3 i D3DXMATRIX sa zdefiniowane w d3dx9math.h
+
+// Deklaracje dla struktur graficznych i silnika
+typedef D3DXVECTOR3 TPixelPosition;
+struct _D3DCOLOR;
 class CGraphicThingInstance;
 class CActorInstance;
 class CItemData;
