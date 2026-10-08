@@ -4,6 +4,8 @@ add_subdirectory(libsodium)
 
 ## zstd is a bit tricky
 set(ZSTD_BUILD_SHARED OFF CACHE BOOL "BUILD SHARED LIBRARIES" FORCE)
+set(ZSTD_BUILD_PROGRAMS OFF CACHE BOOL "BUILD PROGRAMS" FORCE)
+set(ZSTD_BUILD_TESTS OFF CACHE BOOL "BUILD TESTS" FORCE)
 add_subdirectory(zstd-1.5.7/build/cmake zstd)
 include_directories("zstd/lib")
 
@@ -21,8 +23,12 @@ if (WIN32)
 	set_target_properties(freetype PROPERTIES FOLDER vendor)
 
 	## zstd stuff
-	set_target_properties(zstd PROPERTIES FOLDER vendor/zstd)
-	set_target_properties(libzstd_static PROPERTIES FOLDER vendor/zstd)
+	if (TARGET zstd)
+		set_target_properties(zstd PROPERTIES FOLDER vendor/zstd)
+	endif()
+	if (TARGET libzstd_static)
+		set_target_properties(libzstd_static PROPERTIES FOLDER vendor/zstd)
+	endif()
 	set_target_properties(clean-all PROPERTIES FOLDER vendor/zstd)
 	set_target_properties(uninstall PROPERTIES FOLDER vendor/zstd)
 endif()
