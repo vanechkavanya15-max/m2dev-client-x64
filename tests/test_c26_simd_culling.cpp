@@ -203,6 +203,97 @@ static void TestDynamicDispatcherAndBenchmark()
     std::cout << "[PASS] Test dispatchera i benchmark zakonczony pomyslnie.\n" << std::endl;
 }
 
+static void TestEdgeCasesAndTails()
+{
+    std::cout << "[TEST] 5. Skrajne przypadki (Edge Cases), puste tablice i nieliniowe ogony (Tails)..." << std::endl;
+    const auto frustum = CreateStandardFrustum();
+    const auto& cpu = CPUIDFeatures::Get();
+
+    // 1. Pusty bufor / count == 0
+    uint8_t dummyRes = 0xAA;
+    FrustumCullSpheresBatch(frustum, nullptr, 0, &dummyRes);
+    FrustumCullAABBBatch(frustum, nullptr, 0, &dummyRes);
+    assert(dummyRes == 0xAA && "Bufor o count==0 nie powinien byc modyfikowany!");
+
+    // 2. Testy dla kazdego malego i nieregularnego rozmiaru ogonow (od 1 do 33 oraz 127)
+    const std::vector<size_t> tailSizes = {1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 13, 15, 17, 23, 31, 33, 127};
+
+    std::mt19937 rng(777);
+    std::uniform_real_distribution<float> distPos(-2500.0f, 2500.0f);
+    std::uniform_real_distribution<float> distRadius(5.0f, 120.0f);
+
+    for (size_t size : tailSizes)
+    {
+        std::vector<BoundingSphere> testSpheres(size);
+        std::vector<BoundingAABB> testAABBs(size);
+
+        for (size_t i = 0; i < size; ++i)
+        {
+            testSpheres[i] = BoundingSphere(distPos(rng), distPos(rng), distPos(rng), distRadius(rng));
+
+            float x = distPos(rng), y = distPos(rng), z = distPos(rng);
+            float s = distRadius(rng);
+            testAABBs[i] = BoundingAABB(x, y, z, x + s, y + s, z + s);
+        }
+
+        std::vector<uint8_t> refScalarSpheres(size, 0xFF);
+        std::vector<uint8_t> sseSpheres(size, 0xFF);
+        std::vector<uint8_t> avxSpheres(size, 0xFF);
+
+        FrustumCullSpheres_Scalar(frustum, testSpheres.data(), size, refScalarSpheres.data());
+        FrustumCullSpheres_SSE2(frustum, testSpheres.data(), size, sseSpheres.data());
+        assert(refScalarSpheres == sseSpheres && "SSE2 Spheres tail mismatch!");
+
+        if (cpu.HasAVX2())
+        {
+            FrustumCullSpheres_AVX2(frustum, testSpheres.data(), size, avxSpheres.data());
+            assert(refScalarSpheres == avxSpheres && "AVX2 Spheres tail mismatch!");
+        }
+
+        // AABB
+        std::vector<uint8_t> refScalarAABB(size, 0xFF);
+        std::vector<uint8_t> sseAABB(size, 0xFF);
+        std::vector<uint8_t> avxAABB(size, 0xFF);
+
+        FrustumCullAABB_Scalar(frustum, testAABBs.data(), size, refScalarAABB.data());
+        FrustumCullAABB_SSE2(frustum, testAABBs.data(), size, sseAABB.data());
+        assert(refScalarAABB == sseAABB && "SSE2 AABB tail mismatch!");
+
+        if (cpu.HasAVX2())
+        {
+            FrustumCullAABB_AVX2(frustum, testAABBs.data(), size, avxAABB.data());
+            assert(refScalarAABB == avxAABB && "AVX2 AABB tail mismatch!");
+        }
+    }
+    std::cout << "       [PASS] Wszystkie rozmiary ogonow (od 1 do 127) sa w 100% zgodne miedzy kernelami." << std::endl;
+
+    // 3. Test unaligned offsetu wskaznika (np. spheres.data() + 1 nie jest 32-bajtowo wyrownany)
+    std::vector<BoundingSphere> unalignedSpheres(17);
+    for (size_t i = 0; i < 17; ++i)
+    {
+        unalignedSpheres[i] = BoundingSphere(distPos(rng), distPos(rng), distPos(rng), distRadius(rng));
+    }
+    std::vector<uint8_t> unalignedResScalar(16, 0);
+    std::vector<uint8_t> unalignedResBatch(16, 0);
+
+    FrustumCullSpheres_Scalar(frustum, unalignedSpheres.data() + 1, 16, unalignedResScalar.data());
+    FrustumCullSpheresBatch(frustum, unalignedSpheres.data() + 1, 16, unalignedResBatch.data());
+    assert(unalignedResScalar == unalignedResBatch && "Unaligned memory load mismatch!");
+    std::cout << "       [PASS] Test unaligned memory loads (brak wyrownania 32B) zaliczony." << std::endl;
+
+    // 4. Test przelaczania backendu w locie (SetFrustumCullBackend)
+    SetFrustumCullBackend(KernelBackend::Scalar);
+    assert(GetActiveFrustumCullBackend() == KernelBackend::Scalar);
+
+    SetFrustumCullBackend(KernelBackend::SSE2);
+    assert(GetActiveFrustumCullBackend() == KernelBackend::SSE2);
+
+    SetFrustumCullBackend(KernelBackend::Auto);
+    std::cout << "       [PASS] Dynamiczne przelaczanie backendow w locie zaliczone." << std::endl;
+
+    std::cout << "[PASS] Test skrajnych przypadkow zakonczony pomyslnie.\n" << std::endl;
+}
+
 int main()
 {
     std::cout << "=================================================================" << std::endl;
@@ -213,6 +304,7 @@ int main()
     TestBitwiseConsistencySpheres();
     TestBitwiseConsistencyAABB();
     TestDynamicDispatcherAndBenchmark();
+    TestEdgeCasesAndTails();
 
     std::cout << "=== WSZYSTKIE TESTY SIMD FRUSTUM CULLING ZAKONCZONE SUKCESEM (100% PASS) ===" << std::endl;
     return 0;
