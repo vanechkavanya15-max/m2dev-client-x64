@@ -37,6 +37,8 @@
 #include "PythonNetworkStreamPhaseGameCombat.h"
 #include "PythonNetworkStreamPhaseGameWorld.h"
 #include "PythonNetworkStreamPhaseGameRefine.h"
+#include "PythonNetworkStreamPhaseGameChat.h"
+#include "PythonNetworkStreamPhaseGameSync.h"
 
 BOOL gs_bEmpireLanuageEnable = TRUE;
 
@@ -378,64 +380,24 @@ void CPythonNetworkStream::__InitializeGamePhase()
 
 void CPythonNetworkStream::Warp(LONG lGlobalX, LONG lGlobalY)
 {
-	CPythonBackground& rkBgMgr=CPythonBackground::Instance();
-	rkBgMgr.Destroy();
-	rkBgMgr.Create();
-	rkBgMgr.Warp(lGlobalX, lGlobalY);
-	//rkBgMgr.SetShadowLevel(CPythonBackground::SHADOW_ALL);
-	rkBgMgr.RefreshShadowLevel();
-
-	// NOTE : Warp 했을때 CenterPosition의 Height가 0이기 때문에 카메라가 땅바닥에 박혀있게 됨
-	//        움직일때마다 Height가 갱신 되기 때문이므로 맵을 이동하면 Position을 강제로 한번
-	//        셋팅해준다 - [levites]
-	int32_t lLocalX = lGlobalX;
-	int32_t lLocalY = lGlobalY;
-	__GlobalPositionToLocalPosition(lLocalX, lLocalY);
-	float fHeight = CPythonBackground::Instance().GetHeight(float(lLocalX), float(lLocalY));
-
-	IAbstractApplication& rkApp=IAbstractApplication::GetSingleton();
-	rkApp.SetCenterPosition(float(lLocalX), float(lLocalY), fHeight);
-
-	__ShowMapName(lLocalX, lLocalY);
+	PhaseGameSyncBridge::Warp(this, lGlobalX, lGlobalY);
 }
 
 void CPythonNetworkStream::__ShowMapName(LONG lLocalX, LONG lLocalY)
 {
-	const std::string & c_rstrMapFileName = CPythonBackground::Instance().GetWarpMapName();
-	PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "ShowMapName", Py_BuildValue("(sii)", c_rstrMapFileName.c_str(), lLocalX, lLocalY));
+	PhaseGameSyncBridge::ShowMapName(this, lLocalX, lLocalY);
 }
 
 void CPythonNetworkStream::__LeaveGamePhase()
 {
-	CInstanceBase::ClearPVPKeySystem();
-
-	__ClearNetworkActorManager();
-
-	m_bComboSkillFlag = FALSE;
-
-	IAbstractCharacterManager& rkChrMgr=IAbstractCharacterManager::GetSingleton();
-	rkChrMgr.Destroy();
-
-	CPythonItem& rkItemMgr=CPythonItem::Instance();
-	rkItemMgr.Destroy();
+	PhaseGameSyncBridge::LeaveGamePhase(this);
 }
 
 void CPythonNetworkStream::SetGamePhase()
 {
-	if ("Game"!=m_strPhase)
-		m_phaseLeaveFunc.Run();
-
-	m_strPhase = "Game";
-
-	m_dwChangingPhaseTime = ELTimer_GetMSec();
-	m_phaseProcessFunc.Set(this, &CPythonNetworkStream::GamePhase);
-	m_phaseLeaveFunc.Set(this, &CPythonNetworkStream::__LeaveGamePhase);
-
-	IAbstractPlayer & rkPlayer = IAbstractPlayer::GetSingleton();
-	rkPlayer.SetMainCharacterIndex(GetMainActorVID());
-
-	__RefreshStatus();
+	PhaseGameSyncBridge::SetGamePhase(this);
 }
+
 
 bool CPythonNetworkStream::RecvObserverAddPacket()
 {
@@ -481,16 +443,7 @@ bool CPythonNetworkStream::RecvObserverMovePacket()
 
 bool CPythonNetworkStream::RecvWarpPacket()
 {
-	TPacketGCWarp kWarpPacket;
-
-	if (!Recv(sizeof(kWarpPacket), &kWarpPacket))
-		return false;
-
-	__DirectEnterMode_Set(m_dwSelectedCharacterIndex);
-	
-	CNetworkStream::Connect((DWORD)kWarpPacket.lAddr, kWarpPacket.wPort);
-
-	return true;
+	return PhaseGameSyncBridge::HandleWarp(this);
 }
 
 bool CPythonNetworkStream::RecvDuelStartPacket()
@@ -707,42 +660,9 @@ bool CPythonNetworkStream::SendUseSkillPacket(DWORD dwSkillIndex, DWORD dwTarget
 
 bool CPythonNetworkStream::SendChatPacket(const char * c_szChat, BYTE byType)
 {
-	if (strlen(c_szChat) == 0)
-		return true;
-
-	if (strlen(c_szChat) >= 512)
-		return true;
-
-	if (c_szChat[0] == '/')
-	{
-		if (1 == strlen(c_szChat))
-		{
-			if (!m_strLastCommand.empty())
-				c_szChat = m_strLastCommand.c_str();
-		}
-		else
-		{
-			m_strLastCommand = c_szChat;
-		}
-	}
-
-	if (ClientCommand(c_szChat))
-		return true;
-
-	int iTextLen = strlen(c_szChat) + 1;
-	TPacketCGChat ChatPacket;
-	ChatPacket.header = CG::CHAT;
-	ChatPacket.length = sizeof(ChatPacket) + iTextLen;
-	ChatPacket.type = byType;
-
-	if (!Send(sizeof(ChatPacket), &ChatPacket))
-		return false;
-
-	if (!Send(iTextLen, c_szChat))
-		return false;
-
-	return true;
+	return PhaseGameChatBridge::SendChat(this, c_szChat, byType);
 }
+
 
 //////////////////////////////////////////////////////////////////////////
 // Emoticon
@@ -922,181 +842,19 @@ void CPythonNetworkStream::__LocalizeItemLinks(char* buf, size_t bufSize)
 
 bool CPythonNetworkStream::RecvChatPacket()
 {
-	TPacketGCChat kChat;
-	char buf[1024 + 1];
-	char line[1024 + 1];
-
-	if (!Recv(sizeof(kChat), &kChat))
-		return false;
-
-	UINT uChatSize=kChat.length - sizeof(kChat);
-
-	if (!Recv(uChatSize, buf))
-		return false;
-
-	buf[uChatSize]='\0';
-
-	// Localize item names in hyperlinks for multi-language support
-	__LocalizeItemLinks(buf, sizeof(buf));
-
-	if (kChat.type >= CHAT_TYPE_MAX_NUM)
-		return true;
-
-	if (CHAT_TYPE_COMMAND == kChat.type)
-	{
-		ServerCommand(buf);
-		return true;
-	}
-
-	if (kChat.dwVID != 0)
-	{
-		CPythonCharacterManager& rkChrMgr=CPythonCharacterManager::Instance();
-		CInstanceBase * pkInstChatter = rkChrMgr.GetInstancePtr(kChat.dwVID);
-		if (NULL == pkInstChatter)
-			return true;
-		
-		switch (kChat.type)
-		{
-		case CHAT_TYPE_TALKING:  /* 그냥 채팅 */
-		case CHAT_TYPE_PARTY:    /* 파티말 */
-		case CHAT_TYPE_GUILD:    /* 길드말 */
-		case CHAT_TYPE_SHOUT:	/* 외치기 */
-		case CHAT_TYPE_WHISPER:	// 서버와는 연동되지 않는 Only Client Enum
-			{
-				char * p = strchr(buf, ':');
-
-				if (p)
-					p += 2;
-				else
-					p = buf;
-
-				DWORD dwEmoticon;
-
-				if (ParseEmoticon(p, &dwEmoticon))
-				{
-					pkInstChatter->SetEmoticon(dwEmoticon);
-					return true;
-				}
-				else
-				{
-					if (gs_bEmpireLanuageEnable)
-					{
-						CInstanceBase* pkInstMain=rkChrMgr.GetMainInstancePtr();
-						if (pkInstMain)
-							if (!pkInstMain->IsSameEmpire(*pkInstChatter))
-								__ConvertEmpireText(pkInstChatter->GetEmpireID(), p);
-					}
-
-					if (m_isEnableChatInsultFilter)
-					{
-						if (false == pkInstChatter->IsNPC() && false == pkInstChatter->IsEnemy())
-						{
-							__FilterInsult(p, strlen(p));
-						}
-					}
-
-					_snprintf(line, sizeof(line), "%s", p);
-				}
-			}
-			break;
-		case CHAT_TYPE_COMMAND:	/* 명령 */
-		case CHAT_TYPE_INFO:     /* 정보 (아이템을 집었다, 경험치를 얻었다. 등) */
-		case CHAT_TYPE_NOTICE:   /* 공지사항 */
-		case CHAT_TYPE_BIG_NOTICE:
-		case CHAT_TYPE_MAX_NUM:
-		default:
-			_snprintf(line, sizeof(line), "%s", buf);
-			break;
-		}
-
-		if (CHAT_TYPE_SHOUT != kChat.type)
-		{
-			CPythonTextTail::Instance().RegisterChatTail(kChat.dwVID, line);
-		}
-
-		if (pkInstChatter->IsPC())
-			CPythonChat::Instance().AppendChat(kChat.type, buf);
-	}
-	else
-	{
-		if (CHAT_TYPE_NOTICE == kChat.type)
-		{
-			PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "BINARY_SetTipMessage", Py_BuildValue("(s)", buf));
-		}
-		else if (CHAT_TYPE_BIG_NOTICE == kChat.type)
-		{
-			PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "BINARY_SetBigMessage", Py_BuildValue("(s)", buf));
-		}
-		else if (CHAT_TYPE_SHOUT == kChat.type)
-		{
-			char * p = strchr(buf, ':');
-
-			if (p)
-			{
-				if (m_isEnableChatInsultFilter)
-					__FilterInsult(p, strlen(p));
-			}
-		}
-
-		CPythonChat::Instance().AppendChat(kChat.type, buf);
-		
-	}
-	return true;
+	return PhaseGameChatBridge::HandleChat(this);
 }
 
 bool CPythonNetworkStream::RecvWhisperPacket()
 {
-	TPacketGCWhisper whisperPacket;
-    char buf[512 + 1];
-
-	if (!Recv(sizeof(whisperPacket), &whisperPacket))
-		return false;
-
-	assert(whisperPacket.length - sizeof(whisperPacket) < 512);
-
-	if (!Recv(whisperPacket.length - sizeof(whisperPacket), &buf))
-		return false;
-
-	buf[whisperPacket.length - sizeof(whisperPacket)] = '\0';
-
-	static char line[256];
-	if (CPythonChat::WHISPER_TYPE_CHAT == whisperPacket.bType || CPythonChat::WHISPER_TYPE_GM == whisperPacket.bType)
-	{		
-		_snprintf(line, sizeof(line), "%s : %s", whisperPacket.szNameFrom, buf);
-		PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "OnRecvWhisper", Py_BuildValue("(iss)", (int) whisperPacket.bType, whisperPacket.szNameFrom, line));
-	}
-	else if (CPythonChat::WHISPER_TYPE_SYSTEM == whisperPacket.bType || CPythonChat::WHISPER_TYPE_ERROR == whisperPacket.bType)
-	{
-		PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "OnRecvWhisperSystemMessage", Py_BuildValue("(iss)", (int) whisperPacket.bType, whisperPacket.szNameFrom, buf));
-	}
-	else
-	{
-		PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "OnRecvWhisperError", Py_BuildValue("(iss)", (int) whisperPacket.bType, whisperPacket.szNameFrom, buf));
-	}
-
-	return true;
+	return PhaseGameChatBridge::HandleWhisper(this);
 }
 
 bool CPythonNetworkStream::SendWhisperPacket(const char * name, const char * c_szChat)
 {
-	if (strlen(c_szChat) >= 255)
-		return true;
-
-	int iTextLen = strlen(c_szChat) + 1;
-	TPacketCGWhisper WhisperPacket;
-	WhisperPacket.header = CG::WHISPER;
-	WhisperPacket.length = sizeof(WhisperPacket) + iTextLen;
-
-	strncpy(WhisperPacket.szNameTo, name, sizeof(WhisperPacket.szNameTo) - 1);
-
-	if (!Send(sizeof(WhisperPacket), &WhisperPacket))
-		return false;
-
-	if (!Send(iTextLen, c_szChat))
-		return false;
-
-	return true;
+	return PhaseGameChatBridge::SendWhisper(this, name, c_szChat);
 }
+
 
 bool CPythonNetworkStream::RecvPointChange()
 {
@@ -3167,12 +2925,14 @@ bool CPythonNetworkStream::RecvShopSignPacket()
 
 bool CPythonNetworkStream::RecvTimePacket()
 {
-	TPacketGCTime TimePacket;
-	if (!Recv(sizeof(TimePacket), &TimePacket))
-		return false;
-
-	return PhaseGameWorldBridge::HandleTime(this, TimePacket);
+	return PhaseGameSyncBridge::HandleTime(this);
 }
+
+bool CPythonNetworkStream::RecvTimeStatusPacket()
+{
+	return PhaseGameSyncBridge::HandleTimeStatus(this);
+}
+
 
 bool CPythonNetworkStream::RecvWalkModePacket()
 {

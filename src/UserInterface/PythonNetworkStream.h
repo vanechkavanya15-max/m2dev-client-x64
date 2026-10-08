@@ -156,6 +156,8 @@ class CPythonNetworkStream : public CNetworkStream, public CSingleton<CPythonNet
 		friend class PhaseGameCombatBridge;
 		friend class PhaseGameWorldBridge;
 		friend class PhaseGameRefineBridge;
+		friend class PhaseGameChatBridge;
+		friend class PhaseGameSyncBridge;
 
 		bool SendSyncPositionElementPacket(DWORD dwVictimVID, DWORD dwVictimX, DWORD dwVictimY);
 
@@ -574,6 +576,7 @@ class CPythonNetworkStream : public CNetworkStream, public CSingleton<CPythonNet
 
 		// Time
 		bool RecvTimePacket();
+		bool RecvTimeStatusPacket();
 
 		// WalkMode
 		bool RecvWalkModePacket();

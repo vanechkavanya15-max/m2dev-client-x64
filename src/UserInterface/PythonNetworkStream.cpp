@@ -12,6 +12,7 @@
 #include "Network/PacketDispatcher.h"
 #include "Network/Dispatchers/NetworkStreamPhaseGameBridge.h"
 #include "Client/Bridge/StranglerFacade.h"
+#include "PythonNetworkStreamPhaseGameSync.h"
 
 // MARK_BUG_FIX
 static DWORD gs_nextDownloadMarkTime = 0;
@@ -478,24 +479,7 @@ bool CPythonNetworkStream::RecvPhasePacket()
 
 bool CPythonNetworkStream::RecvPingPacket()
 {
-	TPacketGCPing kPacketPing;
-
-	if (!Recv(sizeof(TPacketGCPing), &kPacketPing))
-		return false;
-
-	m_dwLastGamePingTime = ELTimer_GetMSec();
-
-	// Sync server time from ping
-	ELTimer_SetServerMSec(kPacketPing.server_time);
-
-	TPacketCGPong kPacketPong;
-	kPacketPong.header = CG::PONG;
-	kPacketPong.length = sizeof(kPacketPong);
-
-	if (!Send(sizeof(TPacketCGPong), &kPacketPong))
-		return false;
-
-	return true;
+	return PhaseGameSyncBridge::HandlePing(this);
 }
 
 bool CPythonNetworkStream::OnProcess()

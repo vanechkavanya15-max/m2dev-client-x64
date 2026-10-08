@@ -1,9 +1,18 @@
 #pragma once
 
 #include <functional>
+#include <map>
+#include <list>
+#include <vector>
+#include <string>
+
 #include "AbstractCharacterManager.h"
 #include "InstanceBase.h"
 #include "GameLib/PhysicsObject.h"
+
+#include "World/ActorRegistry.h"
+#include "World/SpatialHashGrid.h"
+#include "InstanceSceneManager.h"
 
 class CPythonCharacterManager : public CSingleton<CPythonCharacterManager>, public IAbstractCharacterManager, public IObjectManager
 {
@@ -92,6 +101,14 @@ class CPythonCharacterManager : public CSingleton<CPythonCharacterManager>, publ
 		int									PickAll();
 		CInstanceBase *						GetCloseInstance(CInstanceBase * pInstance);
 
+		// Subsystem coordinators
+		[[nodiscard]] Client::World::ActorRegistry& GetActorRegistry() noexcept { return m_actorRegistry; }
+		[[nodiscard]] const Client::World::ActorRegistry& GetActorRegistry() const noexcept { return m_actorRegistry; }
+		[[nodiscard]] Client::World::SpatialHashGrid& GetSpatialHashGrid() noexcept { return m_spatialGrid; }
+		[[nodiscard]] const Client::World::SpatialHashGrid& GetSpatialHashGrid() const noexcept { return m_spatialGrid; }
+		[[nodiscard]] UserInterface::InstanceSceneManager& GetSceneManager() noexcept { return m_sceneMgr; }
+		[[nodiscard]] const UserInterface::InstanceSceneManager& GetSceneManager() const noexcept { return m_sceneMgr; }
+
 		// Refresh TextTail
 		void								RefreshAllPCTextTail();
 		void								RefreshAllGuildMark();
@@ -122,13 +139,17 @@ class CPythonCharacterManager : public CSingleton<CPythonCharacterManager>, publ
 		D3DXVECTOR2							m_v2PickedInstProjPos;
 
 		TCharacterInstanceMap				m_kAliveInstMap;
-		TCharacterInstanceList				m_kDeadInstList;
 
 		std::vector<CInstanceBase*>			m_kVct_pkInstPicked;
 
 		DWORD								m_adwPointEffect[POINT_MAX_NUM];
 
 		TCharacterDeadCallback				m_pfnCharacterDeadCallback;
+
+		// Subsystems
+		Client::World::ActorRegistry		m_actorRegistry;
+		Client::World::SpatialHashGrid		m_spatialGrid;
+		UserInterface::InstanceSceneManager	m_sceneMgr;
 
 	public:
 		class CharacterIterator
