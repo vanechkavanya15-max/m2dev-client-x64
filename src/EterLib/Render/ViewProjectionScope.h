@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "../StdAfx.h"
 #pragma once
 
 #include "../StateManager.h"

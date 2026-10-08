@@ -1998,7 +1998,7 @@ typedef struct SPlayerSkill
 {
 	uint8_t bMasterType;
 	uint8_t bLevel;
-	time_t tNextRead;
+	uint32_t tNextRead;
 } TPlayerSkill;
 
 typedef struct packet_skill_level_new
@@ -2250,7 +2250,7 @@ typedef struct SPacketGCTime
 {
     uint16_t	header;
     uint16_t	length;
-    time_t      time;
+    uint32_t    time;
 } TPacketGCTime;
 
 enum

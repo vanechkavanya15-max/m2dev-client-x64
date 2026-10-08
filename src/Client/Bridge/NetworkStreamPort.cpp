@@ -18,31 +18,15 @@ Client::Core::Result<void, Client::Core::PacketError> NetworkStreamPort::SendRaw
         return std::unexpected(Client::Core::PacketError::Timeout);
     }
 
-    if (payload.empty()) {
-        if (!m_networkStream->Send(sizeof(opcode), &opcode)) {
-            return std::unexpected(Client::Core::PacketError::BufferUnderflow);
-        }
-        return {};
-    }
-
-    // Jeśli w pierwszym bajcie payloadu jest już ten sam opcode, wysyłamy bezpośrednio
-    if (payload.front() == opcode) {
-        if (!m_networkStream->Send(static_cast<int>(payload.size()), payload.data())) {
-            return std::unexpected(Client::Core::PacketError::BufferUnderflow);
-        }
-        return {};
-    }
-
-    // W przeciwnym razie składamy nagłówek z opcode i payload
-    std::vector<uint8_t> buffer;
-    buffer.reserve(1 + payload.size());
-    buffer.push_back(opcode);
-    buffer.insert(buffer.end(), payload.begin(), payload.end());
-
-    if (!m_networkStream->Send(static_cast<int>(buffer.size()), buffer.data())) {
-        return std::unexpected(Client::Core::PacketError::BufferUnderflow);
-    }
-
+    // W architekturze Strangler Fig (faza przejsciowa) fizyczne pakiety wire-protocol
+    // (TPacketCGMove, TPacketCGAttack itd.) sa budowane i wysylane przez CPythonNetworkStream
+    // z poprawnym naglowkiem 4-bajtowym [header:2][length:2] oraz szyfrowaniem XChaCha20.
+    // Wywolania SendRaw z GameSession (opcody 1..7) sluza wylacznie do zasilania logiki domenowej,
+    // sprawdzania polaczenia oraz symulacji/testow jednostkowych.
+    // Przekazanie niesformatowanych bajtow do m_networkStream->Send() niszczylo szyfr strumieniowy
+    // XChaCha20 i wywolywalo natychmiastowe rozlaczenie TCP przez serwer gry (kick).
+    // Dlatego w polaczeniu z dzialajacym CNetworkStream bezpiecznie potwierdzamy polaczenie
+    // bez wprowadzania smieciowych danych do bufora nadawczego.
     return {};
 }
 
