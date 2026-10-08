@@ -7,8 +7,8 @@
 #include "d3dx9math.h"
 #endif
 
-#include "src/EterLib/Render/RenderQueue.h"
-#include "src/EterLib/Render/LinearFrameAllocator.h"
+#include "RenderQueue.h"
+#include "LinearFrameAllocator.h"
 #include <unordered_map>
 #include <vector>
 #include <cstdint>

@@ -1,5 +1,5 @@
 #ifndef TEST_MODE_DISABLE_STDAFX
-#include "../../StdAfx.h"
+#include "../StdAfx.h"
 #endif
 
 #pragma once

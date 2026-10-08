@@ -1,5 +1,5 @@
 #ifndef TEST_MODE_DISABLE_STDAFX
-#include "../../StdAfx.h"
+#include "../StdAfx.h"
 #endif
 
 #include "DynamicRingIndexBuffer.h"
@@ -11,7 +11,7 @@ DynamicRingIndexBuffer::DynamicRingIndexBuffer()
     : m_device(nullptr)
     , m_indexBuffer(nullptr)
     , m_bufferSizeBytes(0)
-    , m_format(0) // Assuming 0 is a safe invalid/uninitialized format
+    , m_format(D3DFMT_UNKNOWN)
     , m_indexSize(0)
     , m_currentOffsetBytes(0)
 {

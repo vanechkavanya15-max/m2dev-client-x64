@@ -2,7 +2,7 @@
 
 namespace EterLib::Render
 {
-    bool ActorBoundingFrustum::IsActorVisible(const D3DVECTOR& pos, float radius, std::span<const D3DPLANE, 6> frustum) const noexcept
+    bool ActorBoundingFrustum::IsActorVisible(const D3DVECTOR& pos, float radius, std::span<const D3DXPLANE, 6> frustum) const noexcept
     {
         for (const auto& plane : frustum)
         {
@@ -17,7 +17,7 @@ namespace EterLib::Render
         return true;
     }
 
-    bool ActorBoundingFrustum::IsBoxVisible(const D3DVECTOR& minPoint, const D3DVECTOR& maxPoint, std::span<const D3DPLANE, 6> frustum) const noexcept
+    bool ActorBoundingFrustum::IsBoxVisible(const D3DVECTOR& minPoint, const D3DVECTOR& maxPoint, std::span<const D3DXPLANE, 6> frustum) const noexcept
     {
         for (const auto& plane : frustum)
         {
@@ -37,4 +37,3 @@ namespace EterLib::Render
         return true;
     }
 }
-

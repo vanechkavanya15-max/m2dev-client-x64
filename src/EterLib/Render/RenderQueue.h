@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <span>
 #include <vector>
+#include "RenderSortKey.h"
 
 namespace EterLib::Render
 {
@@ -22,21 +23,6 @@ enum class CommandType : uint8_t
     Draw,
     StateChange,
     Compute
-};
-
-struct RenderSortKey
-{
-    uint64_t value;
-
-    constexpr bool operator<(const RenderSortKey& other) const noexcept
-    {
-        return value < other.value;
-    }
-    
-    constexpr bool operator==(const RenderSortKey& other) const noexcept
-    {
-        return value == other.value;
-    }
 };
 
 struct RenderQueueEntry
@@ -74,4 +60,3 @@ private:
 };
 
 } // namespace EterLib::Render
-

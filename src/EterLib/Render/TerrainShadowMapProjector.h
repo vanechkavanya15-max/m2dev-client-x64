@@ -14,12 +14,11 @@ namespace EterLib::Render
         ~TerrainShadowMapProjector() = default;
 
         void SetupSunMatrix(const D3DVECTOR& sunDir, const D3DVECTOR& cameraPos);
-        D3DMATRIX GetLightViewProjMatrix() const noexcept;
+        D3DXMATRIX GetLightViewProjMatrix() const noexcept;
         bool IsPatchInShadow(float x, float y, float size) const noexcept;
 
     private:
-        D3DMATRIX m_lightViewProj;
+        D3DXMATRIX m_lightViewProj;
         float m_sunRadius;
     };
 }
-

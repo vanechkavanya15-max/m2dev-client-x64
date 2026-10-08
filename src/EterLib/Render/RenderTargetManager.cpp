@@ -1,4 +1,4 @@
-#include "../../StdAfx.h"
+#include "../StdAfx.h"
 #include "RenderTargetManager.h"
 #include <stdexcept>
 

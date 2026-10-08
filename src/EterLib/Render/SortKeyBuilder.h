@@ -3,16 +3,10 @@
 #include <cstdint>
 #include <compare>
 #include <algorithm>
+#include "RenderSortKey.h"
 
 namespace EterLib::Render
 {
-    struct RenderSortKey
-    {
-        uint64_t value{0};
-
-        constexpr auto operator<=>(const RenderSortKey&) const = default;
-    };
-
     class SortKeyBuilder
     {
     public:
@@ -81,9 +75,6 @@ namespace EterLib::Render
         }
 
     private:
-        // CPU Cache optimization: storing internal state directly as a packed 64-bit integer
-        // rather than multiple members. This takes 8 bytes instead of 32+ bytes.
         uint64_t m_key{0};
     };
 }
-

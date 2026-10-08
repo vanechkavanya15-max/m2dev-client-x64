@@ -1,7 +1,7 @@
 #pragma once
 
 #ifndef TEST_MODE_DISABLE_STDAFX
-#include "../../StdAfx.h"
+#include "../StdAfx.h"
 #else
 #include <cstdint>
 #include <cstddef>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../StdAfx.h"
+#include "../StdAfx.h"
 #include <vector>
 #include <span>
 #include <unordered_map>

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <d3dx9.h>
+#include <cassert>
 
 class CRay
 {
@@ -55,6 +56,7 @@ class CRay
 			m_fRayRange = rhs.m_fRayRange;
 			D3DXVec3Normalize(&m_v3Direction, &m_v3Direction);
 			m_v3End = m_v3Start + m_fRayRange * m_v3Direction;
+			return *this;
 		}
 		
 	private:

@@ -51,7 +51,7 @@ namespace EterLib::Render
         if (cmd)
         {
             RenderSortKey key;
-            key.value = static_cast<uint64_t>(Pass::AlphaBlend) << 56;
+            key.value = static_cast<uint64_t>(Pass::Transparent) << 56;
             queue.Submit(key, cmd, CommandType::Draw);
         }
 

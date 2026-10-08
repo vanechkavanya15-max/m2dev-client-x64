@@ -34,7 +34,7 @@ namespace EterLib::Render
         D3DXMatrixMultiply(&m_lightViewProj, &viewMatrix, &projMatrix);
     }
 
-    D3DMATRIX TerrainShadowMapProjector::GetLightViewProjMatrix() const noexcept
+    D3DXMATRIX TerrainShadowMapProjector::GetLightViewProjMatrix() const noexcept
     {
         return m_lightViewProj;
     }
@@ -66,9 +66,9 @@ namespace EterLib::Render
             }
 
             if (px < minX) minX = px;
-            if (px > maxX) maxX = px;
+            if (maxX > px) maxX = px;
             if (py < minY) minY = py;
-            if (py > maxY) maxY = py;
+            if (maxY > py) maxY = py;
         }
 
         if (maxX < -1.0f || minX > 1.0f)
@@ -80,4 +80,3 @@ namespace EterLib::Render
         return true;
     }
 }
-

@@ -6,9 +6,16 @@
 #include <expected>
 
 #include "UserInterface/Packet.h"
-// If PacketHeader.h doesn't exist, we just rely on Packet.h which has everything usually.
-// Since we found header constants inside Packet.h, we will just use that.
-#include "EterBase/Error/PacketResult.h"
+
+namespace EterBase {
+    enum class PacketError {
+        BufferUnderflow,
+        InvalidHeader
+    };
+
+    template <typename T>
+    using PacketResult = std::expected<T, PacketError>;
+}
 
 namespace Client::Network
 {

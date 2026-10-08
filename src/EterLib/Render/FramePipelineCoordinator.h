@@ -13,20 +13,10 @@
 #include "RenderQueue.h"
 #include "FrameStatisticsTracker.h"
 
+#include "DynamicRingVertexBuffer.h"
+
 namespace EterLib::Render
 {
-    /**
-     * @brief Dummy class for dynamic ring vertex buffer as required.
-     */
-    class DynamicRingVertexBuffer
-    {
-    public:
-        DynamicRingVertexBuffer() = default;
-        ~DynamicRingVertexBuffer() = default;
-
-        void Reset() noexcept {}
-    };
-
     /**
      * @brief Orchestrator for the rendering frame pipeline.
      */

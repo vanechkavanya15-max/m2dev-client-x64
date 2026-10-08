@@ -6,11 +6,7 @@
 #include <string>
 #include <expected>
 
-// If PACKET_MOCK_H is defined, MockPacket.h is already included.
-// Otherwise include the real UserInterface/Packet.h
-#ifndef PACKET_MOCK_H
 #include "../../UserInterface/Packet.h"
-#endif
 
 namespace EterBase {
     enum class PacketError {
