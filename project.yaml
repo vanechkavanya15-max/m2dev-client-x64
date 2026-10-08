@@ -20,8 +20,8 @@ test_dirs:
   - "tests/"
 
 test_commands:
-  check: "cmake --build build --config Release --target Client2026"
-  test: "build\\tests\\Release\\test_c26_strangler_facade.exe"
+  check: "cmake --build build --config Release --target Client2026 --parallel"
+  test: "ctest -C Release --output-on-failure"
   timeout: 180
 
 conventions:
