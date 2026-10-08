@@ -102,8 +102,8 @@ bool StranglerFacade::ExecuteWhisper(std::string_view target, std::string_view m
         .recipientName = std::string(target),
         .message = std::string(msg)
     };
-    // Whisper komenda
-    return true;
+    auto res = m_session->Execute(cmd);
+    return res.has_value();
 }
 
 } // namespace Client::Bridge

@@ -1,3 +1,4 @@
+#define DOCTEST_SINGLE_MAIN_ALLOWED
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "doctest.h"
 #include <vector>

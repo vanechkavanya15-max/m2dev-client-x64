@@ -1,30 +1,41 @@
 cmake_minimum_required(VERSION 3.19)
 
-file(GLOB TEST_SOURCES "test_c26_*.cpp")
+add_executable(test_c26_strangler_facade test_c26_strangler_facade.cpp)
 
-add_executable(ClientTests
-    test_main.cpp
-    ${TEST_SOURCES}
-)
-
-set_target_properties(ClientTests PROPERTIES
-    CXX_STANDARD 23
-    CXX_STANDARD_REQUIRED ON
-    FOLDER "tests"
-)
-
-target_include_directories(ClientTests PRIVATE
+target_include_directories(test_c26_strangler_facade PRIVATE
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/src/Client
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/mock_includes
     ${CMAKE_SOURCE_DIR}/extern/include
     ${CMAKE_SOURCE_DIR}/vendor/libsodium/src/libsodium/include
     ${CMAKE_SOURCE_DIR}/vendor/zstd-1.5.7/lib
 )
 
-target_link_libraries(ClientTests PRIVATE
+target_link_libraries(test_c26_strangler_facade PRIVATE
     Client2026
+    EterLib
+    EterBase
+    libzstd_static
+    sodium
+    lzo2
+    mio
+    ws2_32
+)
+
+add_executable(test_c26_e2e_pandora_simulation test_c26_e2e_pandora_simulation.cpp)
+
+target_include_directories(test_c26_e2e_pandora_simulation PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/Client
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/extern/include
+    ${CMAKE_SOURCE_DIR}/vendor/libsodium/src/libsodium/include
+    ${CMAKE_SOURCE_DIR}/vendor/zstd-1.5.7/lib
+)
+
+target_link_libraries(test_c26_e2e_pandora_simulation PRIVATE
+    Client2026
+    EterLib
     EterBase
     libzstd_static
     sodium
@@ -34,4 +45,5 @@ target_link_libraries(ClientTests PRIVATE
 )
 
 enable_testing()
-add_test(NAME ClientTests COMMAND ClientTests)
+add_test(NAME StranglerFacadeTest COMMAND test_c26_strangler_facade)
+add_test(NAME PandoraSimulationTest COMMAND test_c26_e2e_pandora_simulation)

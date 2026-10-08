@@ -34,6 +34,7 @@ public:
     [[nodiscard]] Result<void, CommandError> Execute(const UseItemCommand& cmd);
     [[nodiscard]] Result<void, CommandError> Execute(const PickupCommand& cmd);
     [[nodiscard]] Result<void, CommandError> Execute(const ChatCommand& cmd);
+    [[nodiscard]] Result<void, CommandError> Execute(const WhisperCommand& cmd);
 
     void Tick(float deltaTime);
 

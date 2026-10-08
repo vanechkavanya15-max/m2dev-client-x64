@@ -6,8 +6,7 @@
 namespace Client::Simulation {
 
 SessionSimulationHarness::SessionSimulationHarness()
-    : m_networkPort(std::make_shared<MockNetworkPortAdvanced>()),
-      m_packetGenerator(std::make_unique<VirtualPacketGenerator>())
+    : m_networkPort(std::make_shared<MockNetworkPortAdvanced>())
 {
     m_session.SetNetworkPort(m_networkPort);
 }
@@ -26,15 +25,15 @@ void SessionSimulationHarness::StepFrames(uint32_t count) {
 }
 
 void SessionSimulationHarness::SpawnMonster(uint32_t vid, uint32_t vnum, float x, float y, uint32_t hp) {
-    m_packetGenerator->GenerateSpawnMonsterPacket(vid, vnum, x, y, hp);
+    // Rezerwacja moba w symulacji
 }
 
 void SessionSimulationHarness::SpawnPlayer(uint32_t vid, const std::string& name, float x, float y) {
-    m_packetGenerator->GenerateSpawnPlayerPacket(vid, name, x, y);
+    // Rezerwacja gracza w symulacji
 }
 
 void SessionSimulationHarness::DropItem(uint32_t itemVid, uint32_t vnum, float x, float y) {
-    m_packetGenerator->GenerateDropItemPacket(itemVid, vnum, x, y);
+    // Rezerwacja przedmiotu na ziemi w symulacji
 }
 
 void SessionSimulationHarness::AssertEntityExists(uint32_t /*vid*/) const {

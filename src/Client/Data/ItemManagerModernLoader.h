@@ -1,5 +1,10 @@
 #pragma once
 
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+
 #include <cstdint>
 #include <span>
 #include <functional>
@@ -7,7 +12,7 @@
 #include <string_view>
 #include <string>
 
-#include "GameLib/ItemData.h"
+#include "ItemData.h"
 
 class ItemManagerModernLoader
 {

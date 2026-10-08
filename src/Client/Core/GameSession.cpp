@@ -122,6 +122,23 @@ Result<void, CommandError> GameSession::Execute(const ChatCommand& cmd) {
     return {};
 }
 
+Result<void, CommandError> GameSession::Execute(const WhisperCommand& cmd) {
+    if (cmd.recipientName.empty() || cmd.message.empty()) {
+        return std::unexpected(CommandError::InvalidParameter);
+    }
+    if (m_networkPort) {
+        if (!m_networkPort->IsConnected()) {
+            return std::unexpected(CommandError::Disconnected);
+        }
+        std::string payload = cmd.recipientName + " " + cmd.message;
+        auto sendRes = m_networkPort->SendRaw(7, std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(payload.data()), payload.size()));
+        if (!sendRes.has_value()) {
+            return std::unexpected(CommandError::Disconnected);
+        }
+    }
+    return {};
+}
+
 void GameSession::Tick(float /*deltaTime*/) {
     // Deterministyczna aktualizacja lokalnego stanu sesji
 }

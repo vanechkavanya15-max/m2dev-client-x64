@@ -11,6 +11,12 @@
 
 namespace Client::Data {
 
+using CItemData::ITEM_NAME_MAX_LEN;
+using CItemData::ITEM_LIMIT_MAX_NUM;
+using CItemData::ITEM_VALUES_MAX_NUM;
+using CItemData::ITEM_APPLY_MAX_NUM;
+using CItemData::ITEM_SOCKET_MAX_NUM;
+
 #define PARSE_INT_FIELD(obj, fieldName, target) \
     if (!obj.HasMember(fieldName)) { return std::unexpected(ProtoParseError::MissingField); } \
     if (!obj[fieldName].IsInt()) { return std::unexpected(ProtoParseError::TypeMismatch); } \

@@ -1,3 +1,4 @@
+#include "EterBase/StdAfx.h"
 #include "ItemManagerModernLoader.h"
 #include "PackLib/PackManager.h"
 #include "EterBase/ModernLogger.h"

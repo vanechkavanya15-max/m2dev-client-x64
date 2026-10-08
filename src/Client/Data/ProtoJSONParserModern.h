@@ -1,17 +1,32 @@
 #pragma once
 
+#include "EterBase/StdAfx.h"
+#include "EterBase/Singleton.h"
+#include "UserInterface/StdAfx.h"
+#include "GameLib/ItemData.h"
+#include "UserInterface/PythonNonPlayer.h"
+#include "../../EterBase/Result.h"
 
 #include <vector>
 #include <string>
 #include <string_view>
 #include <expected>
 #include <format>
-#include "../../EterBase/Result.h"
 
-#include "../../dummy_structs.h"
-#ifndef TEST_MOCK_STRUCTS
-
-
+#ifndef ITEM_NAME_MAX_LEN
+#define ITEM_NAME_MAX_LEN CItemData::ITEM_NAME_MAX_LEN
+#endif
+#ifndef ITEM_LIMIT_MAX_NUM
+#define ITEM_LIMIT_MAX_NUM CItemData::ITEM_LIMIT_MAX_NUM
+#endif
+#ifndef ITEM_VALUES_MAX_NUM
+#define ITEM_VALUES_MAX_NUM CItemData::ITEM_VALUES_MAX_NUM
+#endif
+#ifndef ITEM_APPLY_MAX_NUM
+#define ITEM_APPLY_MAX_NUM CItemData::ITEM_APPLY_MAX_NUM
+#endif
+#ifndef ITEM_SOCKET_MAX_NUM
+#define ITEM_SOCKET_MAX_NUM CItemData::ITEM_SOCKET_MAX_NUM
 #endif
 
 namespace Client::Data {
