@@ -5,14 +5,8 @@
 #include <expected>
 #include <cstdint>
 
+#include "EterBase/Result.h"
 #include "../../UserInterface/Packet.h"
-
-namespace EterBase {
-    enum class PacketError { BufferUnderflow };
-
-    template <typename T>
-    using PacketResult = std::expected<T, PacketError>;
-}
 
 namespace Client::Network {
 
@@ -26,5 +20,12 @@ namespace Client::Network {
 
     std::vector<uint8_t> EncodeGuildAddMember(uint32_t vid);
     std::vector<uint8_t> EncodeGuildRemoveMember(uint32_t pid);
+
+    class GuildPacketCodec {
+    public:
+        static EterBase::PacketResult<TPacketGCGuild> Decode(std::span<const uint8_t> buffer) {
+            return DecodeGuildHeader(buffer);
+        }
+    };
 
 }

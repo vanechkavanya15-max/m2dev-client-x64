@@ -5,17 +5,8 @@
 #include <span>
 #include <expected>
 
+#include "EterBase/Result.h"
 #include "UserInterface/Packet.h"
-
-namespace EterBase {
-    enum class PacketError {
-        BufferUnderflow,
-        InvalidHeader
-    };
-
-    template <typename T>
-    using PacketResult = std::expected<T, PacketError>;
-}
 
 namespace Client::Network
 {

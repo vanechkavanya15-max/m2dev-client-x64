@@ -6,22 +6,28 @@
 #include <string>
 #include <expected>
 
+#include "EterBase/Result.h"
 #include "../../UserInterface/Packet.h"
-
-namespace EterBase {
-    enum class PacketError {
-        BufferUnderflow,
-        InvalidHeader
-    };
-
-    template <typename T>
-    using PacketResult = std::expected<T, PacketError>;
-}
 
 namespace Client::Network {
 
     class QuestPacketCodec {
     public:
+        static bool DecodeQuestInfo(const TPacketGCQuestInfo& pack, uint16_t& outIndex, uint8_t& outFlag)
+        {
+            outIndex = pack.index;
+            outFlag = pack.flag;
+            return true;
+        }
+
+        static bool DecodeQuestConfirm(const TPacketGCQuestConfirm& pack, std::string& outMsg, int32_t& outTimeout, uint32_t& outRequestPID)
+        {
+            outMsg = pack.msg;
+            outTimeout = pack.timeout;
+            outRequestPID = pack.requestPID;
+            return true;
+        }
+
         static EterBase::PacketResult<TPacketGCQuestInfo> DecodeQuestInfo(std::span<const uint8_t> buffer);
         static EterBase::PacketResult<TPacketGCQuestConfirm> DecodeQuestConfirm(std::span<const uint8_t> buffer);
         static EterBase::PacketResult<std::string> DecodeScript(std::span<const uint8_t> buffer);

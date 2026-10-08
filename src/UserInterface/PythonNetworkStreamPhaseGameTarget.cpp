@@ -39,9 +39,9 @@ bool PhaseGameTargetBridge::HandleTargetCreate(CPythonNetworkStream* pStream, co
 		return false;
 
 	CPythonMiniMap & rkpyMiniMap = CPythonMiniMap::Instance();
-	rkpyMiniMap.CreateTarget(result->lID, result->szTargetName.c_str());
+	rkpyMiniMap.CreateTarget(result->lID, result->szTargetName);
 
-	PyCallClassMemberFunc(pStream->GetPhaseWindow(PHASE_WINDOW_GAME), "BINARY_OpenAtlasWindow", Py_BuildValue("()"));
+	PyCallClassMemberFunc(pStream->GetPhaseWindow(CPythonNetworkStream::PHASE_WINDOW_GAME), "BINARY_OpenAtlasWindow", Py_BuildValue("()"));
 	
 	return true;
 }
