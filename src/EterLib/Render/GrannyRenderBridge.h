@@ -33,7 +33,7 @@ namespace EterLib::Render
         size_t instanceCount;
     };
 
-    class ActorInstancedBatcher
+    class GrannyMeshBatcher
     {
     public:
         void AddInstance(uint32_t meshId, const D3DMATRIX& world)
@@ -65,7 +65,7 @@ namespace EterLib::Render
         void FlushPending(RenderQueue& queue, LinearFrameAllocator& alloc);
 
     private:
-        ActorInstancedBatcher m_batcher;
+        GrannyMeshBatcher m_batcher;
     };
 } // namespace EterLib::Render
 

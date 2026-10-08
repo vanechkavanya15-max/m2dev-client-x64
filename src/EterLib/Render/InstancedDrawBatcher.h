@@ -23,7 +23,7 @@ namespace EterLib::Render
     /**
      * @brief A simple queue to collect draw instances before batching.
      */
-    class RenderQueue
+    class InstancedBatchQueue
     {
     public:
         /**
@@ -77,7 +77,7 @@ namespace EterLib::Render
          * @param device Direct3D 9 device.
          * @param queue The queue containing instances to flush.
          */
-        void FlushBatches(LPDIRECT3DDEVICE9 device, RenderQueue& queue) noexcept;
+        void FlushBatches(LPDIRECT3DDEVICE9 device, InstancedBatchQueue& queue) noexcept;
 
         /**
          * @brief Gets the number of draw calls saved by batching.

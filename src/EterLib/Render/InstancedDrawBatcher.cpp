@@ -17,7 +17,7 @@ namespace EterLib::Render
         }
     }
 
-    void InstancedDrawBatcher::FlushBatches(LPDIRECT3DDEVICE9 device, RenderQueue& queue) noexcept
+    void InstancedDrawBatcher::FlushBatches(LPDIRECT3DDEVICE9 device, InstancedBatchQueue& queue) noexcept
     {
         if (!device)
             return;

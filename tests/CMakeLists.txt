@@ -85,9 +85,33 @@ target_link_libraries(test_c26_mem_pool PRIVATE
     ws2_32
 )
 
+add_executable(test_c26_radix_sort test_c26_radix_sort.cpp)
+target_include_directories(test_c26_radix_sort PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/extern/include
+)
+target_link_libraries(test_c26_radix_sort PRIVATE
+    EterLib
+    EterBase
+)
+
+add_executable(test_c26_render_target_mgr test_c26_render_target_mgr.cpp)
+target_include_directories(test_c26_render_target_mgr PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/extern/include
+)
+target_link_libraries(test_c26_render_target_mgr PRIVATE
+    EterLib
+    EterBase
+)
+
 enable_testing()
 add_test(NAME StranglerFacadeTest COMMAND test_c26_strangler_facade)
 add_test(NAME PandoraSimulationTest COMMAND test_c26_e2e_pandora_simulation)
 add_test(NAME StateUnificationTest COMMAND test_c26_state_unification)
 add_test(NAME MemPoolTest COMMAND test_c26_mem_pool)
+add_test(NAME RadixSort64Test COMMAND test_c26_radix_sort)
+add_test(NAME RenderTargetMgrTest COMMAND test_c26_render_target_mgr)
 
