@@ -173,6 +173,17 @@ target_link_libraries(test_c26_spatial_hash_grid PRIVATE
     EterBase
 )
 
+add_executable(test_c26_zero_copy_ring_buffer test_c26_zero_copy_ring_buffer.cpp)
+target_include_directories(test_c26_zero_copy_ring_buffer PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/Client
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+target_link_libraries(test_c26_zero_copy_ring_buffer PRIVATE
+    Client2026
+    EterBase
+)
+
 enable_testing()
 add_test(NAME StranglerFacadeTest COMMAND test_c26_strangler_facade)
 add_test(NAME PandoraSimulationTest COMMAND test_c26_e2e_pandora_simulation)
@@ -186,5 +197,6 @@ add_test(NAME ItemBonusTest COMMAND test_c26_item_bonus)
 add_test(NAME InventoryDomainTest COMMAND test_c26_inventory_domain)
 add_test(NAME ActorRegistryTest COMMAND test_c26_actor_registry)
 add_test(NAME SpatialHashGridTest COMMAND test_c26_spatial_hash_grid)
+add_test(NAME ZeroCopyRingBufferTest COMMAND test_c26_zero_copy_ring_buffer)
 
 

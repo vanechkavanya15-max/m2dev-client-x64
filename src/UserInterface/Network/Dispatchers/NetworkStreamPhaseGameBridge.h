@@ -27,7 +27,7 @@ namespace Network::Dispatchers {
             auto& dispatcher = Network::PacketDispatcher::Instance();
 
             if (!dispatcher.HasHandler(opcode)) {
-                EterBase::ModernLogger::Warning("NetworkStreamPhaseGameBridge: Unhandled packet opcode 0x{:04X}", opcode);
+                EterBase::ModernLogger::Trace("NetworkStreamPhaseGameBridge: Unhandled packet opcode 0x{:04X}", opcode);
                 return EterBase::MakeError(EterBase::PacketError::UnknownOpcode);
             }
 
