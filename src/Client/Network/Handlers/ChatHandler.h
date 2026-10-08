@@ -7,7 +7,7 @@
 #include <string_view>
 #include "../../../EterBase/Result.h"
 #include "../../../EterBase/StrongTypes.h"
-#include "../../../UserInterface/Core/EventBus.h"
+#include "Client/Core/EventBus.h"
 
 namespace Client::Network::Handlers
 {
@@ -33,7 +33,7 @@ struct PacketWhisperHeader
 };
 #pragma pack(pop)
 
-struct ChatMessageReceivedEvent : public UserInterface::Core::IEvent
+struct ChatMessageReceivedEvent : public Client::Core::IEvent
 {
     uint8_t type;
     uint32_t dwVID;
@@ -44,7 +44,7 @@ struct ChatMessageReceivedEvent : public UserInterface::Core::IEvent
         : type(type), dwVID(dwVID), bEmpire(bEmpire), message(std::move(message)) {}
 };
 
-struct WhisperMessageReceivedEvent : public UserInterface::Core::IEvent
+struct WhisperMessageReceivedEvent : public Client::Core::IEvent
 {
     uint8_t type;
     std::string senderName;

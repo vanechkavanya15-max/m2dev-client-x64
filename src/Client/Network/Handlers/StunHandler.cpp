@@ -1,6 +1,6 @@
 #include "StdAfx.h"
 #include "StunHandler.h"
-#include "UserInterface/Packet.h"
+#include "../Protocol/Protocol.h"
 #include "EterBase/LogModern.h"
 
 namespace Client::Network::Handlers {
@@ -17,7 +17,7 @@ namespace Client::Network::Handlers {
         EterBase::ModernLogger::Info("HandleStunPacket: Received stun packet for EntityId={}", targetId.value());
 
         // Emit the domain-specific event to trigger the stun animation and block movement in CombatDomain
-        UserInterface::Core::EventBus::GetInstance().Publish(
+        Client::Core::EventBus::GetInstance().Publish(
             Client::Gameplay::CombatDomainStunEvent{targetId}
         );
 

@@ -1,9 +1,9 @@
 #include "ItemDelHandler.h"
 #include "../../Gameplay/InventoryDomain.h"
-#include "../../../UserInterface/Packet.h"
+#include "../Protocol/Protocol.h"
 #include "../../../EterBase/LogModern.h"
 #include "../../../EterBase/StrongTypes.h"
-#include "../../../UserInterface/GameType.h"
+#include "../Protocol/ProtocolTypes.h"
 
 namespace Client::Network::Handlers {
 

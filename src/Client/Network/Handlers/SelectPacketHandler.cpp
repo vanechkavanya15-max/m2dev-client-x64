@@ -1,6 +1,6 @@
 
 #include "SelectPacketHandler.h"
-#include "../../../UserInterface/Packet.h"
+#include "../Protocol/Protocol.h"
 #include <cstring>
 
 namespace Client::Network::Handlers {
@@ -42,7 +42,7 @@ EterBase::PacketResult<void> SelectPacketHandler::HandleLoginSuccess4(std::span<
             std::memcpy(guildNameBuf, packet.guild_name[i], GUILD_NAME_MAX_LEN);
             data.guildName = guildNameBuf;
 
-            UserInterface::Core::EventBus::Instance().Publish(CharacterSlotUpdatedEvent(data));
+            Client::Core::EventBus::Instance().Publish(CharacterSlotUpdatedEvent(data));
         }
     }
 
@@ -85,7 +85,7 @@ EterBase::PacketResult<void> SelectPacketHandler::HandleCreateSuccess(std::span<
     data.guildId = 0; // New character has no guild
     data.guildName = "";
 
-    UserInterface::Core::EventBus::Instance().Publish(CharacterSlotUpdatedEvent(data));
+    Client::Core::EventBus::Instance().Publish(CharacterSlotUpdatedEvent(data));
 
     return {};
 }
@@ -102,7 +102,7 @@ EterBase::PacketResult<void> SelectPacketHandler::HandleDeleteSuccess(std::span<
         return std::unexpected(EterBase::PacketError::MalformedPayload);
     }
 
-    UserInterface::Core::EventBus::Instance().Publish(CharacterSlotDeletedEvent(packet.account_index));
+    Client::Core::EventBus::Instance().Publish(CharacterSlotDeletedEvent(packet.account_index));
 
     return {};
 }

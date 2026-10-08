@@ -1,13 +1,8 @@
 #include "QuestHandler.h"
 
-#ifndef TEST_COMPILATION
-#include "../../../UserInterface/Packet.h"
-#include "../../../UserInterface/PythonQuest.h"
-#include "../../../UserInterface/PythonEventManager.h"
-#include "../../../UserInterface/PythonNetworkStream.h"
-#include "../../../UserInterface/Core/EventBus.h"
+#include "../Protocol/Protocol.h"
+#include "Client/Core/EventBus.h"
 #include "../../../EterBase/LogModern.h"
-#endif
 
 #include <cstring>
 #include <string>
@@ -16,17 +11,37 @@ namespace Network::Handlers
 {
     namespace Events
     {
-        struct QuestUpdatedEvent : public UserInterface::Core::IEvent {
-            uint16_t index;
-            explicit QuestUpdatedEvent(uint16_t idx) : index(idx) {}
+        enum class QuestPacketType : uint8_t { None, Begin, Update, End };
+
+        struct QuestUpdatedEvent : public Client::Core::IEvent {
+            uint16_t index{0};
+            QuestPacketType packetType{QuestPacketType::None};
+            std::string title;
+            std::string clockName;
+            int32_t clockValue{0};
+            std::string counterName;
+            int32_t counterValue{0};
+            std::string iconFileName;
+
+            QuestUpdatedEvent(uint16_t idx, QuestPacketType type, std::string t = "", std::string clk = "", int32_t clkVal = 0,
+                              std::string cnt = "", int32_t cntVal = 0, std::string icon = "")
+                : index(idx), packetType(type), title(std::move(t)), clockName(std::move(clk)), clockValue(clkVal),
+                  counterName(std::move(cnt)), counterValue(cntVal), iconFileName(std::move(icon)) {}
         };
-        struct ScriptStartedEvent : public UserInterface::Core::IEvent {
-            uint8_t skin; int index;
-            ScriptStartedEvent(uint8_t s, int i) : skin(s), index(i) {}
+
+        struct ScriptStartedEvent : public Client::Core::IEvent {
+            uint8_t skin{0};
+            std::string script;
+
+            ScriptStartedEvent(uint8_t s, std::string scr)
+                : skin(s), script(std::move(scr)) {}
         };
-        struct WarpEvent : public UserInterface::Core::IEvent {
-            int32_t lX; int32_t lY;
-            int32_t lAddr; uint16_t wPort;
+
+        struct WarpEvent : public Client::Core::IEvent {
+            int32_t lX{0};
+            int32_t lY{0};
+            int32_t lAddr{0};
+            uint16_t wPort{0};
             WarpEvent(int32_t x, int32_t y, int32_t addr, uint16_t port) : lX(x), lY(y), lAddr(addr), wPort(port) {}
         };
     }
@@ -51,15 +66,14 @@ namespace Network::Handlers
         if (!SafeRead(questInfo)) return EterBase::MakeError(EterBase::PacketError::BufferUnderflow);
 
         const uint8_t flag = questInfo.flag;
-        enum QuestPacketType { QUEST_PACKET_TYPE_NONE, QUEST_PACKET_TYPE_BEGIN, QUEST_PACKET_TYPE_UPDATE, QUEST_PACKET_TYPE_END };
-        QuestPacketType packetType = QUEST_PACKET_TYPE_NONE;
+        Events::QuestPacketType packetType = Events::QuestPacketType::None;
 
         if ((flag & QUEST_SEND_IS_BEGIN) != 0) {
             uint8_t isBegin = 0;
             if (!SafeRead(isBegin)) return EterBase::MakeError(EterBase::PacketError::BufferUnderflow);
-            packetType = isBegin ? QUEST_PACKET_TYPE_BEGIN : QUEST_PACKET_TYPE_END;
+            packetType = isBegin ? Events::QuestPacketType::Begin : Events::QuestPacketType::End;
         } else {
-            packetType = QUEST_PACKET_TYPE_UPDATE;
+            packetType = Events::QuestPacketType::Update;
         }
 
         char title[31] = {0}; char clockName[17] = {0}; int32_t clockValue = 0;
@@ -72,25 +86,9 @@ namespace Network::Handlers
         if ((flag & QUEST_SEND_COUNTER_VALUE) != 0 && !SafeRead(counterValue)) return EterBase::MakeError(EterBase::PacketError::BufferUnderflow);
         if ((flag & QUEST_SEND_ICON_FILE) != 0 && !SafeReadString(iconFileName, 24)) return EterBase::MakeError(EterBase::PacketError::BufferUnderflow);
 
-        CPythonQuest& pythonQuest = CPythonQuest::Instance();
-        if (packetType == QUEST_PACKET_TYPE_END) {
-            pythonQuest.DeleteQuestInstance(questInfo.index);
-        } else if (packetType == QUEST_PACKET_TYPE_UPDATE) {
-            if (!pythonQuest.IsQuest(questInfo.index)) pythonQuest.MakeQuest(questInfo.index);
-            if (title[0] != '\0') pythonQuest.SetQuestTitle(questInfo.index, title);
-            if (clockName[0] != '\0') pythonQuest.SetQuestClockName(questInfo.index, clockName);
-            if (counterName[0] != '\0') pythonQuest.SetQuestCounterName(questInfo.index, counterName);
-            if (iconFileName[0] != '\0') pythonQuest.SetQuestIconFileName(questInfo.index, iconFileName);
-            if ((flag & QUEST_SEND_CLOCK_VALUE) != 0) pythonQuest.SetQuestClockValue(questInfo.index, clockValue);
-            if ((flag & QUEST_SEND_COUNTER_VALUE) != 0) pythonQuest.SetQuestCounterValue(questInfo.index, counterValue);
-        } else if (packetType == QUEST_PACKET_TYPE_BEGIN) {
-            CPythonQuest::SQuestInstance q; q.dwIndex = questInfo.index;
-            q.strTitle = title; q.strClockName = clockName; q.iClockValue = clockValue;
-            q.strCounterName = counterName; q.iCounterValue = counterValue; q.strIconFileName = iconFileName;
-            pythonQuest.RegisterQuestInstance(q);
-        }
-
-        UserInterface::Core::EventBus::GetInstance().Publish(Events::QuestUpdatedEvent{questInfo.index});
+        Client::Core::EventBus::GetInstance().Publish(Events::QuestUpdatedEvent{
+            questInfo.index, packetType, title, clockName, clockValue, counterName, counterValue, iconFileName
+        });
         return {};
     }
 
@@ -104,19 +102,14 @@ namespace Network::Handlers
         std::string str(reinterpret_cast<const char*>(buffer.data() + sizeof(TPacketGCScript)), strLen);
         if (!str.empty() && str.back() != '\0') str.push_back('\0');
 
-        int iIndex = CPythonEventManager::Instance().RegisterEventSetFromString(str);
-        if (-1 != iIndex) {
-            CPythonEventManager::Instance().SetVisibleLineCount(iIndex, 30);
-            CPythonNetworkStream::Instance().OnScriptEventStart(sp.skin, iIndex);
-            UserInterface::Core::EventBus::GetInstance().Publish(Events::ScriptStartedEvent{sp.skin, iIndex});
-        }
+        Client::Core::EventBus::GetInstance().Publish(Events::ScriptStartedEvent{sp.skin, std::move(str)});
         return {};
     }
 
     EterBase::PacketResult<void> QuestHandler::HandleWarp(std::span<const uint8_t> buffer) {
         if (buffer.size() < sizeof(TPacketGCWarp)) return EterBase::MakeError(EterBase::PacketError::BufferUnderflow);
         TPacketGCWarp w; std::memcpy(&w, buffer.data(), sizeof(TPacketGCWarp));
-        UserInterface::Core::EventBus::GetInstance().Publish(Events::WarpEvent{w.lX, w.lY, w.lAddr, w.wPort});
+        Client::Core::EventBus::GetInstance().Publish(Events::WarpEvent{w.lX, w.lY, w.lAddr, w.wPort});
         return {};
     }
 }

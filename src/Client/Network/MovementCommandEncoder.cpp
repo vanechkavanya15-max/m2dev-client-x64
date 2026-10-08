@@ -1,5 +1,5 @@
 #include "MovementCommandEncoder.h"
-#include "../../UserInterface/Packet.h"
+#include "Protocol/Protocol.h"
 #include <cmath>
 
 namespace Client::Network {

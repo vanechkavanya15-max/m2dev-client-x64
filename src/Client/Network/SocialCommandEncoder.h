@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../UserInterface/Packet.h"
+#include "Protocol/Protocol.h"
 #include <cstdint>
 #include <vector>
 #include <string>

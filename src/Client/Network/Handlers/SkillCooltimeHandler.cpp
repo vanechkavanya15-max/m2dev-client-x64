@@ -23,7 +23,7 @@ EterBase::PacketResult<void> SkillCooltimeHandler::HandlePacket(std::span<const 
     EterBase::ModernLogger::Log(EterBase::LogLevel::Debug, "SkillCooltimeHandler: Resetted cooldown for skill {}", skillId.value());
 
     // Publish event to notify UI subsystem to unlock the icon
-    UserInterface::Core::EventBus::GetInstance().Publish(SkillCooltimeEndEvent{skillId});
+    Client::Core::EventBus::GetInstance().Publish(SkillCooltimeEndEvent{skillId});
 
     return {};
 }

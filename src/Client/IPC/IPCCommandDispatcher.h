@@ -8,7 +8,7 @@
 #include "Client/Core/Result.h"
 #include "Client/Core/StrongTypes.h"
 #include "Client/Core/GameSession.h"
-#include "UserInterface/Core/EventBus.h"
+#include "Client/Core/EventBus.h"
 
 namespace Client::IPC {
 

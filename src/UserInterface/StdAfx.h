@@ -28,10 +28,17 @@
 
 #define APP_NAME "Metin 2"
 
+#ifndef POINT_MAX_NUM_DEFINED
+#define POINT_MAX_NUM_DEFINED
 enum
 {
 	POINT_MAX_NUM = 255,
 	CHARACTER_NAME_MAX_LEN = 64,
+};
+#endif
+
+enum
+{
 	PLAYER_NAME_MAX_LEN = 12,
 };
 

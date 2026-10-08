@@ -84,7 +84,7 @@ EterBase::PacketResult<void> ProcessChatMessage(std::span<const uint8_t> buffer)
         return EterBase::MakeError(EterBase::PacketError::MalformedPayload);
     }
 
-    UserInterface::Core::EventBus::GetInstance().Publish(
+    Client::Core::EventBus::GetInstance().Publish(
         ChatMessageReceivedEvent{header->type, header->dwVID, header->bEmpire, std::string(messageView)}
     );
 
@@ -136,7 +136,7 @@ EterBase::PacketResult<void> ProcessWhisperMessage(std::span<const uint8_t> buff
         return EterBase::MakeError(EterBase::PacketError::MalformedPayload);
     }
 
-    UserInterface::Core::EventBus::GetInstance().Publish(
+    Client::Core::EventBus::GetInstance().Publish(
         WhisperMessageReceivedEvent{header->type, std::string(senderNameView), std::string(messageView)}
     );
 

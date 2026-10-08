@@ -1,6 +1,6 @@
 #include "EterBase/StdAfx.h"
 #include "DungeonCommandEncoder.h"
-#include "UserInterface/Packet.h"
+#include "Protocol/Protocol.h"
 #include <cstring>
 
 namespace Client::Network {

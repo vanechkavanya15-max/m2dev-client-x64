@@ -1,5 +1,5 @@
 #include "ActorUpdateHandler.h"
-#include "../../../UserInterface/Packet.h"
+#include "../Protocol/Protocol.h"
 #include <cstring>
 
 namespace Client::Network::Handlers {

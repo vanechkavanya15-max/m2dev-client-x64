@@ -6,7 +6,7 @@
 #include <expected>
 
 #ifndef PACKET_MOCK_H
-#include "../../UserInterface/Packet.h"
+#include "Protocol/Protocol.h"
 #endif
 
 #include "EterBase/Result.h"

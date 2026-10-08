@@ -4,7 +4,7 @@
 #include <span>
 #include <expected>
 
-#include "../../../UserInterface/Core/EventBus.h"
+#include "Client/Core/EventBus.h"
 #include "../../../EterBase/StrongTypes.h"
 #include "../../../EterBase/Result.h"
 
@@ -32,7 +32,7 @@ struct TPacketGCSkillCoolTimeEnd
  * @brief Event emitted when a skill's cooltime ends.
  * Subsystems can subscribe to this event to update the UI or internal states.
  */
-struct SkillCooltimeEndEvent : public UserInterface::Core::IEvent
+struct SkillCooltimeEndEvent : public Client::Core::IEvent
 {
     /** @brief The ID of the skill whose cooldown has ended. */
     EterBase::SkillId skillId{0};

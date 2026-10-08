@@ -6,7 +6,7 @@
 #include "../../../EterBase/Result.h"
 #include "../../../EterBase/StrongTypes.h"
 #include "../../World/ECSComponents.h"
-#include "../../../UserInterface/Core/EventBus.h"
+#include "Client/Core/EventBus.h"
 
 namespace Client::Network::Handlers
 {
@@ -30,7 +30,7 @@ namespace Client::Network::Handlers
      * @brief Zdarzenie domenowe emitowane po otrzymaniu poprawnego pakietu ITEM_GROUND_ADD.
      * Zgodnie z architekturą Zero-Conflict, systemy są odseparowane przez EventBus.
      */
-    struct ItemGroundAddEvent : public UserInterface::Core::IEvent {
+    struct ItemGroundAddEvent : public Client::Core::IEvent {
         EterBase::EntityId dropVid;
         EterBase::ItemVnum itemVnum;
         Client::World::MapCoords coords;

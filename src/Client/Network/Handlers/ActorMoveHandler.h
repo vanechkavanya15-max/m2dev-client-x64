@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../UserInterface/Packet.h"
+#include "../Protocol/Protocol.h"
 #include "../../World/SpatialHashGrid.h"
 #include "../../EterBase/Result.h"
 #include "../../EterBase/StrongTypes.h"

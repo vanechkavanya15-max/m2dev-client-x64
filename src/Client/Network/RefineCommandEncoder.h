@@ -6,7 +6,7 @@
 
 #include "../../EterBase/StrongTypes.h"
 #include "../../EterBase/PacketResult.h"
-#include "../../UserInterface/Packet.h"
+#include "Protocol/Protocol.h"
 
 namespace Client::Network {
 

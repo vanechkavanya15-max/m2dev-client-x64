@@ -1,12 +1,11 @@
 #include "StdAfx.h"
 #include "ItemGroundDelHandler.h"
-#include "../../../UserInterface/PythonItem.h"
 #include <cstring>
 
 namespace {
-    UserInterface::Core::EventBus& EventBusInstance()
+    Client::Core::EventBus& EventBusInstance()
     {
-        return UserInterface::Core::EventBus::GetInstance();
+        return Client::Core::EventBus::GetInstance();
     }
 } // namespace
 
@@ -29,14 +28,11 @@ EterBase::PacketResult<void> ItemGroundDelHandler::Handle(std::span<const uint8_
         return packet;
     };
 
-    // Step 3: Handle deletion logic
+    // Step 3: Handle deletion logic via EventBus
     auto handleDeletion = [](const ItemGroundDelPacket& packet) -> void {
         EterBase::EntityId dropVid(packet.itemVid);
 
-        // Remove the 3D model from the game world
-        CPythonItem::Instance().DeleteItem(dropVid.value());
-
-        // Dispatch event via EventBus to inform UI (e.g., TextTailEngine) to unregister the text
+        // Dispatch event via EventBus to inform subscribers (e.g. UserInterface CPythonItem)
         ItemGroundDelEvent event(dropVid);
         EventBusInstance().Publish(event);
 

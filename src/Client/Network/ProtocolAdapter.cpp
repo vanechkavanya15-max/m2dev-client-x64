@@ -1,5 +1,5 @@
 #include "ProtocolAdapter.h"
-#include "../../UserInterface/Packet.h"
+#include "Protocol/Protocol.h"
 
 namespace Client::Network {
 

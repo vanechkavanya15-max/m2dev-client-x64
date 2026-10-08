@@ -1,5 +1,5 @@
 #include "ActorSpawnHandler.h"
-#include "../../../UserInterface/Packet.h"
+#include "../Protocol/Protocol.h"
 #include "../PendingSpawnRegistry.h"
 #include <cstring>
 

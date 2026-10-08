@@ -2,7 +2,7 @@
 
 #include <EterBase/StrongTypes.h>
 #include <EterBase/Result.h>
-#include "../../UserInterface/Packet.h"
+#include "Protocol/Protocol.h"
 
 #include <unordered_map>
 #include <chrono>

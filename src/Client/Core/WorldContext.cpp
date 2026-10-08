@@ -1,6 +1,6 @@
 #include "WorldContext.h"
 #include "DomainEvents.h"
-#include "UserInterface/Core/EventBus.h"
+#include "EventBus.h"
 #include <algorithm>
 
 namespace Client::Core {

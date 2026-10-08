@@ -3,7 +3,7 @@
 #include "Client/Core/INetworkPort.h"
 #include "Client/Core/Result.h"
 #include "EterBase/StrongTypes.h"
-#include "UserInterface/GameType.h" // For TItemPos
+#include "Protocol/ProtocolTypes.h" // For TItemPos
 
 namespace Client::Network {
 

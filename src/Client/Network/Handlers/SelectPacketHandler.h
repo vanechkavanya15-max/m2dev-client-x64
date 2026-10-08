@@ -5,7 +5,7 @@
 #include <string>
 #include "../../../EterBase/PacketResult.h"
 #include "../../../EterBase/StrongTypes.h"
-#include "../../../UserInterface/Core/EventBus.h"
+#include "Client/Core/EventBus.h"
 
 namespace Client::Network::Handlers {
 
@@ -28,14 +28,14 @@ struct CharacterSlotData {
     std::string guildName;
 };
 
-struct CharacterSlotUpdatedEvent : public UserInterface::Core::IEvent {
+struct CharacterSlotUpdatedEvent : public Client::Core::IEvent {
     CharacterSlotData slotData;
 
     explicit CharacterSlotUpdatedEvent(const CharacterSlotData& data)
         : slotData(data) {}
 };
 
-struct CharacterSlotDeletedEvent : public UserInterface::Core::IEvent {
+struct CharacterSlotDeletedEvent : public Client::Core::IEvent {
     uint8_t slotIndex;
 
     explicit CharacterSlotDeletedEvent(uint8_t index)

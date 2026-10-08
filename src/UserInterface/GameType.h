@@ -1,4 +1,7 @@
 #pragma once
+#ifndef __METIN2_GAME_TYPE_H__
+#define __METIN2_GAME_TYPE_H__
+#endif
 #include "GameLib/ItemData.h"
 
 struct SAffects

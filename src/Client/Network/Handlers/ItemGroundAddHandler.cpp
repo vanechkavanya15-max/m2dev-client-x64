@@ -3,7 +3,7 @@
 #include "ItemGroundAddHandler.h"
 
 // Systemy są odseparowane przez EventBus, Zero-Conflict
-#include "../../../UserInterface/Core/EventBus.h"
+#include "Client/Core/EventBus.h"
 
 namespace Client::Network::Handlers
 {
@@ -31,7 +31,7 @@ namespace Client::Network::Handlers
 
         // Publikacja zdarzenia z pusta etykieta wlasnosci
         ItemGroundAddEvent event(dropVid, itemVnum, coords, "");
-        UserInterface::Core::EventBus::GetInstance().Publish(event);
+        Client::Core::EventBus::GetInstance().Publish(event);
 
         return {};
     }

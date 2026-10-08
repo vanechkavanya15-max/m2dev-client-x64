@@ -1,6 +1,6 @@
 #include "StdAfx.h"
 #include "AesCryptoProvider.h"
-#include "../../UserInterface/BeaviumProtocol.h"
+#include "Protocol/BeaviumProtocol.h"
 #include <algorithm>
 #include <cstring>
 

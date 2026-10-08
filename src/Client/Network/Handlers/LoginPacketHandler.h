@@ -8,7 +8,7 @@
 #include "../../../EterBase/Result.h"
 #include "../../Network/ModernPacketDispatcher.h"
 #ifndef TEST_MODE_DISABLE_STDAFX
-#include "../../../UserInterface/Packet.h"
+#include "../Protocol/Protocol.h"
 #endif
 
 namespace Client::Network

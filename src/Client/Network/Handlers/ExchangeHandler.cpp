@@ -1,6 +1,6 @@
 #include "StdAfx.h"
 #include "ExchangeHandler.h"
-#include "UserInterface/Packet.h"
+#include "../Protocol/Protocol.h"
 
 namespace Client::Network::Handlers {
 
@@ -61,7 +61,7 @@ EterBase::PacketResult<void> ExchangeHandler::HandleExchangePacket(
         }
         case ExchangeSub::GC::END: {
             if (!exchangeState) return EterBase::MakeError(EterBase::PacketError::SessionClosed);
-            exchangeState->Cancel();
+            (void)exchangeState->Cancel();
             break;
         }
         case ExchangeSub::GC::ITEM_DEL: {
@@ -69,7 +69,7 @@ EterBase::PacketResult<void> ExchangeHandler::HandleExchangePacket(
         }
         case ExchangeSub::GC::ALREADY:
         case ExchangeSub::GC::LESS_ELK:
-            if (exchangeState) exchangeState->Cancel();
+            if (exchangeState) (void)exchangeState->Cancel();
             break;
         default:
             return EterBase::MakeError(EterBase::PacketError::UnknownOpcode);

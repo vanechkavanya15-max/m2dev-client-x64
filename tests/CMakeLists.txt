@@ -365,6 +365,15 @@ add_test(NAME TypeSanitizationTest COMMAND test_c26_type_sanitization)
 add_test(NAME MsdfTextBatcherTest COMMAND test_c26_msdf_text_batcher)
 add_test(NAME HardwareMeshInstancingTest COMMAND test_c26_hardware_mesh_instancing)
 
+add_executable(test_c26_protocol_pillar1 test_c26_protocol_pillar1.cpp)
+target_include_directories(test_c26_protocol_pillar1 PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/Client
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+target_link_libraries(test_c26_protocol_pillar1 PRIVATE
+    Client2026
+    EterBase
+)
 
-
-
+add_test(NAME ProtocolPillar1Test COMMAND test_c26_protocol_pillar1)

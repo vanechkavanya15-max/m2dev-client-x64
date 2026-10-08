@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <span>
 #include "EterBase/Result.h"
-#include "UserInterface/Packet.h"
+#include "../Protocol/Protocol.h"
 
 namespace Client::Network::Handlers {
 

@@ -7,7 +7,7 @@
 
 // Wymagane mocki do izolacji, zeby nie dolaczac StdAfx.h z d3d9.h w testach
 #ifndef ETERBASE_STDAFX_H
-#include "../../UserInterface/Packet.h"
+#include "Protocol/Protocol.h"
 #endif
 
 #include "EterBase/Result.h"

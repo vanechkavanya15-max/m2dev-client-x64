@@ -1,7 +1,7 @@
 #include "StdAfx.h"
 #include "SafeboxCommandEncoder.h"
-#include "../../UserInterface/Packet.h"
-#include "../../UserInterface/Packets/Packet_Chat.h"
+#include "Protocol/Protocol.h"
+#include "Protocol/Packets/Packet_Chat.h"
 #include <cstring>
 #include <format>
 #include <string>

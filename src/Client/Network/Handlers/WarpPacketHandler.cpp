@@ -1,6 +1,6 @@
 #include "EterBase/StdAfx.h"
 #include "WarpPacketHandler.h"
-#include "UserInterface/Core/EventBus.h"
+#include "Client/Core/EventBus.h"
 #include <cstring>
 
 namespace Client::Network::Handlers {
@@ -24,7 +24,7 @@ EterBase::PacketResult<void> WarpPacketHandler::HandleWarpPacket(std::span<const
         .port = packet.wPort
     };
 
-    UserInterface::Core::EventBus::GetInstance().Publish(ev);
+    Client::Core::EventBus::GetInstance().Publish(ev);
     return {};
 }
 

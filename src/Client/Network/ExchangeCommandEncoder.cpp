@@ -1,6 +1,6 @@
 #include "StdAfx.h"
 #include "ExchangeCommandEncoder.h"
-#include "UserInterface/Packet.h"
+#include "Protocol/Protocol.h"
 
 #include <cstring>
 

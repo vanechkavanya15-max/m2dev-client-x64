@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "../../EterBase/Result.h"
-#include "../../UserInterface/Packet.h"
+#include "Protocol/Protocol.h"
 
 namespace Network::CombatPacketCodec
 {

@@ -1,5 +1,5 @@
 #include "SafeboxHandler.h"
-#include "UserInterface/Packet.h"
+#include "../Protocol/Protocol.h"
 #include "EterBase/LogModern.h"
 
 namespace Client::Network::Handlers {
@@ -57,7 +57,7 @@ EterBase::PacketResult<void> HandleSafeboxSize(std::span<const uint8_t> buffer) 
     const auto* packet = reinterpret_cast<const TPacketGCSafeboxSize*>(buffer.data());
     
     EterBase::ModernLogger::Info("HandleSafeboxSize: Received new safebox size {}", packet->bSize);
-    UserInterface::Core::EventBus::GetInstance().Publish(SafeBoxSizeChangedEvent{packet->bSize});
+    Client::Core::EventBus::GetInstance().Publish(SafeBoxSizeChangedEvent{packet->bSize});
 
     return {};
 }
@@ -70,7 +70,7 @@ EterBase::PacketResult<void> HandleSafeboxWrongPassword(std::span<const uint8_t>
     }
 
     EterBase::ModernLogger::Info("HandleSafeboxWrongPassword: Wrong password event received");
-    UserInterface::Core::EventBus::GetInstance().Publish(SafeBoxWrongPasswordEvent{});
+    Client::Core::EventBus::GetInstance().Publish(SafeBoxWrongPasswordEvent{});
 
     return {};
 }

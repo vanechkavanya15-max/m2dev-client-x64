@@ -1,5 +1,5 @@
 #include "EterBase/StdAfx.h"
-#include "../../../UserInterface/Packet.h"
+#include "../Protocol/Protocol.h"
 #include "TargetHandler.h"
 #include "../../Gameplay/CombatDomain.h"
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #ifndef _USERINTERFACE_PACKET_H_
-#include "../../UserInterface/Packet.h"
+#include "Protocol/Protocol.h"
 #endif
 
 #include <cstdint>

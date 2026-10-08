@@ -1,5 +1,5 @@
 #include "QuestCommandHandler.h"
-#include <UserInterface/Packet.h> // We need CG::SCRIPT_ANSWER and CG::QUEST_CONFIRM
+#include "Client/Network/Protocol/Protocol.h" // We need CG::SCRIPT_ANSWER and CG::QUEST_CONFIRM
 #include <EterBase/ModernLogger.h>
 #include <vector>
 #include <cstring>

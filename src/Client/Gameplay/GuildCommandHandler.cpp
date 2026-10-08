@@ -1,6 +1,6 @@
 #include "StdAfx.h"
 #include "GuildCommandHandler.h"
-#include "../../UserInterface/Packet.h"
+#include "Client/Network/Protocol/Protocol.h"
 #include "../../EterBase/ModernLogger.h"
 #include <vector>
 #include <cstring>

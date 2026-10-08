@@ -15,7 +15,7 @@
 // Let's include the headers where these packets are defined.
 
 #include "EterBase/StrongTypes.h"
-#include "UserInterface/Packet.h"
+#include "Protocol/Protocol.h"
 
 namespace Client::Network {
 

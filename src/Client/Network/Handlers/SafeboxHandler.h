@@ -5,16 +5,16 @@
 #include "EterBase/Result.h"
 #include "EterBase/StrongTypes.h"
 #include "Client/Gameplay/TradeDomain.h"
-#include "UserInterface/Core/EventBus.h"
+#include "Client/Core/EventBus.h"
 
 namespace Client::Network::Handlers {
 
-struct SafeBoxSizeChangedEvent : public UserInterface::Core::IEvent {
+struct SafeBoxSizeChangedEvent : public Client::Core::IEvent {
     uint8_t size;
     explicit SafeBoxSizeChangedEvent(uint8_t size) : size(size) {}
 };
 
-struct SafeBoxWrongPasswordEvent : public UserInterface::Core::IEvent {
+struct SafeBoxWrongPasswordEvent : public Client::Core::IEvent {
     SafeBoxWrongPasswordEvent() = default;
 };
 

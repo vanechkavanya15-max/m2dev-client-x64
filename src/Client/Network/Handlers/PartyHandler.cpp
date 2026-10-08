@@ -4,7 +4,7 @@
 #include "../../../EterBase/LogModern.h"
 #include "../../../EterBase/StrongTypes.h"
 #include "../../Core/StrongTypes.h"
-#include "../../../UserInterface/Packet.h"
+#include "../Protocol/Protocol.h"
 
 namespace Client::Network::Handlers {
 

@@ -1,5 +1,5 @@
 #include "InventoryDomain.h"
-#include "UserInterface/Core/EventBus.h"
+#include "Client/Core/EventBus.h"
 #include <algorithm>
 
 namespace Client::Gameplay {

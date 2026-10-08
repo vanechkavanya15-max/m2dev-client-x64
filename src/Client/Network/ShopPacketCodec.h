@@ -5,7 +5,7 @@
 #include <span>
 #include <expected>
 
-#include "UserInterface/Packet.h"
+#include "Protocol/Protocol.h"
 
 #include "EterBase/Result.h"
 

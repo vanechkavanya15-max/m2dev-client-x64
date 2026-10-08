@@ -1,6 +1,6 @@
 #include "LoginPacketHandler.h"
 #ifndef TEST_MODE_DISABLE_STDAFX
-#include "StdAfx.h"
+#include "EterBase/StdAfx.h"
 #endif
 
 #ifdef TEST_MODE_DISABLE_STDAFX

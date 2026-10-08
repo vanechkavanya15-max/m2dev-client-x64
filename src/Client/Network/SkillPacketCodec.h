@@ -5,7 +5,7 @@
 #include <vector>
 #include <expected>
 
-#include "../../UserInterface/Packet.h"
+#include "Protocol/Protocol.h"
 
 namespace Client::Network
 {

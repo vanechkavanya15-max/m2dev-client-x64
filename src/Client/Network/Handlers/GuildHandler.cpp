@@ -1,7 +1,7 @@
 #include "StdAfx.h"
 #include "GuildHandler.h"
-#include "../../../UserInterface/Packet.h"
-#include "../../../UserInterface/Core/EventBus.h"
+#include "../Protocol/Protocol.h"
+#include "Client/Core/EventBus.h"
 #include <cstring>
 
 namespace Client::Network::Handlers {
@@ -49,9 +49,9 @@ EterBase::PacketResult<void> GuildHandler::HandleGuildPacket(std::span<const uin
                     Client::Gameplay::GuildMember newMember(EterBase::EntityId{memberPack->pid}, memberName, permissions);
                     
                     if (guild->GetMember(EterBase::EntityId{memberPack->pid})) {
-                         guild->RemoveMember(EterBase::EntityId{memberPack->pid}); // Refresh
+                         (void)guild->RemoveMember(EterBase::EntityId{memberPack->pid}); // Refresh
                     }
-                    guild->AddMember(newMember);
+                    (void)guild->AddMember(newMember);
                 }
             }
             break;
@@ -71,7 +71,7 @@ EterBase::PacketResult<void> GuildHandler::HandleGuildPacket(std::span<const uin
                 guild->SetExp(level, exp);
             }
             
-            UserInterface::Core::EventBus::GetInstance().Publish(GuildExpUpdatedEvent(level, exp));
+            Client::Core::EventBus::GetInstance().Publish(GuildExpUpdatedEvent(level, exp));
             break;
         }
         case GuildSub::GC::MONEY_CHANGE: {
@@ -86,7 +86,7 @@ EterBase::PacketResult<void> GuildHandler::HandleGuildPacket(std::span<const uin
                 guild->SetBank(money);
             }
             
-            UserInterface::Core::EventBus::GetInstance().Publish(GuildBankUpdatedEvent(money));
+            Client::Core::EventBus::GetInstance().Publish(GuildBankUpdatedEvent(money));
             break;
         }
         // Additional subheaders could be processed here
@@ -109,7 +109,7 @@ EterBase::PacketResult<void> GuildHandler::HandleMarkUpdatePacket(std::span<cons
         guild->SetMark(std::to_string(packet->imgIdx));
     }
     
-    UserInterface::Core::EventBus::GetInstance().Publish(GuildMarkUpdatedEvent(packet->guildID, packet->imgIdx));
+    Client::Core::EventBus::GetInstance().Publish(GuildMarkUpdatedEvent(packet->guildID, packet->imgIdx));
     
     return {};
 }

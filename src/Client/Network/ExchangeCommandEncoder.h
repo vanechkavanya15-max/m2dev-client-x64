@@ -1,7 +1,7 @@
 #pragma once
 
 #include "EterBase/PacketResult.h"
-#include "UserInterface/GameType.h"
+#include "Protocol/ProtocolTypes.h"
 #include <vector>
 #include <cstdint>
 

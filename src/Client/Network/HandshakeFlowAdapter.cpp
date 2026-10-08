@@ -2,7 +2,8 @@
 #include "HandshakeFlowAdapter.h"
 #include "HandshakeFSM.h"
 #include "../Core/INetworkPort.h"
-#include "../../UserInterface/Packets/Packet_Handshake.h"
+#include "Protocol/Protocol.h"
+#include "Protocol/Packets/Packet_Handshake.h"
 #include "../../EterBase/ModernLogger.h"
 #include <cstring>
 

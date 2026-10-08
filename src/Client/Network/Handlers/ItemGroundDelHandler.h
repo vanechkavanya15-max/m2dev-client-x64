@@ -5,7 +5,7 @@
 #include "../../../EterBase/Result.h"
 #include "../../../EterBase/StrongTypes.h"
 #include "../../../EterBase/LogModern.h"
-#include "../../../UserInterface/Core/EventBus.h"
+#include "Client/Core/EventBus.h"
 
 #pragma pack(push, 1)
 struct ItemGroundDelPacket
@@ -16,7 +16,7 @@ struct ItemGroundDelPacket
 #pragma pack(pop)
 static_assert(sizeof(ItemGroundDelPacket) == 5, "ItemGroundDelPacket must be exactly 5 bytes");
 
-struct ItemGroundDelEvent : public UserInterface::Core::IEvent
+struct ItemGroundDelEvent : public Client::Core::IEvent
 {
     EterBase::EntityId dropVid;
 

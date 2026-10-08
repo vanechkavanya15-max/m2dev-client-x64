@@ -1,9 +1,9 @@
 #include "StdAfx.h"
 #include <chrono>
 #include "DamageInfoHandler.h"
-#include "../../../UserInterface/Packet.h"
+#include "../Protocol/Protocol.h"
 #include "../../Gameplay/CombatDomain.h"
-#include "../../../UserInterface/Core/EventBus.h"
+#include "Client/Core/EventBus.h"
 #include "../../../EterBase/ModernLogger.h"
 
 namespace Client::Network::Handlers
@@ -61,7 +61,7 @@ namespace Client::Network::Handlers
         combatEvent.displayTime = std::chrono::steady_clock::now();
 
         // Publish cleanly via the generic EventBus template
-        UserInterface::Core::EventBus::GetInstance().Publish(combatEvent);
+        Client::Core::EventBus::GetInstance().Publish(combatEvent);
 
         EterBase::ModernLogger::Debug("DamageInfoHandler: Notified CombatDomain. Target {} Dmg {} Flags {:02X}", 
                                       combatEvent.targetId, combatEvent.damage, static_cast<uint32_t>(combatEvent.flags));

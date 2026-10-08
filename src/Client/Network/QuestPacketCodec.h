@@ -7,7 +7,7 @@
 #include <expected>
 
 #include "EterBase/Result.h"
-#include "../../UserInterface/Packet.h"
+#include "Protocol/Protocol.h"
 
 namespace Client::Network {
 

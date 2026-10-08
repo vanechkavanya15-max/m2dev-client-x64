@@ -1,6 +1,6 @@
 #include "ItemSetHandler.h"
 #include "../../../EterBase/LogModern.h"
-#include "../../../UserInterface/Packets/Packet_ItemSet.h"
+#include "../Protocol/Protocol.h"
 #include <algorithm>
 #include <format>
 

@@ -5,8 +5,8 @@
 #include <span>
 
 #include "../../../EterBase/Result.h"
-#include "../../../UserInterface/Packet.h"
-#include "../../../UserInterface/Services/IPlayerStatsService.h"
+#include "../Protocol/Protocol.h"
+#include "Client/Gameplay/IPlayerStatsService.h"
 
 namespace Network::Handlers
 {
@@ -30,6 +30,6 @@ namespace Network::Handlers
          * @param statsService The service to update player stats.
          * @return EterBase::PacketResult<void> Success or PacketError.
          */
-        static EterBase::PacketResult<void> HandlePoints(std::span<const uint8_t> payload, UserInterface::Services::IPlayerStatsService& statsService);
+        static EterBase::PacketResult<void> HandlePoints(std::span<const uint8_t> payload, Client::Gameplay::IPlayerStatsService& statsService);
     };
 }

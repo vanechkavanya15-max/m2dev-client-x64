@@ -1,7 +1,7 @@
 #include "EterBase/StdAfx.h"
 #include "InventoryItemValidator.h"
 #include "../../GameLib/ItemData.h"
-#include "../../UserInterface/GameType.h"
+#include "Client/Network/Protocol/GameType.h"
 
 namespace Client::Gameplay {
     EterBase::Result<bool, Client::Core::CommandError> InventoryItemValidator::CanEquipItem(

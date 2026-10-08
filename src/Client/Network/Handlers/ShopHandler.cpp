@@ -1,7 +1,7 @@
 #include "EterBase/StdAfx.h"
 #include "ShopHandler.h"
 #include "Client/Gameplay/TradeDomain.h"
-#include "UserInterface/Packet.h"
+#include "../Protocol/Protocol.h"
 #include <cstring>
 
 namespace Client::Network::Handlers {
