@@ -10,6 +10,10 @@ target_link_libraries(GameLib
 target_include_directories(GameLib PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR}
 	${CMAKE_CURRENT_SOURCE_DIR}/Terrain
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/src/Client
+	${CMAKE_SOURCE_DIR}/src/Client/Graphics
+	${CMAKE_SOURCE_DIR}/extern/include
 )
 
 GroupSourcesByFolder(GameLib)

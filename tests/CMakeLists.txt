@@ -310,6 +310,34 @@ target_link_libraries(test_c26_type_sanitization PRIVATE
     EterBase
 )
 
+add_executable(test_c26_msdf_text_batcher test_c26_msdf_text_batcher.cpp)
+target_include_directories(test_c26_msdf_text_batcher PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/Client
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/vendor
+)
+target_link_libraries(test_c26_msdf_text_batcher PRIVATE
+    Client2026
+    EterBase
+)
+
+add_executable(test_c26_hardware_mesh_instancing test_c26_hardware_mesh_instancing.cpp)
+target_include_directories(test_c26_hardware_mesh_instancing PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/Client
+    ${CMAKE_SOURCE_DIR}/src/GameLib
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/vendor
+)
+target_link_libraries(test_c26_hardware_mesh_instancing PRIVATE
+    Client2026
+    GameLib
+    EterBase
+)
+
 enable_testing()
 add_test(NAME StranglerFacadeTest COMMAND test_c26_strangler_facade)
 add_test(NAME PandoraSimulationTest COMMAND test_c26_e2e_pandora_simulation)
@@ -334,6 +362,8 @@ add_test(NAME DynamicGeometryRingBufferTest COMMAND test_c26_dynamic_geometry_ri
 add_test(NAME InstancePhysicsEngineTest COMMAND test_c26_instance_physics_engine)
 add_test(NAME InstanceCombatEngineTest COMMAND test_c26_instance_combat_engine)
 add_test(NAME TypeSanitizationTest COMMAND test_c26_type_sanitization)
+add_test(NAME MsdfTextBatcherTest COMMAND test_c26_msdf_text_batcher)
+add_test(NAME HardwareMeshInstancingTest COMMAND test_c26_hardware_mesh_instancing)
 
 
 
