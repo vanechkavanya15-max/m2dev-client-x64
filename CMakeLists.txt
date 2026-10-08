@@ -76,3 +76,6 @@ include_directories("${CMAKE_SOURCE_DIR}/vendor/zstd-1.5.7/lib")
 add_subdirectory(vendor)
 add_subdirectory(src)
 add_subdirectory(extern)
+
+enable_testing()
+add_subdirectory(tests)
