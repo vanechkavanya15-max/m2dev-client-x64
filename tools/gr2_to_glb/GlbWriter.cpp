@@ -8,8 +8,13 @@
 #include <cfloat>
 #include <cmath>
 #include <cstring>
+#include <filesystem>
 
 bool GlbWriter::Write(const std::string& outputPath, const GrannyExtractor& extractor) {
+    return Write(std::filesystem::u8path(outputPath), extractor);
+}
+
+bool GlbWriter::Write(const std::filesystem::path& outputPath, const GrannyExtractor& extractor) {
     granny_file_info* fileInfo = extractor.GetFileInfo();
     if (!fileInfo) {
         std::cerr << "Brak danych z pliku Granny." << std::endl;
@@ -644,7 +649,24 @@ bool GlbWriter::Write(const std::string& outputPath, const GrannyExtractor& extr
     cgltf_options options = {};
     options.type = cgltf_file_type_glb;
 
-    cgltf_result result = cgltf_write_file(&options, outputPath.c_str(), &data);
+    cgltf_size expected = cgltf_write(&options, NULL, 0, &data);
+    char* jsonBuffer = (char*)malloc(expected);
+    cgltf_size actual = cgltf_write(&options, jsonBuffer, expected, &data);
+
+#ifdef _WIN32
+    FILE* file = _wfopen(outputPath.wstring().c_str(), L"wb");
+#else
+    FILE* file = fopen(outputPath.string().c_str(), "wb");
+#endif
+
+    cgltf_result result = cgltf_result_success;
+    if (!file) {
+        result = cgltf_result_file_not_found;
+    } else {
+        cgltf_write_glb(file, jsonBuffer, actual - 1, data.bin, data.bin_size);
+        fclose(file);
+    }
+    free(jsonBuffer);
 
     if (data.asset.extras.data) {
         free(data.asset.extras.data);

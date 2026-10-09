@@ -36,18 +36,50 @@ GrannyExtractor::~GrannyExtractor() {
     Free();
 }
 
-bool GrannyExtractor::Load(const std::string& path) {
+#include <fstream>
+#include <filesystem>
+
+bool GrannyExtractor::Load(const std::filesystem::path& path) {
     Free();
 
-    m_file = GrannyReadEntireFile(path.c_str());
+#ifdef _WIN32
+    FILE* fp = _wfopen(path.wstring().c_str(), L"rb");
+#else
+    FILE* fp = fopen(path.string().c_str(), "rb");
+#endif
+    if (!fp) {
+        std::cerr << "Nie mozna otworzyc pliku: " << (const char*)path.u8string().c_str() << std::endl;
+        return false;
+    }
+
+    fseek(fp, 0, SEEK_END);
+    long size = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+
+    if (size <= 0) {
+        fclose(fp);
+        return false;
+    }
+
+    m_memoryBuffer.resize(static_cast<size_t>(size));
+    size_t readBytes = fread(m_memoryBuffer.data(), 1, size, fp);
+    fclose(fp);
+
+    if (readBytes != static_cast<size_t>(size)) {
+        Free();
+        return false;
+    }
+
+    m_file = GrannyReadEntireFileFromMemory(static_cast<granny_int32x>(size), m_memoryBuffer.data());
     if (!m_file) {
-        std::cerr << "Nie mozna wczytac pliku: " << path << std::endl;
+        std::cerr << "Nie mozna sparsowac pliku Granny: " << (const char*)path.u8string().c_str() << std::endl;
+        Free();
         return false;
     }
 
     m_fileInfo = GrannyGetFileInfo(m_file);
     if (!m_fileInfo) {
-        std::cerr << "Nie mozna pobrac informacji o pliku." << std::endl;
+        std::cerr << "Nie mozna pobrac informacji o pliku: " << (const char*)path.u8string().c_str() << std::endl;
         Free();
         return false;
     }
@@ -61,11 +93,16 @@ bool GrannyExtractor::Load(const std::string& path) {
     return true;
 }
 
+bool GrannyExtractor::Load(const std::string& path) {
+    return Load(std::filesystem::u8path(path));
+}
+
 void GrannyExtractor::Free() {
     if (m_file) {
         GrannyFreeFile(m_file);
         m_file = nullptr;
     }
+    m_memoryBuffer.clear();
     m_fileInfo = nullptr;
     m_events.clear();
     m_skeletons.clear();

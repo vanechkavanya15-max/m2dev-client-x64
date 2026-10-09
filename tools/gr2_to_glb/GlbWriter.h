@@ -3,8 +3,11 @@
 #include "GrannyExtractor.h"
 #include <cgltf/cgltf_write.h>
 
+#include <filesystem>
+
 class GlbWriter {
 public:
+    bool Write(const std::filesystem::path& outputPath, const GrannyExtractor& extractor);
     bool Write(const std::string& outputPath, const GrannyExtractor& extractor);
 
 private:

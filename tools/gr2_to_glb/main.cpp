@@ -12,20 +12,28 @@ void PrintUsage() {
               << "Opcjonalnie: --batch <katalog_zrodlowy> [--outdir <katalog_docelowy>]\n";
 }
 
-bool ConvertSingle(const std::string& inputPath, const std::string& outputPath) {
-    GrannyExtractor extractor;
-    if (!extractor.Load(inputPath)) {
-        std::cerr << "Nie udalo sie zaladowac: " << inputPath << "\n";
+bool ConvertSingle(const fs::path& inputPath, const fs::path& outputPath) {
+    try {
+        GrannyExtractor extractor;
+        if (!extractor.Load(inputPath)) {
+            std::cerr << "Nie udalo sie zaladowac: " << (const char*)inputPath.u8string().c_str() << "\n";
+            return false;
+        }
+
+        GlbWriter writer;
+        if (!writer.Write(outputPath, extractor)) {
+            std::cerr << "Nie udalo sie zapisac: " << (const char*)outputPath.u8string().c_str() << "\n";
+            return false;
+        }
+
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "Wyjatek podczas konwersji " << (const char*)inputPath.u8string().c_str() << ": " << e.what() << "\n";
+        return false;
+    } catch (...) {
+        std::cerr << "Nieznany wyjatek podczas konwersji " << (const char*)inputPath.u8string().c_str() << "\n";
         return false;
     }
-
-    GlbWriter writer;
-    if (!writer.Write(outputPath, extractor)) {
-        std::cerr << "Nie udalo sie zapisac: " << outputPath << "\n";
-        return false;
-    }
-
-    return true;
 }
 
 int main(int argc, char** argv) {
@@ -52,14 +60,16 @@ int main(int argc, char** argv) {
     }
 
     if (!batchDir.empty()) {
-        if (!fs::exists(batchDir) || !fs::is_directory(batchDir)) {
+        fs::path bPath = fs::u8path(batchDir);
+        if (!fs::exists(bPath) || !fs::is_directory(bPath)) {
             std::cerr << "Katalog wsadowy nie istnieje: " << batchDir << "\n";
             return 1;
         }
 
         std::vector<fs::path> gr2Files;
-        for (const auto& entry : fs::recursive_directory_iterator(batchDir)) {
-            if (entry.is_regular_file() && entry.path().extension() == ".gr2") {
+        std::error_code ec;
+        for (const auto& entry : fs::recursive_directory_iterator(bPath, fs::directory_options::skip_permission_denied, ec)) {
+            if (entry.is_regular_file(ec) && entry.path().extension() == ".gr2") {
                 gr2Files.push_back(entry.path());
             }
         }
@@ -72,23 +82,23 @@ int main(int argc, char** argv) {
             const auto& p = gr2Files[i];
             fs::path targetPath;
             if (!outDir.empty()) {
-                fs::path relativePath = fs::relative(p, batchDir);
-                targetPath = fs::path(outDir) / relativePath;
+                fs::path relativePath = fs::relative(p, bPath);
+                targetPath = fs::u8path(outDir) / relativePath;
                 targetPath.replace_extension(".glb");
-                fs::create_directories(targetPath.parent_path());
+                fs::create_directories(targetPath.parent_path(), ec);
             } else {
                 targetPath = p;
                 targetPath.replace_extension(".glb");
             }
 
-            if (ConvertSingle(p.string(), targetPath.string())) {
+            if (ConvertSingle(p, targetPath)) {
                 successCount++;
             } else {
                 failCount++;
             }
 
-            if ((i + 1) % 10 == 0 || i + 1 == gr2Files.size()) {
-                std::cout << "Postep: [" << (i + 1) << "/" << gr2Files.size() << "]\n";
+            if ((i + 1) % 100 == 0 || i + 1 == gr2Files.size()) {
+                std::cout << "Postep: [" << (i + 1) << "/" << gr2Files.size() << "] Sukces: " << successCount << ", Bledy: " << failCount << "\n";
             }
         }
 
@@ -101,10 +111,13 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    if (!ConvertSingle(inputPath, outputPath)) {
+    fs::path inPath = fs::u8path(inputPath);
+    fs::path outPath = fs::u8path(outputPath);
+
+    if (!ConvertSingle(inPath, outPath)) {
         return 1;
     }
 
-    std::cout << "Konwersja zakonczona sukcesem: " << outputPath << "\n";
+    std::cout << "Konwersja zakonczona sukcesem: " << (const char*)outPath.u8string().c_str() << "\n";
     return 0;
 }

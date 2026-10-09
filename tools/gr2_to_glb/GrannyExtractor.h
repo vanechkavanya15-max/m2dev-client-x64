@@ -67,11 +67,14 @@ struct ExtractedMaterial {
     std::string opacityTexture;
 };
 
+#include <filesystem>
+
 class GrannyExtractor {
 public:
     GrannyExtractor();
     ~GrannyExtractor();
 
+    bool Load(const std::filesystem::path& path);
     bool Load(const std::string& path);
     void Free();
 
@@ -98,5 +101,6 @@ private:
     std::vector<ExtractedMesh> m_meshes;
     std::vector<ExtractedAnimation> m_animations;
     std::vector<ExtractedMaterial> m_materials;
+    std::vector<uint8_t> m_memoryBuffer;
 };
 
