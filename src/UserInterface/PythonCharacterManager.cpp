@@ -146,9 +146,6 @@ void CPythonCharacterManager::Update()
 {
 	CInstanceBase::ResetPerformanceCounter();
 
-	CInstanceBase* pkInstMain = GetMainActorPtr();
-	const float fViewBoundSquared = (CHAR_STAGE_VIEW_BOUND + 10) * (CHAR_STAGE_VIEW_BOUND + 10);
-
 	TCharacterInstanceMap::iterator i = m_aliveActorsMap.begin();
 	while (m_aliveActorsMap.end() != i)
 	{
@@ -163,19 +160,6 @@ void CPythonCharacterManager::Update()
 			TPixelPosition curPos;
 			pkInstEach->NEW_GetPixelPosition(&curPos);
 			m_spatialGrid.UpdateIfMoved(EntityVid(pkInstEach->GetVirtualID()), curPos.x, curPos.y);
-		}
-
-		if (pkInstMain)
-		{
-			if (pkInstEach->IsForceVisible()) [[unlikely]] {
-				continue;
-			}
-
-			float fDistanceSquared = pkInstEach->NEW_GetDistanceFromDestInstanceSquared(*pkInstMain);
-			if (fDistanceSquared > fViewBoundSquared) [[unlikely]] {
-				__DeleteBlendOutInstance(pkInstEach);
-				m_aliveActorsMap.erase(c);
-			}
 		}
 	}
 
@@ -451,7 +435,10 @@ void CPythonCharacterManager::__DeleteBlendOutInstance(CInstanceBase* pkInstDel)
 
 	// Synchronize domain registry and spatial partitioning
 	m_actorRegistry.SetDead(EntityVid(deadVid), true);
+	m_actorRegistry.UnregisterActor(EntityVid(deadVid));
 	m_spatialGrid.Remove(EntityVid(deadVid));
+	m_subsystemActorRegistry.UnregisterActor(deadVid);
+	(void)UserInterface::ECS::ECSWorldRegistry::GetInstance().RemoveEntity(EterBase::EntityId(deadVid));
 
 	// Bezpieczne rozgloszenie zdarzenia smierci aktora przez EventBus (decoupling C++23)
 	UserInterface::Core::EventBus::GetInstance().Publish(UserInterface::Core::ActorDeadEvent(deadVid));

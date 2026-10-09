@@ -135,4 +135,5 @@ void CMapOutdoor::EndRenderCharacterShadowToTexture()
 	// Restore Device Context
 	STATEMANAGER.SetRenderState(D3DRS_LIGHTING, dwLightEnable);
 	STATEMANAGER.RestoreRenderState(D3DRS_TEXTUREFACTOR);
+	STATEMANAGER.SetVertexDeclaration(NULL);
 }

@@ -1200,4 +1200,5 @@ void CGrannyLODController::RenderGltfModel()
 	STATEMANAGER.SetRenderState(D3DRS_CULLMODE, D3DCULL_CW);
 	STATEMANAGER.SetTexture(0, NULL);
 	STATEMANAGER.SetTexture(1, NULL);
+	STATEMANAGER.SetVertexDeclaration(NULL);
 }
