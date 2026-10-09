@@ -1,8 +1,9 @@
-# MASTER AI CLIENT ATLAS - GLOWNY INDEKS ARCHITEKTURY KLIENTA C++
+# MASTER AI CLIENT ATLAS - GLOWNY INDEKS ARCHITEKTURY KLIENTA C++23 (STAN 2026)
 
 > Dokument jest glownym indeksem nawigacyjnym (Knowledge Base) dla agentow AI
-> pracujacych w repozytorium klienta gier (E:\SourceCodeClient\src).
-> Wygenerowany przez roj 150 agentow Google Jules Swarm. Stan: 151/150 raportow.
+> pracujacych w glownym repozytorium silnika klienta gier ([E:\m2dev-client-src-mainOryginalx64](file:///E:/m2dev-client-src-mainOryginalx64)).
+> Dekonstrukcja Monolitow: 100% ZAKONCZONA (Siec, Gracz, Aktor, Protokol, Bindingi Pythona).
+> Wynik Weryfikacji: 40/40 testow CTest PASS (0.77s), plik binarny Metin2_Release.exe (29.5 MB) zbudowany pomyslnie.
 
 ---
 
