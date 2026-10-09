@@ -49,85 +49,61 @@ bool CPackManager::GetFileWithPool(std::string_view path, TPackFile& result, CBu
 	thread_local std::string buf;
 	NormalizePath(path, buf);
 
-	// First try to load from pack
-	if (m_load_from_pack) {
-		auto it = m_entries.find(buf);
-		if (it != m_entries.end()) {
-			return it->second.first->GetFileWithPool(it->second.second, result, pPool);
-		}
-	}
-
-	// Fallback to disk (for files not in packs, like bgm folder)
-	std::ifstream ifs(buf, std::ios::binary);
-	if (ifs.is_open()) {
-		ifs.seekg(0, std::ios::end);
-		size_t size = ifs.tellg();
-		ifs.seekg(0, std::ios::beg);
-
-		if (pPool) {
-			result = pPool->Acquire(size);
-			result.resize(size);
-		} else {
-			result.resize(size);
+	auto tryLoad = [&](const std::string& targetPath) -> bool {
+		// First try to load from pack entries
+		if (m_load_from_pack) {
+			auto it = m_entries.find(targetPath);
+			if (it != m_entries.end()) {
+				return it->second.first->GetFileWithPool(it->second.second, result, pPool);
+			}
 		}
 
-		if (ifs.read((char*)result.data(), size)) {
+		// Fallback to disk (for loose files or dev mode)
+		std::error_code ec;
+		std::filesystem::path fspath = std::filesystem::u8path(targetPath);
+		if (std::filesystem::exists(fspath, ec)) {
+			std::ifstream ifs(fspath, std::ios::binary);
+			if (ifs.is_open()) {
+				ifs.seekg(0, std::ios::end);
+				size_t size = ifs.tellg();
+				ifs.seekg(0, std::ios::beg);
+
+				if (pPool) {
+					result = pPool->Acquire(size);
+					result.resize(size);
+				} else {
+					result.resize(size);
+				}
+
+				if (ifs.read((char*)result.data(), size)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	};
+
+	// 1. Transparent migration: gdy proszony jest stary format .gr2, preferuj nowoczesny model .glb
+	if (buf.size() > 4 && buf.ends_with(".gr2")) {
+		std::string glbPath = buf.substr(0, buf.size() - 4) + ".glb";
+		if (tryLoad(glbPath)) {
 			return true;
 		}
+		// Fallback do oryginalnego .gr2 gdy .glb nie istnieje
+		return tryLoad(buf);
 	}
 
-	// Transparent Fallback dla migracji GR2 <-> GLB
-	if (buf.size() > 4) {
-		if (buf.ends_with(".gr2")) {
-			std::string glbPath = buf.substr(0, buf.size() - 4) + ".glb";
-			if (m_load_from_pack) {
-				auto itGlb = m_entries.find(glbPath);
-				if (itGlb != m_entries.end()) {
-					return itGlb->second.first->GetFileWithPool(itGlb->second.second, result, pPool);
-				}
-			}
-			std::ifstream ifsGlb(glbPath, std::ios::binary);
-			if (ifsGlb.is_open()) {
-				ifsGlb.seekg(0, std::ios::end);
-				size_t size = ifsGlb.tellg();
-				ifsGlb.seekg(0, std::ios::beg);
-				if (pPool) {
-					result = pPool->Acquire(size);
-					result.resize(size);
-				} else {
-					result.resize(size);
-				}
-				if (ifsGlb.read((char*)result.data(), size)) {
-					return true;
-				}
-			}
-		} else if (buf.ends_with(".glb")) {
-			std::string gr2Path = buf.substr(0, buf.size() - 4) + ".gr2";
-			if (m_load_from_pack) {
-				auto itGr2 = m_entries.find(gr2Path);
-				if (itGr2 != m_entries.end()) {
-					return itGr2->second.first->GetFileWithPool(itGr2->second.second, result, pPool);
-				}
-			}
-			std::ifstream ifsGr2(gr2Path, std::ios::binary);
-			if (ifsGr2.is_open()) {
-				ifsGr2.seekg(0, std::ios::end);
-				size_t size = ifsGr2.tellg();
-				ifsGr2.seekg(0, std::ios::beg);
-				if (pPool) {
-					result = pPool->Acquire(size);
-					result.resize(size);
-				} else {
-					result.resize(size);
-				}
-				if (ifsGr2.read((char*)result.data(), size)) {
-					return true;
-				}
-			}
+	// 2. Gdy proszony jest .glb, najpierw laduj .glb, z fallbackiem do .gr2
+	if (buf.size() > 4 && buf.ends_with(".glb")) {
+		if (tryLoad(buf)) {
+			return true;
 		}
+		std::string gr2Path = buf.substr(0, buf.size() - 4) + ".gr2";
+		return tryLoad(gr2Path);
 	}
 
-	return false;
+	// 3. Pozostale pliki (.dds, .tga, .txt, .py, .mse itp.)
+	return tryLoad(buf);
 }
 
 bool CPackManager::IsExist(std::string_view path) const
@@ -135,37 +111,32 @@ bool CPackManager::IsExist(std::string_view path) const
 	thread_local std::string buf;
 	NormalizePath(path, buf);
 
-	// First check in pack entries
-	if (m_load_from_pack) {
-		auto it = m_entries.find(buf);
-		if (it != m_entries.end()) {
+	auto checkExist = [&](const std::string& targetPath) -> bool {
+		if (m_load_from_pack) {
+			if (m_entries.find(targetPath) != m_entries.end())
+				return true;
+		}
+		std::error_code ec;
+		return std::filesystem::exists(std::filesystem::u8path(targetPath), ec);
+	};
+
+	// 1. Transparent migration check dla .gr2
+	if (buf.size() > 4 && buf.ends_with(".gr2")) {
+		std::string glbPath = buf.substr(0, buf.size() - 4) + ".glb";
+		if (checkExist(glbPath))
 			return true;
-		}
+		return checkExist(buf);
 	}
 
-	// Fallback to disk (for files not in packs, like bgm folder)
-	std::error_code ec; // To avoid exceptions from std::filesystem
-	if (std::filesystem::exists(buf, ec))
-		return true;
-
-	// Transparent fallback check for GR2 <-> GLB
-	if (buf.size() > 4) {
-		if (buf.ends_with(".gr2")) {
-			std::string glbPath = buf.substr(0, buf.size() - 4) + ".glb";
-			if (m_load_from_pack && m_entries.find(glbPath) != m_entries.end())
-				return true;
-			if (std::filesystem::exists(glbPath, ec))
-				return true;
-		} else if (buf.ends_with(".glb")) {
-			std::string gr2Path = buf.substr(0, buf.size() - 4) + ".gr2";
-			if (m_load_from_pack && m_entries.find(gr2Path) != m_entries.end())
-				return true;
-			if (std::filesystem::exists(gr2Path, ec))
-				return true;
-		}
+	// 2. Transparent migration check dla .glb
+	if (buf.size() > 4 && buf.ends_with(".glb")) {
+		if (checkExist(buf))
+			return true;
+		std::string gr2Path = buf.substr(0, buf.size() - 4) + ".gr2";
+		return checkExist(gr2Path);
 	}
 
-	return false;
+	return checkExist(buf);
 }
 
 void CPackManager::NormalizePath(std::string_view in, std::string& out) const

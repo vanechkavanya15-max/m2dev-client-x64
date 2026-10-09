@@ -378,6 +378,20 @@ target_link_libraries(test_c26_protocol_pillar1 PRIVATE
 
 add_test(NAME ProtocolPillar1Test COMMAND test_c26_protocol_pillar1)
 
+add_executable(test_c26_modern_packet_dispatcher test_c26_modern_packet_dispatcher.cpp)
+target_include_directories(test_c26_modern_packet_dispatcher PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/Client
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/extern/include
+)
+target_link_libraries(test_c26_modern_packet_dispatcher PRIVATE
+    Client2026
+    EterBase
+    ws2_32
+)
+add_test(NAME ModernPacketDispatcherTest COMMAND test_c26_modern_packet_dispatcher)
+
 add_executable(test_c26_rhi_engine test_c26_rhi_engine.cpp)
 target_include_directories(test_c26_rhi_engine PRIVATE
     ${CMAKE_SOURCE_DIR}/src
