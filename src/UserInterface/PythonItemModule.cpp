@@ -37,11 +37,15 @@ PyObject * itemSetDropSoundFileName(PyObject * poSelf, PyObject * poArgs)
 	return Py_BuildNone();
 }
 
-PyObject * itemSelectItem(PyObject * poSelf, PyObject * poArgs)
+PyObject * itemSelectItem(PyObject * poSelf, PyObject * const * poArgs, Py_ssize_t nargs)
 {
-	int iIndex;
-	if (!PyTuple_GetInteger(poArgs, 0, &iIndex))
+	if (nargs != 1)
 		return Py_BadArgument();
+
+	if (!PyLong_Check(poArgs[0]))
+		return Py_BadArgument();
+
+	int iIndex = PyLong_AsLong(poArgs[0]);
 
 	if (!CItemManager::Instance().SelectItemData(iIndex))
 	{
@@ -49,16 +53,16 @@ PyObject * itemSelectItem(PyObject * poSelf, PyObject * poArgs)
 		CItemManager::Instance().SelectItemData(60001);
 	}
 
-	return Py_BuildNone();
+	Py_RETURN_NONE;
 }
 
-PyObject * itemGetItemName(PyObject * poSelf, PyObject * poArgs)
+PyObject * itemGetItemName(PyObject * poSelf, PyObject * const * poArgs, Py_ssize_t nargs)
 {
 	CItemData * pItemData = CItemManager::Instance().GetSelectedItemDataPointer();
 	if (!pItemData)
 		return Py_BuildException("no selected item data");
 
-	return Py_BuildValue("s", pItemData->GetName());
+	return PyUnicode_FromString(pItemData->GetName());
 }
 
 PyObject * itemGetItemDescription(PyObject * poSelf, PyObject * poArgs)
@@ -117,22 +121,22 @@ PyObject * itemGetItemSize(PyObject * poSelf, PyObject * poArgs)
 	return Py_BuildValue("(ii)", 1, pItemData->GetSize());
 }
 
-PyObject * itemGetItemType(PyObject * poSelf, PyObject * poArgs)
+PyObject * itemGetItemType(PyObject * poSelf, PyObject * const * poArgs, Py_ssize_t nargs)
 {
 	CItemData * pItemData = CItemManager::Instance().GetSelectedItemDataPointer();
 	if (!pItemData)
 		return Py_BuildException("no selected item data");
 
-	return Py_BuildValue("i", pItemData->GetType());
+	return PyLong_FromLong(pItemData->GetType());
 }
 
-PyObject * itemGetItemSubType(PyObject * poSelf, PyObject * poArgs)
+PyObject * itemGetItemSubType(PyObject * poSelf, PyObject * const * poArgs, Py_ssize_t nargs)
 {
 	CItemData * pItemData = CItemManager::Instance().GetSelectedItemDataPointer();
 	if (!pItemData)
 		return Py_BuildException("no selected item data");
 
-	return Py_BuildValue("i", pItemData->GetSubType());
+	return PyLong_FromLong(pItemData->GetSubType());
 }
 
 PyObject * itemGetIBuyItemPrice(PyObject * poSelf, PyObject * poArgs)
@@ -204,11 +208,15 @@ PyObject * itemIs1GoldItem(PyObject * poSelf, PyObject * poArgs)
 	return Py_BuildValue("i", pItemData->IsFlag(CItemData::ITEM_FLAG_COUNT_PER_1GOLD));
 }
 
-PyObject * itemGetLimit(PyObject * poSelf, PyObject * poArgs)
+PyObject * itemGetLimit(PyObject * poSelf, PyObject * const * poArgs, Py_ssize_t nargs)
 {
-	int iValueIndex;
-	if (!PyTuple_GetInteger(poArgs, 0, &iValueIndex))
+	if (nargs != 1)
 		return Py_BadArgument();
+
+	if (!PyLong_Check(poArgs[0]))
+		return Py_BadArgument();
+
+	int iValueIndex = PyLong_AsLong(poArgs[0]);
 
 	CItemData * pItemData = CItemManager::Instance().GetSelectedItemDataPointer();
 	if (!pItemData)
@@ -218,14 +226,23 @@ PyObject * itemGetLimit(PyObject * poSelf, PyObject * poArgs)
 	if (!pItemData->GetLimit(iValueIndex, &ItemLimit))
 		return Py_BuildException();
 
-	return Py_BuildValue("ii", ItemLimit.bType, ItemLimit.lValue);
+	PyObject * poType = PyLong_FromLong(ItemLimit.bType);
+	PyObject * poValue = PyLong_FromLong(ItemLimit.lValue);
+	PyObject * poTuple = PyTuple_Pack(2, poType, poValue);
+	Py_XDECREF(poType);
+	Py_XDECREF(poValue);
+	return poTuple;
 }
 
-PyObject *itemGetLimitType(PyObject *poSelf, PyObject *poArgs)
+PyObject * itemGetLimitType(PyObject * poSelf, PyObject * const * poArgs, Py_ssize_t nargs)
 {
-	int iValueIndex;
-	if (!PyTuple_GetInteger(poArgs, 0, &iValueIndex))
+	if (nargs != 1)
 		return Py_BadArgument();
+
+	if (!PyLong_Check(poArgs[0]))
+		return Py_BadArgument();
+
+	int iValueIndex = PyLong_AsLong(poArgs[0]);
 
 	CItemData * pItemData = CItemManager::Instance().GetSelectedItemDataPointer();
 	if (!pItemData)
@@ -235,16 +252,20 @@ PyObject *itemGetLimitType(PyObject *poSelf, PyObject *poArgs)
 	if (!pItemData->GetLimit(iValueIndex, &ItemLimit))
 		return Py_BuildException();
 
-	return Py_BuildValue("i", ItemLimit.bType);
+	return PyLong_FromLong(ItemLimit.bType);
 }
 
-PyObject *itemGetLimitValue(PyObject *poSelf, PyObject *poArgs)
+PyObject * itemGetLimitValue(PyObject * poSelf, PyObject * const * poArgs, Py_ssize_t nargs)
 {
-	int iValueIndex;
-	if (!PyTuple_GetInteger(poArgs, 0, &iValueIndex))
+	if (nargs != 1)
 		return Py_BadArgument();
 
-	CItemData* pItemData = CItemManager::Instance().GetSelectedItemDataPointer();
+	if (!PyLong_Check(poArgs[0]))
+		return Py_BadArgument();
+
+	int iValueIndex = PyLong_AsLong(poArgs[0]);
+
+	CItemData * pItemData = CItemManager::Instance().GetSelectedItemDataPointer();
 	if (!pItemData)
 		return Py_BuildException("Not yet select item data");
 
@@ -252,14 +273,18 @@ PyObject *itemGetLimitValue(PyObject *poSelf, PyObject *poArgs)
 	if (!pItemData->GetLimit(iValueIndex, &ItemLimit))
 		return Py_BuildException();
 
-	return Py_BuildValue("i", ItemLimit.lValue);
+	return PyLong_FromLong(ItemLimit.lValue);
 }
 
-PyObject * itemGetAffect(PyObject * poSelf, PyObject * poArgs)
+PyObject * itemGetAffect(PyObject * poSelf, PyObject * const * poArgs, Py_ssize_t nargs)
 {
-	int iValueIndex;
-	if (!PyTuple_GetInteger(poArgs, 0, &iValueIndex))
+	if (nargs != 1)
 		return Py_BadArgument();
+
+	if (!PyLong_Check(poArgs[0]))
+		return Py_BadArgument();
+
+	int iValueIndex = PyLong_AsLong(poArgs[0]);
 
 	CItemData * pItemData = CItemManager::Instance().GetSelectedItemDataPointer();
 	if (!pItemData)
@@ -274,20 +299,29 @@ PyObject * itemGetAffect(PyObject * poSelf, PyObject * poArgs)
 		ItemApply.lValue -= TWOHANDED_WEWAPON_ATT_SPEED_DECREASE_VALUE;
 	}
 
-	return Py_BuildValue("ii", ItemApply.bType, ItemApply.lValue);
+	PyObject * poType = PyLong_FromLong(ItemApply.bType);
+	PyObject * poValue = PyLong_FromLong(ItemApply.lValue);
+	PyObject * poTuple = PyTuple_Pack(2, poType, poValue);
+	Py_XDECREF(poType);
+	Py_XDECREF(poValue);
+	return poTuple;
 }
 
-PyObject * itemGetValue(PyObject * poSelf, PyObject * poArgs)
+PyObject * itemGetValue(PyObject * poSelf, PyObject * const * poArgs, Py_ssize_t nargs)
 {
-	int iValueIndex;
-	if (!PyTuple_GetInteger(poArgs, 0, &iValueIndex))
+	if (nargs != 1)
 		return Py_BadArgument();
+
+	if (!PyLong_Check(poArgs[0]))
+		return Py_BadArgument();
+
+	int iValueIndex = PyLong_AsLong(poArgs[0]);
 
 	CItemData * pItemData = CItemManager::Instance().GetSelectedItemDataPointer();
 	if (!pItemData)
 		return Py_BuildException("Not yet select item data");
 
-	return Py_BuildValue("i", pItemData->GetValue(iValueIndex));
+	return PyLong_FromLong(pItemData->GetValue(iValueIndex));
 }
 
 PyObject * itemGetSocket(PyObject * poSelf, PyObject * poArgs)
@@ -542,27 +576,27 @@ void initItem()
 	{	
 		{ "SetUseSoundFileName",			itemSetUseSoundFileName,				METH_VARARGS },
 		{ "SetDropSoundFileName",			itemSetDropSoundFileName,				METH_VARARGS },
-		{ "SelectItem",						itemSelectItem,							METH_VARARGS },
+		{ "SelectItem",						(PyCFunction)itemSelectItem,			METH_FASTCALL },
 
-		{ "GetItemName",					itemGetItemName,						METH_VARARGS },
+		{ "GetItemName",					(PyCFunction)itemGetItemName,			METH_FASTCALL },
 		{ "GetItemDescription",				itemGetItemDescription,					METH_VARARGS },
 		{ "GetItemSummary",					itemGetItemSummary,						METH_VARARGS },
 		{ "GetIconImage",					itemGetIconImage,						METH_VARARGS },
 		{ "GetIconImageFileName",			itemGetIconImageFileName,				METH_VARARGS },
 		{ "GetItemSize",					itemGetItemSize,						METH_VARARGS },
-		{ "GetItemType",					itemGetItemType,						METH_VARARGS },
-		{ "GetItemSubType",					itemGetItemSubType,						METH_VARARGS },
+		{ "GetItemType",					(PyCFunction)itemGetItemType,			METH_FASTCALL },
+		{ "GetItemSubType",					(PyCFunction)itemGetItemSubType,		METH_FASTCALL },
 		{ "GetIBuyItemPrice",				itemGetIBuyItemPrice,					METH_VARARGS },
 		{ "GetISellItemPrice",				itemGetISellItemPrice,					METH_VARARGS },
 		{ "IsAntiFlag",						itemIsAntiFlag,							METH_VARARGS },
 		{ "IsFlag",							itemIsFlag,								METH_VARARGS },
 		{ "IsWearableFlag",					itemIsWearableFlag,						METH_VARARGS },
 		{ "Is1GoldItem",					itemIs1GoldItem,						METH_VARARGS },
-		{ "GetLimit",						itemGetLimit,							METH_VARARGS },
-		{ "GetLimitType",					itemGetLimitType,						METH_VARARGS },
-		{ "GetLimitValue",					itemGetLimitValue,						METH_VARARGS },
-		{ "GetAffect",						itemGetAffect,							METH_VARARGS },
-		{ "GetValue",						itemGetValue,							METH_VARARGS },
+		{ "GetLimit",						(PyCFunction)itemGetLimit,				METH_FASTCALL },
+		{ "GetLimitType",					(PyCFunction)itemGetLimitType,			METH_FASTCALL },
+		{ "GetLimitValue",					(PyCFunction)itemGetLimitValue,			METH_FASTCALL },
+		{ "GetAffect",						(PyCFunction)itemGetAffect,				METH_FASTCALL },
+		{ "GetValue",						(PyCFunction)itemGetValue,				METH_FASTCALL },
 		{ "GetSocket",						itemGetSocket,							METH_VARARGS },
 		{ "GetIconInstance",				itemGetIconInstance,					METH_VARARGS },
 		{ "GetUseType",						itemGetUseType,							METH_VARARGS },

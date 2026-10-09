@@ -3,6 +3,7 @@
 #include "EterBase/Filename.h"
 #include "PythonWindow.h"
 #include "PythonSlotWindow.h"
+#include "PythonInternedStrings.h"
 
 #include "UserInterface/PythonSkill.h"
 #include "UserInterface/PythonPlayer.h"
@@ -989,23 +990,23 @@ void CSlotWindow::OnMouseOver()
 
 void CSlotWindow::OnSelectEmptySlot(int iSlotNumber)
 {
-	PyCallClassMemberFunc(m_poHandler, "OnSelectEmptySlot", Py_BuildValue("(i)", iSlotNumber));
+	UI::PythonInternedStrings::Call(m_poHandler, UI::PythonInternedStrings::OnSelectEmptySlot, static_cast<long>(iSlotNumber));
 }
 void CSlotWindow::OnSelectItemSlot(int iSlotNumber)
 {
 //	OnOverOutItem();
-	PyCallClassMemberFunc(m_poHandler, "OnSelectItemSlot", Py_BuildValue("(i)", iSlotNumber));
+	UI::PythonInternedStrings::Call(m_poHandler, UI::PythonInternedStrings::OnSelectItemSlot, static_cast<long>(iSlotNumber));
 
 	if (UI::CWindowManager::Instance().IsAttaching())
 		OnOverOutItem();
 }
 void CSlotWindow::OnUnselectEmptySlot(int iSlotNumber)
 {
-	PyCallClassMemberFunc(m_poHandler, "OnUnselectEmptySlot", Py_BuildValue("(i)", iSlotNumber));
+	UI::PythonInternedStrings::Call(m_poHandler, UI::PythonInternedStrings::OnUnselectEmptySlot, static_cast<long>(iSlotNumber));
 }
 void CSlotWindow::OnUnselectItemSlot(int iSlotNumber)
 {
-	PyCallClassMemberFunc(m_poHandler, "OnUnselectItemSlot", Py_BuildValue("(i)", iSlotNumber));
+	UI::PythonInternedStrings::Call(m_poHandler, UI::PythonInternedStrings::OnUnselectItemSlot, static_cast<long>(iSlotNumber));
 }
 void CSlotWindow::OnUseSlot()
 {
@@ -1013,7 +1014,7 @@ void CSlotWindow::OnUseSlot()
 	if (GetPickedSlotPointer(&pSlot))
 	if (pSlot->isItem)
 	{
-		PyCallClassMemberFunc(m_poHandler, "OnUseSlot", Py_BuildValue("(i)", pSlot->dwSlotNumber));
+		UI::PythonInternedStrings::Call(m_poHandler, UI::PythonInternedStrings::OnUseSlot, static_cast<unsigned long>(pSlot->dwSlotNumber));
 	}
 }
 
@@ -1030,7 +1031,7 @@ BOOL CSlotWindow::OnOverInItem(DWORD dwSlotNumber)
 		return TRUE;
 
 	m_dwToolTipSlotNumber = dwSlotNumber;
-	PyCallClassMemberFunc(m_poHandler, "OnOverInItem", Py_BuildValue("(i)", dwSlotNumber));
+	UI::PythonInternedStrings::Call(m_poHandler, UI::PythonInternedStrings::OnOverInItem, static_cast<unsigned long>(dwSlotNumber));
 
 	return TRUE;
 }
@@ -1041,14 +1042,14 @@ void CSlotWindow::OnOverOutItem()
 		return;
 
 	m_dwToolTipSlotNumber = SLOT_NUMBER_NONE;
-	PyCallClassMemberFunc(m_poHandler, "OnOverOutItem", Py_BuildValue("()"));
+	UI::PythonInternedStrings::Call(m_poHandler, UI::PythonInternedStrings::OnOverOutItem);
 }
 
 void CSlotWindow::OnPressedSlotButton(DWORD dwType, DWORD dwSlotNumber, BOOL isLeft)
 {
 	if (CSlotButton::SLOT_BUTTON_TYPE_PLUS == dwType)
 	{
-		PyCallClassMemberFunc(m_poHandler, "OnPressedSlotButton", Py_BuildValue("(i)", dwSlotNumber));
+		UI::PythonInternedStrings::Call(m_poHandler, UI::PythonInternedStrings::OnPressedSlotButton, static_cast<unsigned long>(dwSlotNumber));
 	}
 	else if (CSlotButton::SLOT_BUTTON_TYPE_COVER == dwType)
 	{

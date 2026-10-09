@@ -391,3 +391,40 @@ target_link_libraries(test_c26_rhi_engine PRIVATE
 
 add_test(NAME RHIEngineTest COMMAND test_c26_rhi_engine)
 
+add_executable(test_c26_phase_game_routers
+    test_c26_phase_game_routers.cpp
+    ${CMAKE_SOURCE_DIR}/src/UserInterface/Network/Routers/NetCombatRouter.cpp
+    ${CMAKE_SOURCE_DIR}/src/UserInterface/Network/Routers/NetItemRouter.cpp
+    ${CMAKE_SOURCE_DIR}/src/UserInterface/Network/Routers/NetActorRouter.cpp
+    ${CMAKE_SOURCE_DIR}/src/UserInterface/Network/Routers/PhaseGamePacketDispatcher.cpp
+)
+target_include_directories(test_c26_phase_game_routers PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/UserInterface
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+target_compile_definitions(test_c26_phase_game_routers PRIVATE
+    TEST_MODE_DISABLE_STDAFX
+)
+target_link_libraries(test_c26_phase_game_routers PRIVATE
+    EterBase
+)
+add_test(NAME PhaseGameRoutersTest COMMAND test_c26_phase_game_routers)
+
+add_executable(test_c26_pybridge_fastcall test_c26_pybridge_fastcall.cpp)
+target_include_directories(test_c26_pybridge_fastcall PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/Client
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/extern/include
+)
+target_link_libraries(test_c26_pybridge_fastcall PRIVATE
+    Client2026
+    Python
+    EterBase
+    version
+    ws2_32
+)
+
+add_test(NAME PyBridgeFastCallTest COMMAND test_c26_pybridge_fastcall)
+

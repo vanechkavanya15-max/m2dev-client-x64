@@ -534,15 +534,26 @@ PyObject * playerIsSkillCoolTime(PyObject* poSelf, PyObject* poArgs)
 	return Py_BuildValue("i", CPythonPlayer::Instance().IsSkillCoolTime(iSlotIndex));
 }
 
-PyObject * playerGetSkillCoolTime(PyObject* poSelf, PyObject* poArgs)
+PyObject * playerGetSkillCoolTime(PyObject * poSelf, PyObject * const * poArgs, Py_ssize_t nargs)
 {
-	int iSlotIndex;
-	if (!PyTuple_GetInteger(poArgs, 0, &iSlotIndex))
-		return Py_BuildException();
+	if (nargs != 1)
+		return Py_BadArgument();
+
+	if (!PyLong_Check(poArgs[0]))
+		return Py_BadArgument();
+
+	int iSlotIndex = PyLong_AsLong(poArgs[0]);
 
 	float fCoolTime = CPythonPlayer::Instance().GetSkillCoolTime(iSlotIndex);
 	float fElapsedCoolTime = CPythonPlayer::Instance().GetSkillElapsedCoolTime(iSlotIndex);
-	return Py_BuildValue("ff", fCoolTime, fElapsedCoolTime);
+
+	PyObject * poTuple = PyTuple_New(2);
+	if (!poTuple)
+		return NULL;
+
+	PyTuple_SET_ITEM(poTuple, 0, PyFloat_FromDouble(fCoolTime));
+	PyTuple_SET_ITEM(poTuple, 1, PyFloat_FromDouble(fElapsedCoolTime));
+	return poTuple;
 }
 
 PyObject * playerResetSkillCoolTimeForSlot(PyObject* poSelf, PyObject* poArgs)
@@ -702,13 +713,16 @@ PyObject * playerSetSkill(PyObject* poSelf, PyObject* poArgs)
 	return Py_BuildNone();
 }
 
-PyObject * playerGetSkillIndex(PyObject* poSelf, PyObject* poArgs)
+PyObject * playerGetSkillIndex(PyObject * poSelf, PyObject * const * poArgs, Py_ssize_t nargs)
 {
-	int iSlotIndex;
-	if (!PyTuple_GetInteger(poArgs, 0, &iSlotIndex))
-		return Py_BuildException();
+	if (nargs != 1)
+		return Py_BadArgument();
 
-	return Py_BuildValue("i", CPythonPlayer::Instance().GetSkillIndex(iSlotIndex));
+	if (!PyLong_Check(poArgs[0]))
+		return Py_BadArgument();
+
+	int iSlotIndex = PyLong_AsLong(poArgs[0]);
+	return PyLong_FromLong(CPythonPlayer::Instance().GetSkillIndex(iSlotIndex));
 }
 
 PyObject * playerGetSkillSlotIndex(PyObject* poSelf, PyObject* poArgs)
@@ -733,13 +747,16 @@ PyObject * playerGetSkillGrade(PyObject* poSelf, PyObject* poArgs)
 	return Py_BuildValue("i", CPythonPlayer::Instance().GetSkillGrade(iSlotIndex));
 }
 
-PyObject * playerGetSkillLevel(PyObject* poSelf, PyObject* poArgs)
+PyObject * playerGetSkillLevel(PyObject * poSelf, PyObject * const * poArgs, Py_ssize_t nargs)
 {
-	int iSlotIndex;
-	if (!PyTuple_GetInteger(poArgs, 0, &iSlotIndex))
-		return Py_BuildException();
+	if (nargs != 1)
+		return Py_BadArgument();
 
-	return Py_BuildValue("i", CPythonPlayer::Instance().GetSkillLevel(iSlotIndex));
+	if (!PyLong_Check(poArgs[0]))
+		return Py_BadArgument();
+
+	int iSlotIndex = PyLong_AsLong(poArgs[0]);
+	return PyLong_FromLong(CPythonPlayer::Instance().GetSkillLevel(iSlotIndex));
 }
 
 PyObject * playerGetSkillCurrentEfficientPercentage(PyObject* poSelf, PyObject* poArgs)
@@ -827,96 +844,90 @@ PyObject * playerSendClickItemPacket(PyObject* poSelf, PyObject* poArgs)
 	return Py_BuildNone();
 }
 
-PyObject * playerGetItemIndex(PyObject* poSelf, PyObject* poArgs)
+PyObject * playerGetItemIndex(PyObject * poSelf, PyObject * const * poArgs, Py_ssize_t nargs)
 {
-	switch (PyTuple_Size(poArgs))
+	switch (nargs)
 	{
 	case 1:
 		{
-			int iSlotIndex;
-			if (!PyTuple_GetInteger(poArgs, 0, &iSlotIndex))
-				return Py_BuildException();
+			if (!PyLong_Check(poArgs[0]))
+				return Py_BadArgument();
 
-			int ItemIndex = CPythonPlayer::Instance().GetItemIndex(TItemPos (INVENTORY, iSlotIndex));
-			return Py_BuildValue("i", ItemIndex);
+			int iSlotIndex = PyLong_AsLong(poArgs[0]);
+			int ItemIndex = CPythonPlayer::Instance().GetItemIndex(TItemPos(INVENTORY, iSlotIndex));
+			return PyLong_FromLong(ItemIndex);
 		}
 	case 2:
 		{
-			TItemPos Cell;
-			if (!PyTuple_GetByte(poArgs, 0, &Cell.window_type))
-				return Py_BuildException();
-			if (!PyTuple_GetInteger(poArgs, 1, &Cell.cell))
-				return Py_BuildException();
+			if (!PyLong_Check(poArgs[0]) || !PyLong_Check(poArgs[1]))
+				return Py_BadArgument();
 
-			int ItemIndex = CPythonPlayer::Instance().GetItemIndex(Cell);
-			return Py_BuildValue("i", ItemIndex);
+			BYTE window_type = static_cast<BYTE>(PyLong_AsLong(poArgs[0]));
+			WORD cell = static_cast<WORD>(PyLong_AsLong(poArgs[1]));
+
+			int ItemIndex = CPythonPlayer::Instance().GetItemIndex(TItemPos(window_type, cell));
+			return PyLong_FromLong(ItemIndex);
 		}
 	default:
-		return Py_BuildException();
-
+		return Py_BadArgument();
 	}
 }
 
-PyObject * playerGetItemFlags(PyObject* poSelf, PyObject* poArgs)
+PyObject * playerGetItemFlags(PyObject * poSelf, PyObject * const * poArgs, Py_ssize_t nargs)
 {
-	switch (PyTuple_Size(poArgs))
+	switch (nargs)
 	{
 	case 1:
 		{
-			int iSlotIndex;
-			if (!PyTuple_GetInteger(poArgs, 0, &iSlotIndex))
-				return Py_BuildException();
+			if (!PyLong_Check(poArgs[0]))
+				return Py_BadArgument();
 
+			int iSlotIndex = PyLong_AsLong(poArgs[0]);
 			DWORD flags = CPythonPlayer::Instance().GetItemFlags(TItemPos(INVENTORY, iSlotIndex));
-			return Py_BuildValue("i", flags);
+			return PyLong_FromLong(flags);
 		}
 	case 2:
 		{
-			TItemPos Cell;
-			if (!PyTuple_GetByte(poArgs, 0, &Cell.window_type))
-				return Py_BuildException();
+			if (!PyLong_Check(poArgs[0]) || !PyLong_Check(poArgs[1]))
+				return Py_BadArgument();
 
-			if (!PyTuple_GetInteger(poArgs, 1, &Cell.cell))
-				return Py_BuildException();
+			BYTE window_type = static_cast<BYTE>(PyLong_AsLong(poArgs[0]));
+			WORD cell = static_cast<WORD>(PyLong_AsLong(poArgs[1]));
 
-			DWORD flags = CPythonPlayer::Instance().GetItemFlags(Cell);
-			return Py_BuildValue("i", flags);
+			DWORD flags = CPythonPlayer::Instance().GetItemFlags(TItemPos(window_type, cell));
+			return PyLong_FromLong(flags);
 		}
 	default:
-		return Py_BuildException();
+		return Py_BadArgument();
 	}
 }
 
-
-PyObject * playerGetItemCount(PyObject* poSelf, PyObject* poArgs)
+PyObject * playerGetItemCount(PyObject * poSelf, PyObject * const * poArgs, Py_ssize_t nargs)
 {
-	switch (PyTuple_Size(poArgs))
+	switch (nargs)
 	{
 	case 1:
 		{
-			int iSlotIndex;
-			if (!PyTuple_GetInteger(poArgs, 0, &iSlotIndex))
-				return Py_BuildException();
+			if (!PyLong_Check(poArgs[0]))
+				return Py_BadArgument();
 
-			int ItemNum = CPythonPlayer::Instance().GetItemCount(TItemPos (INVENTORY, iSlotIndex));
-			return Py_BuildValue("i", ItemNum);
+			int iSlotIndex = PyLong_AsLong(poArgs[0]);
+			int ItemNum = CPythonPlayer::Instance().GetItemCount(TItemPos(INVENTORY, iSlotIndex));
+			return PyLong_FromLong(ItemNum);
 		}
 	case 2:
 		{
-			TItemPos Cell;
-			if (!PyTuple_GetByte(poArgs, 0, &Cell.window_type))
-				return Py_BuildException();
+			if (!PyLong_Check(poArgs[0]) || !PyLong_Check(poArgs[1]))
+				return Py_BadArgument();
 
-			if (!PyTuple_GetInteger(poArgs, 1, &Cell.cell))
-				return Py_BuildException();
+			BYTE window_type = static_cast<BYTE>(PyLong_AsLong(poArgs[0]));
+			WORD cell = static_cast<WORD>(PyLong_AsLong(poArgs[1]));
 
-			int ItemNum = CPythonPlayer::Instance().GetItemCount(Cell);
-
-			return Py_BuildValue("i", ItemNum);
+			int ItemNum = CPythonPlayer::Instance().GetItemCount(TItemPos(window_type, cell));
+			return PyLong_FromLong(ItemNum);
 		}
 	default:
-		return Py_BuildException();
-
+		return Py_BadArgument();
 	}
 }
 
@@ -2225,19 +2236,19 @@ void initPlayer()
 		///////////////////////////////////////////////////////////////////////////////////////////
 
 		{ "SetSkill",							playerSetSkill,								METH_VARARGS },
-		{ "GetSkillIndex",						playerGetSkillIndex,						METH_VARARGS },
+		{ "GetSkillIndex",						(PyCFunction)playerGetSkillIndex,			METH_FASTCALL },
 		{ "GetSkillSlotIndex",					playerGetSkillSlotIndex,					METH_VARARGS },
 		{ "GetSkillGrade",						playerGetSkillGrade,						METH_VARARGS },
-		{ "GetSkillLevel",						playerGetSkillLevel,						METH_VARARGS },
+		{ "GetSkillLevel",						(PyCFunction)playerGetSkillLevel,			METH_FASTCALL },
 		{ "GetSkillCurrentEfficientPercentage",	playerGetSkillCurrentEfficientPercentage,	METH_VARARGS },
 		{ "GetSkillNextEfficientPercentage",	playerGetSkillNextEfficientPercentage,		METH_VARARGS },
 		{ "ClickSkillSlot",						playerClickSkillSlot,						METH_VARARGS },
 		{ "ChangeCurrentSkillNumberOnly",		playerChangeCurrentSkillNumberOnly,			METH_VARARGS },
 		{ "ClearSkillDict",						playerClearSkillDict,						METH_VARARGS },
 
-		{ "GetItemIndex",						playerGetItemIndex,							METH_VARARGS },
-		{ "GetItemFlags",						playerGetItemFlags,							METH_VARARGS },
-		{ "GetItemCount",						playerGetItemCount,							METH_VARARGS },
+		{ "GetItemIndex",						(PyCFunction)playerGetItemIndex,			METH_FASTCALL },
+		{ "GetItemFlags",						(PyCFunction)playerGetItemFlags,			METH_FASTCALL },
+		{ "GetItemCount",						(PyCFunction)playerGetItemCount,			METH_FASTCALL },
 		{ "GetItemCountByVnum",					playerGetItemCountByVnum,					METH_VARARGS },
 		{ "GetItemMetinSocket",					playerGetItemMetinSocket,					METH_VARARGS },
 		{ "GetItemAttribute",					playerGetItemAttribute,						METH_VARARGS },
@@ -2254,7 +2265,7 @@ void initPlayer()
 		{ "SetPlayTime",				playerSetPlayTime,					METH_VARARGS },
 
 		{ "IsSkillCoolTime",			playerIsSkillCoolTime,				METH_VARARGS },
-		{ "GetSkillCoolTime",			playerGetSkillCoolTime,				METH_VARARGS },
+		{ "GetSkillCoolTime",			(PyCFunction)playerGetSkillCoolTime,	METH_FASTCALL },
 		{ "ResetSkillCoolTimeForSlot",	playerResetSkillCoolTimeForSlot,	METH_VARARGS },
 		{ "ResetHorseSkillCoolTime", 	playerResetHorseSkillCoolTime, 		METH_VARARGS },
 		{ "IsSkillActive",				playerIsSkillActive,				METH_VARARGS },

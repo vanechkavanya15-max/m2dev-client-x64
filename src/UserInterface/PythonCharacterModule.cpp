@@ -366,21 +366,24 @@ PyObject * chrChangeHair(PyObject* poSelf, PyObject* poArgs)
 	return Py_BuildNone();
 }
 
-PyObject * chrSetArmor(PyObject* poSelf, PyObject* poArgs)
+PyObject * chrSetArmor(PyObject* poSelf, PyObject * const * poArgs, Py_ssize_t nargs)
 {
-	int iForm;
-	if (!PyTuple_GetInteger(poArgs, 0, &iForm))
-		return Py_BuildException();
+	if (nargs != 1)
+		return Py_BadArgument();
+
+	if (!PyLong_Check(poArgs[0]))
+		return Py_BadArgument();
+
+	int iForm = PyLong_AsLong(poArgs[0]);
 
 	CInstanceBase * pkInst = CPythonCharacterManager::Instance().GetSelectedInstancePtr();
 	if (!pkInst)
-		return Py_BuildNone();
+		Py_RETURN_NONE;
 
 	pkInst->SetArmor(iForm);
-
 	pkInst->RegisterBoundingSphere();
 
-	return Py_BuildNone();
+	Py_RETURN_NONE;
 }
 
 PyObject * chrChangeShape(PyObject* poSelf, PyObject* poArgs)
@@ -398,19 +401,23 @@ PyObject * chrChangeShape(PyObject* poSelf, PyObject* poArgs)
 	return Py_BuildNone();
 }
 
-PyObject * chrSetWeapon(PyObject* poSelf, PyObject* poArgs)
+PyObject * chrSetWeapon(PyObject* poSelf, PyObject * const * poArgs, Py_ssize_t nargs)
 {
-	int iForm;
-	if (!PyTuple_GetInteger(poArgs, 0, &iForm))
-		return Py_BuildException();
+	if (nargs != 1)
+		return Py_BadArgument();
+
+	if (!PyLong_Check(poArgs[0]))
+		return Py_BadArgument();
+
+	int iForm = PyLong_AsLong(poArgs[0]);
 
 	CInstanceBase * pkInst = CPythonCharacterManager::Instance().GetSelectedInstancePtr();
 	if (!pkInst)
-		return Py_BuildNone();
+		Py_RETURN_NONE;
 
 	pkInst->SetWeapon(iForm);
 
-	return Py_BuildNone();
+	Py_RETURN_NONE;
 }
 
 PyObject * chrSetVirtualID(PyObject* poSelf, PyObject* poArgs)
@@ -586,32 +593,40 @@ PyObject * chrLookAt(PyObject* poSelf, PyObject* poArgs)
 	return Py_BuildNone();
 }
 
-PyObject * chrSetMotionMode(PyObject* poSelf, PyObject* poArgs)
+PyObject * chrSetMotionMode(PyObject* poSelf, PyObject * const * poArgs, Py_ssize_t nargs)
 {
-	int iMotionMode;
-	if (!PyTuple_GetInteger(poArgs, 0, &iMotionMode))
-		return Py_BuildException();
+	if (nargs != 1)
+		return Py_BadArgument();
+
+	if (!PyLong_Check(poArgs[0]))
+		return Py_BadArgument();
+
+	int iMotionMode = PyLong_AsLong(poArgs[0]);
 
 	CInstanceBase * pkInst = CPythonCharacterManager::Instance().GetSelectedInstancePtr();
 	if (!pkInst)
-		return Py_BuildNone();
+		Py_RETURN_NONE;
 
 	pkInst->SetMotionMode(iMotionMode);
-	return Py_BuildNone();
+	Py_RETURN_NONE;
 }
 
-PyObject * chrSetLoopMotion(PyObject* poSelf, PyObject* poArgs)
+PyObject * chrSetLoopMotion(PyObject* poSelf, PyObject * const * poArgs, Py_ssize_t nargs)
 {
-	int iMotionIndex;
-	if (!PyTuple_GetInteger(poArgs, 0, &iMotionIndex))
-		return Py_BuildException();
+	if (nargs != 1)
+		return Py_BadArgument();
+
+	if (!PyLong_Check(poArgs[0]))
+		return Py_BadArgument();
+
+	int iMotionIndex = PyLong_AsLong(poArgs[0]);
 
 	CInstanceBase * pkInst = CPythonCharacterManager::Instance().GetSelectedInstancePtr();
 	if (!pkInst)
-		return Py_BuildNone();
-	pkInst->SetLoopMotion(WORD(iMotionIndex));
+		Py_RETURN_NONE;
 
-	return Py_BuildNone();
+	pkInst->SetLoopMotion(WORD(iMotionIndex));
+	Py_RETURN_NONE;
 }
 
 PyObject * chrBlendLoopMotion(PyObject* poSelf, PyObject* poArgs)
@@ -1256,8 +1271,8 @@ void initchr()
 		{ "Pick",						chrPick,							METH_VARARGS },
 		{ "PickAll",					chrPickAll,							METH_VARARGS },
 
-		{ "SetArmor",					chrSetArmor,						METH_VARARGS },
-		{ "SetWeapon",					chrSetWeapon,						METH_VARARGS },
+		{ "SetArmor",					(PyCFunction)chrSetArmor,						METH_FASTCALL },
+		{ "SetWeapon",					(PyCFunction)chrSetWeapon,						METH_FASTCALL },
 		{ "ChangeShape",				chrChangeShape,						METH_VARARGS },
 		{ "SetRace",					chrSetRace,							METH_VARARGS },
 		{ "SetHair",					chrSetHair,							METH_VARARGS },
@@ -1276,8 +1291,8 @@ void initchr()
 		{ "AttachEffectByName",			chrAttachEffectByName,				METH_VARARGS },
 
 		{ "LookAt",						chrLookAt,							METH_VARARGS },
-		{ "SetMotionMode",				chrSetMotionMode,					METH_VARARGS },
-		{ "SetLoopMotion",				chrSetLoopMotion,					METH_VARARGS },
+		{ "SetMotionMode",				(PyCFunction)chrSetMotionMode,					METH_FASTCALL },
+		{ "SetLoopMotion",				(PyCFunction)chrSetLoopMotion,					METH_FASTCALL },
 		{ "BlendLoopMotion",			chrBlendLoopMotion,					METH_VARARGS },
 		{ "PushOnceMotion",				chrPushOnceMotion,					METH_VARARGS },
 		{ "PushLoopMotion",				chrPushLoopMotion,					METH_VARARGS },

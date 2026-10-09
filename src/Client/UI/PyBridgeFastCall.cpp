@@ -22,7 +22,11 @@ namespace Client::UI::PyFastCall
         }
 
         std::string s(str);
-        PyObject* newStrObj = PyUnicode_FromString(s.c_str());
+        PyObject* newStrObj = PyUnicode_InternFromString(s.c_str());
+        if (!newStrObj)
+        {
+            newStrObj = PyUnicode_FromString(s.c_str());
+        }
         if (newStrObj)
         {
             ms_cache[s] = newStrObj;
@@ -99,20 +103,14 @@ namespace Client::UI::PyFastCall
             return std::unexpected("Attribute is not callable");
         }
 
-        PyBridge::PyRef<> emptyTuple = EmptyTupleCache::Get();
-        if (!emptyTuple.IsValid())
-        {
-            PyErr_Clear();
-            return std::unexpected("Failed to create empty tuple");
-        }
-
-        PyBridge::PyRef<> result(PyObject_Call(callable.Get(), emptyTuple.Get(), nullptr));
-        if (!result.IsValid())
+        // Nowoczesne wywolanie Vectorcall bez alokacji krotek (PEP 590)
+        PyObject* rawResult = PyObject_Vectorcall(callable.Get(), nullptr, 0, nullptr);
+        if (!rawResult)
         {
             PyErr_Clear();
             return std::unexpected("Method call failed");
         }
 
-        return result;
+        return PyBridge::PyRef<>(rawResult);
     }
 }

@@ -3,6 +3,7 @@
 #include "PythonWindow.h"
 #include "PythonSlotWindow.h"
 #include "PythonWindowManager.h"
+#include "PythonInternedStrings.h"
 
 #include "EterLib/StateManager.h"
 #include "UserInterface/Locale_Interface.h"
@@ -261,11 +262,7 @@ namespace UI
 		if (!IsShow())
 			return;
 
-		static PyObject* poFuncName_OnUpdate = PyString_InternFromString("OnUpdate");
-
-		//PyCallClassMemberFunc(m_poHandler, "OnUpdate", BuildEmptyTuple());
-		PyCallClassMemberFunc_ByPyString(m_poHandler, poFuncName_OnUpdate, BuildEmptyTuple());
-		
+		UI::PythonInternedStrings::Call(m_poHandler, UI::PythonInternedStrings::OnUpdate);
 	}
 
 	void CWindow::EnableScissorRect()
@@ -291,8 +288,7 @@ namespace UI
 		if (!IsShow())
 			return;
 
-		//PyCallClassMemberFunc(m_poHandler, "OnRender", BuildEmptyTuple());
-		PyCallClassMemberFunc(m_poHandler, "OnRender", BuildEmptyTuple());
+		UI::PythonInternedStrings::Call(m_poHandler, UI::PythonInternedStrings::OnRender);
 	}
 
 	void CWindow::SetName(const char * c_szName)
@@ -496,7 +492,7 @@ namespace UI
 
 	void CWindow::OnMoveWindow(long lx, long ly)
 	{
-		PyCallClassMemberFunc(m_poHandler, "OnMoveWindow", Py_BuildValue("(ii)", lx, ly));
+		UI::PythonInternedStrings::Call(m_poHandler, UI::PythonInternedStrings::OnMoveWindow, lx, ly);
 	}
 
 	void CWindow::OnSetFocus()
@@ -844,8 +840,8 @@ namespace UI
 
 	BOOL CWindow::OnPressEscapeKey()
 	{
-		long lValue;
-		if (PyCallClassMemberFunc(m_poHandler, "OnPressEscapeKey", BuildEmptyTuple(), &lValue))
+		long lValue = 0;
+		if (UI::PythonInternedStrings::CallWithReturn(m_poHandler, UI::PythonInternedStrings::OnPressEscapeKey, &lValue))
 		if (0 != lValue)
 			return TRUE;
 

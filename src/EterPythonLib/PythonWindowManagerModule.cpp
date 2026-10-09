@@ -11,6 +11,31 @@ bool PyTuple_GetWindow(PyObject* poArgs, int pos, UI::CWindow ** ppRetWindow)
 	return *ppRetWindow != nullptr;
 }
 
+bool PyFastCall_GetWindow(PyObject * poArg, UI::CWindow ** ppRetWindow)
+{
+	if (!poArg || !PyLong_Check(poArg))
+		return false;
+
+	unsigned long long ullVal = PyLong_AsUnsignedLongLong(poArg);
+	if (ullVal == (unsigned long long)-1)
+	{
+		if (PyErr_Occurred())
+			PyErr_Clear();
+		return false;
+	}
+
+	*ppRetWindow = reinterpret_cast<UI::CWindow*>(ullVal);
+	return *ppRetWindow != nullptr;
+}
+
+bool PyFastCall_GetWindow(PyObject * const * poArgs, Py_ssize_t nargs, Py_ssize_t pos, UI::CWindow ** ppRetWindow)
+{
+	if (pos < 0 || pos >= nargs)
+		return false;
+
+	return PyFastCall_GetWindow(poArgs[pos], ppRetWindow);
+}
+
 PyObject * wndMgrGetAspect(PyObject * poSelf, PyObject * poArgs)
 {
 	return Py_BuildValue("f", UI::CWindowManager::Instance().GetAspect());
@@ -364,24 +389,30 @@ PyObject * wndMgrSetTop(PyObject * poSelf, PyObject * poArgs)
 	return Py_BuildNone();
 }
 
-PyObject * wndMgrShow(PyObject * poSelf, PyObject * poArgs)
+PyObject * wndMgrShow(PyObject * poSelf, PyObject * const * poArgs, Py_ssize_t nargs)
 {
+	if (nargs != 1)
+		return Py_BadArgument();
+
 	UI::CWindow * pWin;
-	if (!PyTuple_GetWindow(poArgs, 0, &pWin))
+	if (!PyFastCall_GetWindow(poArgs[0], &pWin))
 		return Py_BuildException();
 
 	pWin->Show();
-	return Py_BuildNone();
+	Py_RETURN_NONE;
 }
 
-PyObject * wndMgrHide(PyObject * poSelf, PyObject * poArgs)
+PyObject * wndMgrHide(PyObject * poSelf, PyObject * const * poArgs, Py_ssize_t nargs)
 {
+	if (nargs != 1)
+		return Py_BadArgument();
+
 	UI::CWindow * pWin;
-	if (!PyTuple_GetWindow(poArgs, 0, &pWin))
+	if (!PyFastCall_GetWindow(poArgs[0], &pWin))
 		return Py_BuildException();
 
 	pWin->Hide();
-	return Py_BuildNone();
+	Py_RETURN_NONE;
 }
 
 PyObject * wndMgrIsShow(PyObject * poSelf, PyObject * poArgs)
@@ -438,36 +469,42 @@ PyObject * wndMgrSetPickAlways(PyObject * poSelf, PyObject * poArgs)
 	return Py_BuildNone();
 }
 
-PyObject * wndMgrSetWndSize(PyObject * poSelf, PyObject * poArgs)
+PyObject * wndMgrSetWndSize(PyObject * poSelf, PyObject * const * poArgs, Py_ssize_t nargs)
 {
+	if (nargs != 3)
+		return Py_BadArgument();
+
 	UI::CWindow * pWin;
-	if (!PyTuple_GetWindow(poArgs, 0, &pWin))
+	if (!PyFastCall_GetWindow(poArgs[0], &pWin))
 		return Py_BuildException();
-	int width;
-	if (!PyTuple_GetInteger(poArgs, 1, &width))
-		return Py_BuildException();
-	int height;
-	if (!PyTuple_GetInteger(poArgs, 2, &height))
-		return Py_BuildException();
+
+	if (!PyLong_Check(poArgs[1]) || !PyLong_Check(poArgs[2]))
+		return Py_BadArgument();
+
+	int width = PyLong_AsLong(poArgs[1]);
+	int height = PyLong_AsLong(poArgs[2]);
 
 	pWin->SetSize(width, height);
-	return Py_BuildNone();
+	Py_RETURN_NONE;
 }
 
-PyObject * wndMgrSetWndPosition(PyObject * poSelf, PyObject * poArgs)
+PyObject * wndMgrSetWndPosition(PyObject * poSelf, PyObject * const * poArgs, Py_ssize_t nargs)
 {
+	if (nargs != 3)
+		return Py_BadArgument();
+
 	UI::CWindow * pWin;
-	if (!PyTuple_GetWindow(poArgs, 0, &pWin))
-		return Py_BuildException();
-	int x;
-	if (!PyTuple_GetInteger(poArgs, 1, &x))
-		return Py_BuildException();
-	int y;
-	if (!PyTuple_GetInteger(poArgs, 2, &y))
+	if (!PyFastCall_GetWindow(poArgs[0], &pWin))
 		return Py_BuildException();
 
+	if (!PyLong_Check(poArgs[1]) || !PyLong_Check(poArgs[2]))
+		return Py_BadArgument();
+
+	int x = PyLong_AsLong(poArgs[1]);
+	int y = PyLong_AsLong(poArgs[2]);
+
 	pWin->SetPosition(x, y);
-	return Py_BuildNone();
+	Py_RETURN_NONE;
 }
 
 PyObject * wndMgrGetName(PyObject * poSelf, PyObject * poArgs)
@@ -557,13 +594,16 @@ PyObject * wndMgrSetWindowVerticalAlign(PyObject * poSelf, PyObject * poArgs)
 	return Py_BuildNone();
 }
 
-PyObject * wndMgrIsIn(PyObject * poSelf, PyObject * poArgs)
+PyObject * wndMgrIsIn(PyObject * poSelf, PyObject * const * poArgs, Py_ssize_t nargs)
 {
+	if (nargs != 1)
+		return Py_BadArgument();
+
 	UI::CWindow * pWin;
-	if (!PyTuple_GetWindow(poArgs, 0, &pWin))
+	if (!PyFastCall_GetWindow(poArgs[0], &pWin))
 		return Py_BuildException();
 
-	return Py_BuildValue("i", pWin == UI::CWindowManager::Instance().GetPointWindow());
+	return PyBool_FromLong(pWin == UI::CWindowManager::Instance().GetPointWindow());
 }
 
 PyObject * wndMgrGetMouseLocalPosition(PyObject * poSelf, PyObject * poArgs)
@@ -596,11 +636,16 @@ PyObject * wndMgrGetScreenHeight(PyObject * poSelf, PyObject * poArgs)
 	return Py_BuildValue("i", UI::CWindowManager::Instance().GetScreenHeight());
 }
 
-PyObject * wndMgrGetMousePosition(PyObject * poSelf, PyObject * poArgs)
+PyObject * wndMgrGetMousePosition(PyObject * poSelf, PyObject * const * poArgs, Py_ssize_t nargs)
 {
 	long lx, ly;
 	UI::CWindowManager::Instance().GetMousePosition(lx, ly);
-	return Py_BuildValue("ii", lx, ly);
+	PyObject * poTuple = PyTuple_New(2);
+	if (!poTuple)
+		return NULL;
+	PyTuple_SET_ITEM(poTuple, 0, PyLong_FromLong(lx));
+	PyTuple_SET_ITEM(poTuple, 1, PyLong_FromLong(ly));
+	return poTuple;
 }
 
 PyObject * wndMgrIsDragging(PyObject * poSelf, PyObject * poArgs)
@@ -2498,8 +2543,8 @@ void initwndMgr()
 		{ "GetName",					wndMgrGetName,						METH_VARARGS },
 
 		{ "SetTop",						wndMgrSetTop,						METH_VARARGS },
-		{ "Show",						wndMgrShow,							METH_VARARGS },
-		{ "Hide",						wndMgrHide,							METH_VARARGS },
+		{ "Show",						reinterpret_cast<PyCFunction>(wndMgrShow),							METH_FASTCALL },
+		{ "Hide",						reinterpret_cast<PyCFunction>(wndMgrHide),							METH_FASTCALL },
 		{ "IsShow",						wndMgrIsShow,						METH_VARARGS },
 		{ "SetParent",					wndMgrSetParent,					METH_VARARGS },
 		{ "SetPickAlways",				wndMgrSetPickAlways,				METH_VARARGS },
@@ -2510,8 +2555,8 @@ void initwndMgr()
 		{ "Lock",						wndMgrLock,							METH_VARARGS },
 		{ "Unlock",						wndMgrUnlock,						METH_VARARGS },
 
-		{ "SetWindowSize",				wndMgrSetWndSize,					METH_VARARGS },
-		{ "SetWindowPosition",			wndMgrSetWndPosition,				METH_VARARGS },
+		{ "SetWindowSize",				reinterpret_cast<PyCFunction>(wndMgrSetWndSize),					METH_FASTCALL },
+		{ "SetWindowPosition",			reinterpret_cast<PyCFunction>(wndMgrSetWndPosition),				METH_FASTCALL },
 		{ "GetWindowWidth",				wndMgrGetWndWidth,					METH_VARARGS },
 		{ "GetWindowHeight",			wndMgrGetWndHeight,					METH_VARARGS },
 		{ "GetWindowLocalPosition",		wndMgrGetWndLocalPosition,			METH_VARARGS },
@@ -2523,9 +2568,9 @@ void initwndMgr()
 		{ "GetChildCount",				wndMgrGetChildCount,				METH_VARARGS },
 
 		{ "IsPickedWindow",				wndMgrIsPickedWindow,				METH_VARARGS },
-		{ "IsIn",						wndMgrIsIn,							METH_VARARGS },
+		{ "IsIn",						reinterpret_cast<PyCFunction>(wndMgrIsIn),							METH_FASTCALL },
 		{ "GetMouseLocalPosition",		wndMgrGetMouseLocalPosition,		METH_VARARGS },
-		{ "GetMousePosition",			wndMgrGetMousePosition,				METH_VARARGS },
+		{ "GetMousePosition",			reinterpret_cast<PyCFunction>(wndMgrGetMousePosition),				METH_FASTCALL },
 		{ "IsDragging",					wndMgrIsDragging,					METH_VARARGS },
 
 		{ "SetLimitBias",				wndMgrSetLimitBias,					METH_VARARGS },

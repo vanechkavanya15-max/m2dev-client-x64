@@ -3,6 +3,7 @@
 #include "PythonSlotWindow.h"
 #include "PythonGridSlotWindow.h"
 #include "PythonWindowManager.h"
+#include "PythonInternedStrings.h"
 
 //#define __WINDOW_LEAK_CHECK__
 
@@ -57,10 +58,12 @@ namespace UI
 		m_LockWindowList.clear();
 
 		gs_poEmptyTuple = Py_BuildValue("()");
+		UI::PythonInternedStrings::Initialize();
 	}
 
 	CWindowManager::~CWindowManager()
 	{		
+		UI::PythonInternedStrings::Finalize();
 		Py_DECREF(gs_poEmptyTuple);
 
 		stl_wipe_second(m_LayerWindowMap);
