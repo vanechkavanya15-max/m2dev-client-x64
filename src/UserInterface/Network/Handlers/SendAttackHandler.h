@@ -2,7 +2,7 @@
 
 #include <cstdint>
 #include <span>
-#include "../../BeaviumProtocol.h"
+#include "Client/Network/Protocol/BeaviumProtocol.h"
 
 class CNetworkStream; // Forward declaration from EterLib/NetStream.h
 

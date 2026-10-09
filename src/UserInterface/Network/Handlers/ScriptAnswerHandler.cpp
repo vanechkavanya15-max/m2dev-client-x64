@@ -6,7 +6,7 @@
 
 #include "ScriptAnswerHandler.h"
 #include "../../PythonNetworkStream.h"
-#include "../../BeaviumProtocol.h"
+#include "Client/Network/Protocol/BeaviumProtocol.h"
 
 namespace Network::Handlers
 {

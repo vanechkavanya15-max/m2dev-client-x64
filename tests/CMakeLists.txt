@@ -496,3 +496,28 @@ target_link_libraries(test_c26_process_scanner PRIVATE
 )
 add_test(NAME ProcessScannerTest COMMAND test_c26_process_scanner)
 
+add_executable(test_c26_multi_server_protocol
+    test_c26_multi_server_protocol.cpp
+    ${CMAKE_SOURCE_DIR}/src/UserInterface/Network/Routers/NetCombatRouter.cpp
+    ${CMAKE_SOURCE_DIR}/src/UserInterface/Network/Routers/NetItemRouter.cpp
+    ${CMAKE_SOURCE_DIR}/src/UserInterface/Network/Routers/NetActorRouter.cpp
+    ${CMAKE_SOURCE_DIR}/src/UserInterface/Network/Routers/PhaseGamePacketDispatcher.cpp
+)
+target_include_directories(test_c26_multi_server_protocol PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/Client
+    ${CMAKE_SOURCE_DIR}/src/UserInterface
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/extern/include
+)
+target_compile_definitions(test_c26_multi_server_protocol PRIVATE
+    TEST_MODE_DISABLE_STDAFX
+)
+target_link_libraries(test_c26_multi_server_protocol PRIVATE
+    Client2026
+    EterBase
+    ws2_32
+)
+add_test(NAME MultiServerProtocolTest COMMAND test_c26_multi_server_protocol)
+
+

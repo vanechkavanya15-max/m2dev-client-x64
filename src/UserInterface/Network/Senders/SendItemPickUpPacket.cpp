@@ -1,5 +1,5 @@
 #include "StdAfx.h"
-#include "../../BeaviumProtocol.h"
+#include "Client/Network/Protocol/BeaviumProtocol.h"
 #include "../../../EterLib/NetStream.h"
 #include "../../../EterBase/StrongTypes.h"
 #include "../../../EterBase/Result.h"

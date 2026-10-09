@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../../StdAfx.h"
-#include "../../BeaviumProtocol.h"
+#include "Client/Network/Protocol/BeaviumProtocol.h"
 #include <cstdint>
 #include <functional>
 #include <span>

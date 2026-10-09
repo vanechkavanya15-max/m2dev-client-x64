@@ -1,5 +1,5 @@
 #include "ShopPacketCodec.h"
-#include "Protocol/BeaviumProtocol.h"
+#include "Client/Network/Protocol/BeaviumProtocol.h"
 #include <cstring>
 
 namespace Client::Network

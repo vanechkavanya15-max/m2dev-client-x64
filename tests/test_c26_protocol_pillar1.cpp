@@ -6,7 +6,6 @@
 #include "Client/Network/Protocol/ProtocolTypes.h"
 #include "Client/Network/Protocol/Protocol.h"
 #include "Client/Network/Protocol/BeaviumProtocol.h"
-#include "UserInterface/BeaviumProtocol.h"
 
 int main()
 {

@@ -11,6 +11,7 @@
 #include "ProcessCRC.h"
 #include "Network/PacketDispatcher.h"
 #include "Network/Dispatchers/NetworkStreamPhaseGameBridge.h"
+#include "Client/Network/Protocol/ProtocolDriverRegistry.h"
 #include "Client/Bridge/StranglerFacade.h"
 #include "PythonNetworkStreamPhaseGameSync.h"
 
@@ -329,92 +330,154 @@ void CPythonNetworkStream::SetLoginKey(DWORD dwLoginKey)
 // Returns false to exit the phase loop (no data, error, or exitPhase handler).
 bool CPythonNetworkStream::DispatchPacket(const PacketHandlerMap& handlers)
 {
-	TPacketHeader header;
-	if (!Peek(sizeof(TPacketHeader), &header))
+	int nAvail = GetRecvBufferSize();
+	if (nAvail <= 0)
 		return false;
 
-	// Skip zero-padding (can occur from encryption alignment)
-	while (0 == header)
+	// Pobieramy aktywny sterownik protokolu (Universal Protocol Matrix)
+	auto* pDriver = Network::Protocol::ProtocolDriverRegistry::Instance().GetActiveDriver();
+	if (!pDriver)
 	{
-		if (!Recv(sizeof(TPacketHeader), &header))
-			return false;
+		Network::Protocol::ProtocolDriverRegistry::Instance().InitializeDefaults();
+		pDriver = Network::Protocol::ProtocolDriverRegistry::Instance().GetActiveDriver();
+	}
+
+	// Pobieramy podglad (do 64 bajtow lub nAvail) do zbadania naglowka
+	int peekLen = std::min(nAvail, 64);
+	std::vector<uint8_t> peekBuffer(peekLen);
+	if (!Peek(peekLen, peekBuffer.data()))
+		return false;
+
+	// Pomijanie zerowego wyrownania (np. padding po krypto)
+	size_t zeroCount = 0;
+	while (zeroCount < peekBuffer.size() && peekBuffer[zeroCount] == 0)
+	{
+		zeroCount++;
+	}
+	if (zeroCount > 0)
+	{
+		Recv(static_cast<int>(zeroCount));
+		return false;
+	}
+
+	// Badamy ramke przez aktywny sterownik
+	std::span<const uint8_t> peekSpan(peekBuffer.data(), peekBuffer.size());
+	auto frameOpt = pDriver ? pDriver->InspectFrame(peekSpan) : std::nullopt;
+
+	if (!frameOpt.has_value())
+	{
+		// Fallback do badania naglowka 2B / 4B jesli sterownik nie rozpoznal ramki
+		TPacketHeader header;
 		if (!Peek(sizeof(TPacketHeader), &header))
 			return false;
-	}
 
-	// Look up handler in this phase's table
-	auto it = handlers.find(header);
-	if (it == handlers.end())
-	{
-		// Check if modern C++23 PacketDispatcher or PhaseGamePacketDispatcher domain routers can handle this opcode
-		if (Network::PacketDispatcher::Instance().HasHandler(header) ||
-		    UserInterface::Network::Routers::PhaseGamePacketDispatcher::Instance().HasHandlerForHeader(header))
+		auto it = handlers.find(header);
+		if (it == handlers.end())
 		{
-			TDynamicSizePacketHeader packetFrame;
-			if (!Peek(sizeof(TDynamicSizePacketHeader), &packetFrame))
-				return false;
-
-			constexpr uint16_t MAX_PACKET_LENGTH = 65000;
-			if (packetFrame.length < PACKET_HEADER_SIZE || packetFrame.length > MAX_PACKET_LENGTH)
+			if (Network::PacketDispatcher::Instance().HasHandler(header) ||
+			    UserInterface::Network::Routers::PhaseGamePacketDispatcher::Instance().HasHandlerForHeader(header))
 			{
-				TraceError("DispatchPacket: Invalid modern packet length: header 0x%04X length: %u", header, packetFrame.length);
-				ClearRecvBuffer();
-				return false;
+				TDynamicSizePacketHeader packetFrame;
+				if (!Peek(sizeof(TDynamicSizePacketHeader), &packetFrame))
+					return false;
+
+				constexpr uint16_t MAX_PACKET_LENGTH = 65000;
+				if (packetFrame.length < PACKET_HEADER_SIZE || packetFrame.length > MAX_PACKET_LENGTH)
+				{
+					TraceError("DispatchPacket: Invalid modern packet length: header 0x%04X length: %u", header, packetFrame.length);
+					ClearRecvBuffer();
+					return false;
+				}
+
+				if (!Peek(packetFrame.length))
+					return false;
+
+				std::vector<uint8_t> packetBuffer(packetFrame.length);
+				if (!Recv(packetFrame.length, packetBuffer.data()))
+					return false;
+
+				LogRecvPacket(header, packetFrame.length);
+
+				std::span<const uint8_t> packetSpan(packetBuffer.data(), packetFrame.length);
+				auto res = Network::Dispatchers::NetworkStreamPhaseGameBridge::RouteGamePacket(header, packetSpan);
+				if (!res.has_value())
+				{
+					TraceError("DispatchPacket: Modern dispatch failed for header 0x%04X: %s", header, EterBase::ToString(res.error()).data());
+					return false;
+				}
+				return true;
 			}
 
-			if (!Peek(packetFrame.length))
-				return false;
-
-			std::vector<uint8_t> packetBuffer(packetFrame.length);
-			if (!Recv(packetFrame.length, packetBuffer.data()))
-				return false;
-
-			LogRecvPacket(header, packetFrame.length);
-
-			std::span<const uint8_t> packetSpan(packetBuffer.data(), packetFrame.length);
-			auto res = Network::Dispatchers::NetworkStreamPhaseGameBridge::RouteGamePacket(header, packetSpan);
-			if (!res.has_value())
-			{
-				TraceError("DispatchPacket: Modern dispatch failed for header 0x%04X: %s", header, EterBase::ToString(res.error()).data());
-				return false;
-			}
-			return true;
+			TraceError("Unknown packet header: 0x%04X (recv_seq #%u), Phase: %s", header, m_dwRecvPacketSeq, m_strPhase.c_str());
+			DumpRecentPackets();
+			ClearRecvBuffer();
+			return false;
 		}
 
-		TraceError("Unknown packet header: 0x%04X (recv_seq #%u), Phase: %s", header, m_dwRecvPacketSeq, m_strPhase.c_str());
-		DumpRecentPackets();
-		ClearRecvBuffer();
-		return false;
+		// Fallback: tradycyjne ramkowanie
+		TDynamicSizePacketHeader packetFrame;
+		if (!Peek(sizeof(TDynamicSizePacketHeader), &packetFrame))
+			return false;
+
+		constexpr uint16_t MAX_PACKET_LENGTH = 65000;
+		if (packetFrame.length < PACKET_HEADER_SIZE || packetFrame.length > MAX_PACKET_LENGTH)
+		{
+			TraceError("DispatchPacket: Invalid packet length: header 0x%04X length: %u", header, packetFrame.length);
+			DumpRecentPackets();
+			ClearRecvBuffer();
+			PostQuitMessage(0);
+			return false;
+		}
+
+		if (!Peek(packetFrame.length))
+			return false;
+
+		LogRecvPacket(header, packetFrame.length);
+		bool ret = (this->*(it->second.handler))();
+		return ret && !it->second.exitPhase;
 	}
 
-	// All packets use uniform framing: [header:2][length:2][payload...]
-	TDynamicSizePacketHeader packetFrame;
-	if (!Peek(sizeof(TDynamicSizePacketHeader), &packetFrame))
-		return false;
-
-	constexpr uint16_t MAX_PACKET_LENGTH = 65000;
-	if (packetFrame.length < PACKET_HEADER_SIZE || packetFrame.length > MAX_PACKET_LENGTH)
+	const auto& frame = frameOpt.value();
+	if (nAvail < static_cast<int>(frame.packetLength))
 	{
-		TraceError("DispatchPacket: Invalid packet length: header 0x%04X length: %u (min %u, max %u), recv_seq #%u",
-			header, packetFrame.length, PACKET_HEADER_SIZE, MAX_PACKET_LENGTH, m_dwRecvPacketSeq);
-		DumpRecentPackets();
-		ClearRecvBuffer();
-		PostQuitMessage(0);
+		// Czekamy na reszte danych z TCP
 		return false;
 	}
 
-	// Wait for full packet to be received
-	if (!Peek(packetFrame.length))
+	uint16_t header = frame.unifiedOpcode;
+
+	// Sprawdzamy czy handler jest w mapie fazy CPythonNetworkStream
+	auto it = handlers.find(header);
+	if (it != handlers.end())
+	{
+		if (!Peek(frame.packetLength))
+			return false;
+
+		LogRecvPacket(header, frame.packetLength);
+		bool ret = (this->*(it->second.handler))();
+		return ret && !it->second.exitPhase;
+	}
+
+	// W przeciwnym razie odbieramy caly pakiet i przekazujemy do sterownika
+	std::vector<uint8_t> packetBuffer(frame.packetLength);
+	if (!Recv(frame.packetLength, packetBuffer.data()))
 		return false;
 
-	// Log this packet
-	LogRecvPacket(header, packetFrame.length);
+	LogRecvPacket(header, frame.packetLength);
 
-	// Call handler
-	bool ret = (this->*(it->second.handler))();
+	std::span<const uint8_t> packetSpan(packetBuffer.data(), packetBuffer.size());
+	if (pDriver->DispatchInbound(header, packetSpan, nullptr))
+	{
+		return true;
+	}
 
-	if (!ret || it->second.exitPhase)
+	// Ostateczny fallback: RouteGamePacket
+	auto res = Network::Dispatchers::NetworkStreamPhaseGameBridge::RouteGamePacket(header, packetSpan);
+	if (!res.has_value())
+	{
+		TraceError("DispatchPacket: Dispatch failed for header 0x%04X: %s", header, EterBase::ToString(res.error()).data());
 		return false;
+	}
 
 	return true;
 }
