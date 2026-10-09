@@ -1,3 +1,5 @@
+﻿#include "EterLib/Camera.h"
+#include "EterBase/Timer.h"
 #include <cassert>
 #include <iostream>
 #include <string>
@@ -296,17 +298,26 @@ void TestSkillExecutor()
 
 int main()
 {
-    std::cout << "========================================================\n";
-    std::cout << "URUCHOMIENIE TESTOW: Player Controllers Suite (C++23)\n";
-    std::cout << "========================================================\n";
+    CTimer timer;
+    CCameraManager cameraManager;
 
+    std::cout << "START MAIN" << std::endl;
+    std::cout << "[1] TestMovementController" << std::endl;
     TestMovementController();
+    std::cout << "[2] TestCombatController" << std::endl;
     TestCombatController();
+    std::cout << "[3] TestTargetController" << std::endl;
     TestTargetController();
+    std::cout << "[4] TestPKController" << std::endl;
     TestPKController();
+    std::cout << "[5] TestItemController" << std::endl;
     TestItemController();
+    std::cout << "[6] TestSkillExecutor" << std::endl;
     TestSkillExecutor();
 
-    std::cout << "\n>>> WSZYSTKIE TESTY KONTROLEROW GRACZA: 100% PASS <<<\n";
+    std::cout << "\n>>> WSZYSTKIE TESTY KONTROLEROW GRACZA: 100% PASS <<<\n" << std::endl;
     return 0;
 }
+
+
+

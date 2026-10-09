@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.19)
+﻿cmake_minimum_required(VERSION 3.19)
 
 add_executable(test_c26_strangler_facade test_c26_strangler_facade.cpp)
 
@@ -427,4 +427,33 @@ target_link_libraries(test_c26_pybridge_fastcall PRIVATE
 )
 
 add_test(NAME PyBridgeFastCallTest COMMAND test_c26_pybridge_fastcall)
+
+
+add_executable(test_c26_player_controllers
+    test_c26_player_controllers.cpp
+    player_controller_mocks.cpp
+    ${CMAKE_SOURCE_DIR}/src/UserInterface/PlayerControllers/PlayerMovementController.cpp
+    ${CMAKE_SOURCE_DIR}/src/UserInterface/PlayerControllers/PlayerCombatController.cpp
+    ${CMAKE_SOURCE_DIR}/src/UserInterface/PlayerControllers/PlayerTargetController.cpp
+    ${CMAKE_SOURCE_DIR}/src/UserInterface/PlayerControllers/PlayerSkillExecutor.cpp
+    ${CMAKE_SOURCE_DIR}/src/UserInterface/PlayerControllers/PlayerItemController.cpp
+    ${CMAKE_SOURCE_DIR}/src/UserInterface/PlayerControllers/PlayerPKController.cpp
+)
+target_include_directories(test_c26_player_controllers PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/UserInterface
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/extern/include
+)
+target_compile_definitions(test_c26_player_controllers PRIVATE
+    TEST_MODE_DISABLE_STDAFX
+)
+target_link_libraries(test_c26_player_controllers PRIVATE
+    Client2026
+    EterBase
+    EterLib
+    GameLib
+    PackLib
+)
+add_test(NAME PlayerControllersTest COMMAND test_c26_player_controllers)
 

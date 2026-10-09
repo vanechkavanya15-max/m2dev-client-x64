@@ -107,6 +107,7 @@ namespace Client::UI::PyFastCall
         PyObject* rawResult = PyObject_Vectorcall(callable.Get(), nullptr, 0, nullptr);
         if (!rawResult)
         {
+            PyErr_Print();
             PyErr_Clear();
             return std::unexpected("Method call failed");
         }
