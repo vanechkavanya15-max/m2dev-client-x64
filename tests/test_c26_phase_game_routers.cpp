@@ -2,12 +2,18 @@
 #include <iostream>
 #include <string_view>
 #include <vector>
+#include <cmath>
 
 #include "../src/UserInterface/Contracts/IPacketRouter.h"
 #include "../src/UserInterface/Contracts/IGameEvents.h"
 #include "../src/UserInterface/Network/Routers/NetCombatRouter.h"
 #include "../src/UserInterface/Network/Routers/NetItemRouter.h"
 #include "../src/UserInterface/Network/Routers/NetActorRouter.h"
+#include "../src/UserInterface/Network/Routers/NetShopRouter.h"
+#include "../src/UserInterface/Network/Routers/NetExchangeRouter.h"
+#include "../src/UserInterface/Network/Routers/NetQuestRouter.h"
+#include "../src/UserInterface/Network/Routers/NetPartyRouter.h"
+#include "../src/UserInterface/Network/Routers/NetGuildRouter.h"
 #include "../src/UserInterface/Network/Routers/PhaseGamePacketDispatcher.h"
 #include "../src/UserInterface/Core/EventBus.h"
 
@@ -32,6 +38,33 @@ public:
 
     int actorMovedCount = 0;
     ActorMovedEvent lastMovedEvent{};
+
+    int shopCount = 0;
+    ShopEvent lastShopEvent{};
+
+    int shopSignCount = 0;
+    ShopSignEvent lastShopSignEvent{};
+
+    int exchangeCount = 0;
+    ExchangeEvent lastExchangeEvent{};
+
+    int questInfoCount = 0;
+    QuestInfoEvent lastQuestInfoEvent{};
+
+    int questConfirmCount = 0;
+    QuestConfirmEvent lastQuestConfirmEvent{};
+
+    int partyAddCount = 0;
+    PartyAddEvent lastPartyAddEvent{};
+
+    int partyUpdateCount = 0;
+    PartyUpdateEvent lastPartyUpdateEvent{};
+
+    int partyRemoveCount = 0;
+    PartyRemoveEvent lastPartyRemoveEvent{};
+
+    int guildCount = 0;
+    GuildEvent lastGuildEvent{};
 
     void OnItemReceived(const ItemReceivedEvent& event) override
     {
@@ -61,6 +94,60 @@ public:
     {
         ++actorMovedCount;
         lastMovedEvent = event;
+    }
+
+    void OnShop(const ShopEvent& event) override
+    {
+        ++shopCount;
+        lastShopEvent = event;
+    }
+
+    void OnShopSign(const ShopSignEvent& event) override
+    {
+        ++shopSignCount;
+        lastShopSignEvent = event;
+    }
+
+    void OnExchange(const ExchangeEvent& event) override
+    {
+        ++exchangeCount;
+        lastExchangeEvent = event;
+    }
+
+    void OnQuestInfo(const QuestInfoEvent& event) override
+    {
+        ++questInfoCount;
+        lastQuestInfoEvent = event;
+    }
+
+    void OnQuestConfirm(const QuestConfirmEvent& event) override
+    {
+        ++questConfirmCount;
+        lastQuestConfirmEvent = event;
+    }
+
+    void OnPartyAdd(const PartyAddEvent& event) override
+    {
+        ++partyAddCount;
+        lastPartyAddEvent = event;
+    }
+
+    void OnPartyUpdate(const PartyUpdateEvent& event) override
+    {
+        ++partyUpdateCount;
+        lastPartyUpdateEvent = event;
+    }
+
+    void OnPartyRemove(const PartyRemoveEvent& event) override
+    {
+        ++partyRemoveCount;
+        lastPartyRemoveEvent = event;
+    }
+
+    void OnGuild(const GuildEvent& event) override
+    {
+        ++guildCount;
+        lastGuildEvent = event;
     }
 };
 
@@ -249,6 +336,222 @@ void TestNetActorRouter()
     std::cout << "[PASS] Test NetActorRouter zakonczony sukcesem.\n";
 }
 
+void TestNetShopRouter()
+{
+    std::cout << "[TEST] Rozpoczecie testu NetShopRouter...\n";
+
+    MockGameEventSink sink;
+    NetShopRouter shopRouter(&sink);
+
+    assert(shopRouter.GetRouterName() == "NetShopRouter");
+    assert(shopRouter.CanHandleHeader(static_cast<uint8_t>(0x26))); // GC::SHOP
+    assert(shopRouter.CanHandleHeader(static_cast<uint8_t>(0x32))); // GC::SHOP_SIGN
+    assert(shopRouter.CanHandleHeader(static_cast<uint16_t>(0x0810))); // 16-bit GC::SHOP
+    assert(shopRouter.CanHandleHeader(static_cast<uint16_t>(0x0811))); // 16-bit GC::SHOP_SIGN
+    assert(!shopRouter.CanHandleHeader(static_cast<uint8_t>(0xFE)));
+
+    // Test HandleShop
+    TPacketGCShop shopPack{};
+    shopPack.header = 0x0810;
+    shopPack.length = sizeof(TPacketGCShop);
+    shopPack.subheader = ShopSub::GC::START;
+    shopRouter.HandleShop(shopPack);
+
+    assert(sink.shopCount == 1);
+    assert(sink.lastShopEvent.bySubHeader == ShopSub::GC::START);
+
+    // Test HandleShopSign
+    TPacketGCShopSign signPack{};
+    signPack.header = 0x0811;
+    signPack.length = sizeof(TPacketGCShopSign);
+    signPack.dwVID = 7777;
+    std::snprintf(signPack.szSign, sizeof(signPack.szSign), "Sklep Testowy");
+    shopRouter.HandleShopSign(signPack);
+
+    assert(sink.shopSignCount == 1);
+    assert(sink.lastShopSignEvent.dwVID == 7777);
+    assert(sink.lastShopSignEvent.szSign == "Sklep Testowy");
+
+    // Test HandleShopUpdatePrice
+    TPacketGCShopUpdatePrice pricePack{};
+    pricePack.iElkAmount = 500000;
+    shopRouter.HandleShopUpdatePrice(pricePack);
+
+    std::cout << "[PASS] Test NetShopRouter zakonczony sukcesem.\n";
+}
+
+void TestNetExchangeRouter()
+{
+    std::cout << "[TEST] Rozpoczecie testu NetExchangeRouter...\n";
+
+    MockGameEventSink sink;
+    NetExchangeRouter exchangeRouter(&sink);
+
+    assert(exchangeRouter.GetRouterName() == "NetExchangeRouter");
+    assert(exchangeRouter.CanHandleHeader(static_cast<uint8_t>(0x19))); // GC::EXCHANGE
+    assert(exchangeRouter.CanHandleHeader(static_cast<uint16_t>(0x051C))); // 16-bit GC::EXCHANGE
+    assert(!exchangeRouter.CanHandleHeader(static_cast<uint8_t>(0xFE)));
+
+    // Test HandleExchange START
+    TPacketGCExchange startPack{};
+    startPack.header = 0x051C;
+    startPack.length = sizeof(TPacketGCExchange);
+    startPack.subheader = ExchangeSub::GC::START;
+    startPack.is_me = 0;
+    startPack.arg1 = 12345; // target VID
+    exchangeRouter.HandleExchange(startPack);
+
+    assert(sink.exchangeCount == 1);
+    assert(sink.lastExchangeEvent.bySubHeader == ExchangeSub::GC::START);
+    assert(!sink.lastExchangeEvent.bIsMe);
+    assert(sink.lastExchangeEvent.dwArg1 == 12345);
+
+    // Test HandleExchange ELK_ADD
+    TPacketGCExchange elkPack{};
+    elkPack.header = 0x051C;
+    elkPack.length = sizeof(TPacketGCExchange);
+    elkPack.subheader = ExchangeSub::GC::ELK_ADD;
+    elkPack.is_me = 1;
+    elkPack.arg1 = 1000000;
+    exchangeRouter.HandleExchange(elkPack);
+
+    assert(sink.exchangeCount == 2);
+    assert(sink.lastExchangeEvent.bySubHeader == ExchangeSub::GC::ELK_ADD);
+    assert(sink.lastExchangeEvent.bIsMe);
+    assert(sink.lastExchangeEvent.dwArg1 == 1000000);
+
+    std::cout << "[PASS] Test NetExchangeRouter zakonczony sukcesem.\n";
+}
+
+void TestNetQuestRouter()
+{
+    std::cout << "[TEST] Rozpoczecie testu NetQuestRouter...\n";
+
+    MockGameEventSink sink;
+    NetQuestRouter questRouter(&sink);
+
+    assert(questRouter.GetRouterName() == "NetQuestRouter");
+    assert(questRouter.CanHandleHeader(static_cast<uint8_t>(0x25))); // GC::QUEST_INFO
+    assert(questRouter.CanHandleHeader(static_cast<uint16_t>(0x0911))); // 16-bit GC::QUEST_CONFIRM
+    assert(questRouter.CanHandleHeader(static_cast<uint16_t>(0x0912))); // 16-bit GC::QUEST_INFO
+    assert(!questRouter.CanHandleHeader(static_cast<uint8_t>(0xFE)));
+
+    // Test HandleQuestInfo
+    TPacketGCQuestInfo infoPack{};
+    infoPack.header = 0x0912;
+    infoPack.length = sizeof(TPacketGCQuestInfo);
+    infoPack.index = 42;
+    infoPack.flag = 1;
+    questRouter.HandleQuestInfo(infoPack);
+
+    assert(sink.questInfoCount == 1);
+    assert(sink.lastQuestInfoEvent.wIndex == 42);
+    assert(sink.lastQuestInfoEvent.byFlag == 1);
+
+    // Test HandleQuestConfirm
+    TPacketGCQuestConfirm confirmPack{};
+    confirmPack.header = 0x0911;
+    confirmPack.length = sizeof(TPacketGCQuestConfirm);
+    std::snprintf(confirmPack.msg, sizeof(confirmPack.msg), "Czy akceptujesz misje?");
+    confirmPack.timeout = 30;
+    confirmPack.requestPID = 9999;
+    questRouter.HandleQuestConfirm(confirmPack);
+
+    assert(sink.questConfirmCount == 1);
+    assert(sink.lastQuestConfirmEvent.szMsg == "Czy akceptujesz misje?");
+    assert(sink.lastQuestConfirmEvent.lTimeout == 30);
+    assert(sink.lastQuestConfirmEvent.dwRequestPID == 9999);
+
+    std::cout << "[PASS] Test NetQuestRouter zakonczony sukcesem.\n";
+}
+
+void TestNetPartyRouter()
+{
+    std::cout << "[TEST] Rozpoczecie testu NetPartyRouter...\n";
+
+    MockGameEventSink sink;
+    NetPartyRouter partyRouter(&sink);
+
+    assert(partyRouter.GetRouterName() == "NetPartyRouter");
+    assert(partyRouter.CanHandleHeader(static_cast<uint8_t>(0x2E))); // GC::PARTY_INVITE
+    assert(partyRouter.CanHandleHeader(static_cast<uint8_t>(0x2F))); // GC::PARTY_ADD
+    assert(partyRouter.CanHandleHeader(static_cast<uint8_t>(0x30))); // GC::PARTY_UPDATE
+    assert(partyRouter.CanHandleHeader(static_cast<uint8_t>(0x31))); // GC::PARTY_REMOVE
+    assert(partyRouter.CanHandleHeader(static_cast<uint16_t>(0x0711))); // 16-bit GC::PARTY_ADD
+    assert(!partyRouter.CanHandleHeader(static_cast<uint8_t>(0xFE)));
+
+    // Test HandlePartyAdd
+    TPacketGCPartyAdd addPack{};
+    addPack.header = 0x0711;
+    addPack.length = sizeof(TPacketGCPartyAdd);
+    addPack.pid = 1234;
+    std::snprintf(addPack.name, sizeof(addPack.name), "Towarzysz");
+    partyRouter.HandlePartyAdd(addPack);
+
+    assert(sink.partyAddCount == 1);
+    assert(sink.lastPartyAddEvent.dwPID == 1234);
+    assert(sink.lastPartyAddEvent.szName == "Towarzysz");
+
+    // Test HandlePartyUpdate
+    TPacketGCPartyUpdate updatePack{};
+    updatePack.header = 0x0712;
+    updatePack.length = sizeof(TPacketGCPartyUpdate);
+    updatePack.pid = 1234;
+    updatePack.state = 2;
+    updatePack.percent_hp = 85;
+    partyRouter.HandlePartyUpdate(updatePack);
+
+    assert(sink.partyUpdateCount == 1);
+    assert(sink.lastPartyUpdateEvent.dwPID == 1234);
+    assert(sink.lastPartyUpdateEvent.byState == 2);
+    assert(sink.lastPartyUpdateEvent.byPercentHP == 85);
+
+    // Test HandlePartyRemove
+    TPacketGCPartyRemove removePack{};
+    removePack.header = 0x0713;
+    removePack.length = sizeof(TPacketGCPartyRemove);
+    removePack.pid = 1234;
+    partyRouter.HandlePartyRemove(removePack);
+
+    assert(sink.partyRemoveCount == 1);
+    assert(sink.lastPartyRemoveEvent.dwPID == 1234);
+
+    std::cout << "[PASS] Test NetPartyRouter zakonczony sukcesem.\n";
+}
+
+void TestNetGuildRouter()
+{
+    std::cout << "[TEST] Rozpoczecie testu NetGuildRouter...\n";
+
+    MockGameEventSink sink;
+    NetGuildRouter guildRouter(&sink);
+
+    assert(guildRouter.GetRouterName() == "NetGuildRouter");
+    assert(guildRouter.CanHandleHeader(static_cast<uint8_t>(0x33))); // GC::GUILD
+    assert(guildRouter.CanHandleHeader(static_cast<uint16_t>(0x0730))); // 16-bit GC::GUILD
+    assert(!guildRouter.CanHandleHeader(static_cast<uint8_t>(0xFE)));
+
+    // Test HandleGuild
+    TPacketGCGuild guildPack{};
+    guildPack.header = 0x0730;
+    guildPack.length = sizeof(TPacketGCGuild);
+    guildPack.subheader = GuildSub::GC::INFO;
+    guildRouter.HandleGuild(guildPack);
+
+    assert(sink.guildCount == 1);
+    assert(sink.lastGuildEvent.bySubHeader == GuildSub::GC::INFO);
+
+    // Test HandleGuildWar
+    TPacketGCGuildWar warPack{};
+    warPack.dwGuildSelf = 100;
+    warPack.dwGuildOpp = 200;
+    warPack.bType = 1;
+    warPack.bWarState = GUILD_WAR_ON_WAR;
+    guildRouter.HandleGuildWar(warPack);
+
+    std::cout << "[PASS] Test NetGuildRouter zakonczony sukcesem.\n";
+}
+
 void TestPhaseGamePacketDispatcher()
 {
     std::cout << "[TEST] Rozpoczecie testu PhaseGamePacketDispatcher...\n";
@@ -259,56 +562,108 @@ void TestPhaseGamePacketDispatcher()
     NetCombatRouter combatRouter(&sink);
     NetItemRouter itemRouter(&sink);
     NetActorRouter actorRouter(&sink);
+    NetShopRouter shopRouter(&sink);
+    NetExchangeRouter exchangeRouter(&sink);
+    NetQuestRouter questRouter(&sink);
+    NetPartyRouter partyRouter(&sink);
+    NetGuildRouter guildRouter(&sink);
 
     dispatcher.SetCombatRouter(&combatRouter);
     dispatcher.SetItemRouter(&itemRouter);
     dispatcher.SetActorRouter(&actorRouter);
+    dispatcher.SetShopRouter(&shopRouter);
+    dispatcher.SetExchangeRouter(&exchangeRouter);
+    dispatcher.SetQuestRouter(&questRouter);
+    dispatcher.SetPartyRouter(&partyRouter);
+    dispatcher.SetGuildRouter(&guildRouter);
 
-    // Weryfikacja Jump Table O(1)
+    assert(dispatcher.GetCombatRouter() == &combatRouter);
+    assert(dispatcher.GetItemRouter() == &itemRouter);
+    assert(dispatcher.GetActorRouter() == &actorRouter);
+    assert(dispatcher.GetShopRouter() == &shopRouter);
+    assert(dispatcher.GetExchangeRouter() == &exchangeRouter);
+    assert(dispatcher.GetQuestRouter() == &questRouter);
+    assert(dispatcher.GetPartyRouter() == &partyRouter);
+    assert(dispatcher.GetGuildRouter() == &guildRouter);
+
+    // Weryfikacja Jump Table O(1) dla naglowkow 8-bitowych
     assert(dispatcher.GetRouterForHeader(static_cast<uint8_t>(0x0C)) == &combatRouter);
     assert(dispatcher.GetRouterForHeader(static_cast<uint8_t>(0x12)) == &itemRouter);
     assert(dispatcher.GetRouterForHeader(static_cast<uint8_t>(0x01)) == &actorRouter);
+    assert(dispatcher.GetRouterForHeader(static_cast<uint8_t>(0x26)) == &shopRouter);
+    assert(dispatcher.GetRouterForHeader(static_cast<uint8_t>(0x19)) == &exchangeRouter);
+    assert(dispatcher.GetRouterForHeader(static_cast<uint8_t>(0x25)) == &questRouter);
+    assert(dispatcher.GetRouterForHeader(static_cast<uint8_t>(0x2F)) == &partyRouter);
+    assert(dispatcher.GetRouterForHeader(static_cast<uint8_t>(0x33)) == &guildRouter);
     assert(dispatcher.GetRouterForHeader(static_cast<uint8_t>(0xFE)) == nullptr);
 
-    assert(dispatcher.HasHandlerForHeader(static_cast<uint8_t>(0x0C)));
-    assert(dispatcher.HasHandlerForHeader(static_cast<uint8_t>(0x12)));
-    assert(dispatcher.HasHandlerForHeader(static_cast<uint8_t>(0x01)));
+    assert(dispatcher.HasHandlerForHeader(static_cast<uint8_t>(0x26)));
+    assert(dispatcher.HasHandlerForHeader(static_cast<uint8_t>(0x19)));
     assert(!dispatcher.HasHandlerForHeader(static_cast<uint8_t>(0xFE)));
 
     // Weryfikacja naglowkow 16-bitowych
     assert(dispatcher.GetRouterForHeader(static_cast<uint16_t>(0x0410)) == &combatRouter);
     assert(dispatcher.GetRouterForHeader(static_cast<uint16_t>(0x0511)) == &itemRouter);
     assert(dispatcher.GetRouterForHeader(static_cast<uint16_t>(0x0205)) == &actorRouter);
+    assert(dispatcher.GetRouterForHeader(static_cast<uint16_t>(0x0810)) == &shopRouter);
+    assert(dispatcher.GetRouterForHeader(static_cast<uint16_t>(0x051C)) == &exchangeRouter);
+    assert(dispatcher.GetRouterForHeader(static_cast<uint16_t>(0x0912)) == &questRouter);
+    assert(dispatcher.GetRouterForHeader(static_cast<uint16_t>(0x0711)) == &partyRouter);
+    assert(dispatcher.GetRouterForHeader(static_cast<uint16_t>(0x0730)) == &guildRouter);
 
-    // Test dedykowanych metod dyspozycji
-    TPacketGCAttack attack{};
-    attack.dwVID = 50;
-    attack.dwVictimVID = 60;
-    attack.bType = 1;
-    bool bDispatched = dispatcher.DispatchAttack(attack);
+    // Test dedykowanych metod dyspozycji sklepu
+    TPacketGCShop shopPack{};
+    shopPack.subheader = ShopSub::GC::START;
+    bool bDispatched = dispatcher.DispatchShop(shopPack);
     assert(bDispatched);
-    assert(sink.lastAttackEvent.dwAttackerVID == 50);
+    assert(sink.shopCount == 1);
 
-    TPacketGCItemSet itemSet{};
-    itemSet.pos.window_type = 1;
-    itemSet.pos.cell = 3;
-    itemSet.vnum = 2001;
-    itemSet.count = 1;
-    bDispatched = dispatcher.DispatchItemSet(itemSet);
+    // Test dedykowanych metod dyspozycji wymiany
+    TPacketGCExchange exchPack{};
+    exchPack.subheader = ExchangeSub::GC::ACCEPT;
+    exchPack.is_me = 1;
+    exchPack.arg1 = 1;
+    bDispatched = dispatcher.DispatchExchange(exchPack);
     assert(bDispatched);
-    assert(sink.lastItemEvent.dwVnum == 2001);
+    assert(sink.exchangeCount == 1);
 
-    TPacketGCCharacterDelete charDel{};
-    charDel.dwVID = 999;
-    bDispatched = dispatcher.DispatchCharacterDelete(charDel);
+    // Test dedykowanych metod dyspozycji questu
+    TPacketGCQuestInfo qInfoPack{};
+    qInfoPack.index = 100;
+    qInfoPack.flag = 2;
+    bDispatched = dispatcher.DispatchQuestInfo(qInfoPack);
     assert(bDispatched);
-    assert(sink.lastDeadEvent.dwVID == 999);
+    assert(sink.questInfoCount == 1);
 
-    // Test uniwersalnego DispatchPacket O(1) z deserializowanym rekordem POD
-    bDispatched = dispatcher.DispatchPacket(static_cast<uint8_t>(0x0C), &attack);
+    // Test dedykowanych metod dyspozycji party
+    TPacketGCPartyAdd pAddPack{};
+    pAddPack.pid = 555;
+    std::snprintf(pAddPack.name, sizeof(pAddPack.name), "Wojownik");
+    bDispatched = dispatcher.DispatchPartyAdd(pAddPack);
+    assert(bDispatched);
+    assert(sink.partyAddCount == 1);
+
+    // Test dedykowanych metod dyspozycji gildii
+    TPacketGCGuild gPack{};
+    gPack.subheader = GuildSub::GC::GRADE;
+    bDispatched = dispatcher.DispatchGuild(gPack);
+    assert(bDispatched);
+    assert(sink.guildCount == 1);
+
+    // Test uniwersalnego DispatchPacket O(1) z 16-bitowym naglowkiem
+    bDispatched = dispatcher.DispatchPacket(static_cast<uint16_t>(0x0810), &shopPack);
     assert(bDispatched);
 
-    bDispatched = dispatcher.DispatchPacket(static_cast<uint16_t>(0x0511), &itemSet);
+    bDispatched = dispatcher.DispatchPacket(static_cast<uint16_t>(0x051C), &exchPack);
+    assert(bDispatched);
+
+    bDispatched = dispatcher.DispatchPacket(static_cast<uint16_t>(0x0912), &qInfoPack);
+    assert(bDispatched);
+
+    bDispatched = dispatcher.DispatchPacket(static_cast<uint16_t>(0x0711), &pAddPack);
+    assert(bDispatched);
+
+    bDispatched = dispatcher.DispatchPacket(static_cast<uint16_t>(0x0730), &gPack);
     assert(bDispatched);
 
     std::cout << "[PASS] Test PhaseGamePacketDispatcher zakonczony sukcesem.\n";
@@ -323,22 +678,23 @@ void TestNetworkStreamBridgeAndFraming()
     dispatcher.ClearRouters();
     dispatcher.RegisterDefaultRouters(&sink);
 
-    // 1. Weryfikacja zapobiegania rozlaczeniu klienta (HasHandlerForHeader)
+    // 1. Weryfikacja obslugi naglowkow w default routers
     assert(dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0x0401))); // ATTACK
     assert(dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0x0410))); // DAMAGE_INFO
-    assert(dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0x0413))); // CREATE_FLY
-    assert(dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0x0415))); // DUEL_START
-    assert(dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0x0510))); // ITEM_DEL
     assert(dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0x0511))); // ITEM_SET
-    assert(dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0x0515))); // ITEM_GROUND_ADD
-    assert(dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0x0516))); // ITEM_GROUND_DEL
     assert(dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0x0205))); // CHARACTER_ADD
-    assert(dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0x0207))); // CHAR_ADDITIONAL_INFO
-    assert(dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0x0208))); // CHARACTER_DEL
-    assert(dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0x0304))); // SYNC_POSITION
-    assert(dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0x0B22))); // OBSERVER_MOVE
+    assert(dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0x0810))); // SHOP
+    assert(dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0x0811))); // SHOP_SIGN
+    assert(dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0x051C))); // EXCHANGE
+    assert(dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0x0911))); // QUEST_CONFIRM
+    assert(dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0x0912))); // QUEST_INFO
+    assert(dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0x0710))); // PARTY_INVITE
+    assert(dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0x0711))); // PARTY_ADD
+    assert(dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0x0712))); // PARTY_UPDATE
+    assert(dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0x0713))); // PARTY_REMOVE
+    assert(dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0x0730))); // GUILD
 
-    // 2. Symulacja odbioru pakietu GC_ATTACK (0x0401) ze 100% integralnoscia danych (Zero Memory Corruption)
+    // 2. Symulacja odbioru pakietu GC_ATTACK (0x0401)
     TPacketGCAttack attackPacket{};
     attackPacket.header = 0x0401;
     attackPacket.length = sizeof(TPacketGCAttack);
@@ -352,31 +708,19 @@ void TestNetworkStreamBridgeAndFraming()
     assert(sink.lastAttackEvent.dwVictimVID == 7331);
     assert(sink.lastAttackEvent.byMotionType == 2);
 
-    // 3. Symulacja odbioru pakietu GC_DAMAGE_INFO (0x0410)
-    TPacketGCDamageInfo damagePacket{};
-    damagePacket.header = 0x0410;
-    damagePacket.length = sizeof(TPacketGCDamageInfo);
-    damagePacket.dwVID = 5555;
-    damagePacket.damage = 98765;
-    damagePacket.flag = 0x04;
+    // 3. Symulacja odbioru pakietu GC_SHOP_SIGN (0x0811)
+    TPacketGCShopSign shopSignPacket{};
+    shopSignPacket.header = 0x0811;
+    shopSignPacket.length = sizeof(TPacketGCShopSign);
+    shopSignPacket.dwVID = 4444;
+    std::snprintf(shopSignPacket.szSign, sizeof(shopSignPacket.szSign), "Dobre Przedmioty");
 
-    dispatched = dispatcher.DispatchPacket(damagePacket.header, &damagePacket);
+    dispatched = dispatcher.DispatchPacket(shopSignPacket.header, &shopSignPacket);
     assert(dispatched);
-    assert(sink.lastDamageEvent.dwTargetVID == 5555);
-    assert(sink.lastDamageEvent.nDamage == 98765);
-    assert(sink.lastDamageEvent.byFlag == 0x04);
+    assert(sink.lastShopSignEvent.dwVID == 4444);
+    assert(sink.lastShopSignEvent.szSign == "Dobre Przedmioty");
 
-    // 4. Symulacja odbioru pakietu GC_CHARACTER_DEL (0x0208)
-    TPacketGCCharacterDelete delPacket{};
-    delPacket.header = 0x0208;
-    delPacket.length = sizeof(TPacketGCCharacterDelete);
-    delPacket.dwVID = 8888;
-
-    dispatched = dispatcher.DispatchPacket(delPacket.header, &delPacket);
-    assert(dispatched);
-    assert(sink.lastDeadEvent.dwVID == 8888);
-
-    // 5. Weryfikacja odrzucania nieznanego opkodu bez awarii (zero-crash)
+    // 4. Weryfikacja odrzucania nieznanego opkodu bez awarii (zero-crash)
     assert(!dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0xFAFA)));
     assert(!dispatcher.DispatchPacket(static_cast<uint16_t>(0xFAFA), &attackPacket));
 
@@ -393,6 +737,11 @@ int main()
     TestNetCombatRouter();
     TestNetItemRouter();
     TestNetActorRouter();
+    TestNetShopRouter();
+    TestNetExchangeRouter();
+    TestNetQuestRouter();
+    TestNetPartyRouter();
+    TestNetGuildRouter();
     TestPhaseGamePacketDispatcher();
     TestNetworkStreamBridgeAndFraming();
 

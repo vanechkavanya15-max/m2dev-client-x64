@@ -9,6 +9,9 @@
 #include "resource.h"
 #include "PythonApplication.h"
 #include "PythonCharacterManager.h"
+#include "TestHarness/TestHarnessServer.h"
+#include "TestHarness/DeterministicTickController.h"
+#include "TestHarness/MockWorldDriver.h"
 
 #include "ProcessScanner.h"
 
@@ -218,6 +221,8 @@ void CPythonApplication::RenderGame()
 
 void CPythonApplication::UpdateGame()
 {
+	UserInterface::TestHarness::TestHarnessServer::Instance().ProcessMainThreadQueue();
+
 	POINT ptMouse;
 	GetMousePosition(&ptMouse);
 
@@ -260,6 +265,16 @@ void CPythonApplication::UpdateGame()
 
 bool CPythonApplication::Process()
 {
+	// Filar 4: TestHarnessEngine - Przetworzenie kolejki watku glownego z serwera Named Pipe
+	UserInterface::TestHarness::TestHarnessServer::Instance().ProcessMainThreadQueue();
+
+	// Filar 4: MockWorldDriver - wejscie w mock world jesli flaga --mock-world aktywna
+	if (UserInterface::TestHarness::MockWorldDriver::Instance().IsMockWorldEnabled() &&
+		!UserInterface::TestHarness::MockWorldDriver::Instance().HasEntered())
+	{
+		UserInterface::TestHarness::MockWorldDriver::Instance().EnterMockWorld();
+	}
+
 	ELTimer_SetFrameMSec();
 
 	// 	m_Profiler.Clear();
@@ -301,9 +316,9 @@ bool CPythonApplication::Process()
 
 	__UpdateCamera();
 
-	// Taktowanie logiki gry sztywnym krokiem czasowym (60Hz) przez FrameTimer
+	// Taktowanie logiki gry sztywnym krokiem czasowym (60Hz) lub kontrolerem deterministycznym
 	DWORD updatestart = ELTimer_GetMSec();
-	FrameTimer::Instance().Tick([&](float fixedDelta) {
+	auto updateLogicLambda = [&](float fixedDelta) {
 		CTimer& rkTimer = CTimer::Instance();
 		rkTimer.Advance();
 
@@ -325,7 +340,23 @@ bool CPythonApplication::Process()
 		OnUIUpdate();
 
 		++s_dwUpdateFrameCount;
-	});
+	};
+
+	if (UserInterface::TestHarness::DeterministicTickController::Instance().IsTestMode() &&
+		UserInterface::TestHarness::DeterministicTickController::Instance().IsFrozen())
+	{
+		uint32_t stepCount = UserInterface::TestHarness::DeterministicTickController::Instance().ConsumePendingSteps();
+		float stepDelta = UserInterface::TestHarness::DeterministicTickController::Instance().GetStepDeltaTime();
+		for (uint32_t i = 0; i < stepCount; ++i)
+		{
+			updateLogicLambda(stepDelta);
+			UserInterface::TestHarness::DeterministicTickController::Instance().IncrementTickCount();
+		}
+	}
+	else
+	{
+		FrameTimer::Instance().Tick(updateLogicLambda);
+	}
 
 	m_dwCurUpdateTime = ELTimer_GetMSec() - updatestart;
 

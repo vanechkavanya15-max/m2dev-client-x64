@@ -67,6 +67,16 @@ namespace UserInterface::Network::Routers
             m_pItemRouter = nullptr;
         if (m_pActorRouter == pRouter)
             m_pActorRouter = nullptr;
+        if (m_pShopRouter == pRouter)
+            m_pShopRouter = nullptr;
+        if (m_pExchangeRouter == pRouter)
+            m_pExchangeRouter = nullptr;
+        if (m_pQuestRouter == pRouter)
+            m_pQuestRouter = nullptr;
+        if (m_pPartyRouter == pRouter)
+            m_pPartyRouter = nullptr;
+        if (m_pGuildRouter == pRouter)
+            m_pGuildRouter = nullptr;
 
         EterBase::ModernLogger::Debug("PhaseGamePacketDispatcher: Wyrejestrowano router {}", pRouter->GetRouterName());
     }
@@ -78,9 +88,19 @@ namespace UserInterface::Network::Routers
         m_pCombatRouter = nullptr;
         m_pItemRouter = nullptr;
         m_pActorRouter = nullptr;
+        m_pShopRouter = nullptr;
+        m_pExchangeRouter = nullptr;
+        m_pQuestRouter = nullptr;
+        m_pPartyRouter = nullptr;
+        m_pGuildRouter = nullptr;
         m_defaultCombatRouter.reset();
         m_defaultItemRouter.reset();
         m_defaultActorRouter.reset();
+        m_defaultShopRouter.reset();
+        m_defaultExchangeRouter.reset();
+        m_defaultQuestRouter.reset();
+        m_defaultPartyRouter.reset();
+        m_defaultGuildRouter.reset();
 
         EterBase::ModernLogger::Debug("PhaseGamePacketDispatcher: Wyczyszczono wszystkie zarejestrowane routery");
     }
@@ -127,17 +147,97 @@ namespace UserInterface::Network::Routers
         return m_pActorRouter;
     }
 
+    void PhaseGamePacketDispatcher::SetShopRouter(NetShopRouter* pRouter) noexcept
+    {
+        m_pShopRouter = pRouter;
+        if (pRouter)
+        {
+            RegisterRouter(pRouter);
+        }
+    }
+
+    NetShopRouter* PhaseGamePacketDispatcher::GetShopRouter() const noexcept
+    {
+        return m_pShopRouter;
+    }
+
+    void PhaseGamePacketDispatcher::SetExchangeRouter(NetExchangeRouter* pRouter) noexcept
+    {
+        m_pExchangeRouter = pRouter;
+        if (pRouter)
+        {
+            RegisterRouter(pRouter);
+        }
+    }
+
+    NetExchangeRouter* PhaseGamePacketDispatcher::GetExchangeRouter() const noexcept
+    {
+        return m_pExchangeRouter;
+    }
+
+    void PhaseGamePacketDispatcher::SetQuestRouter(NetQuestRouter* pRouter) noexcept
+    {
+        m_pQuestRouter = pRouter;
+        if (pRouter)
+        {
+            RegisterRouter(pRouter);
+        }
+    }
+
+    NetQuestRouter* PhaseGamePacketDispatcher::GetQuestRouter() const noexcept
+    {
+        return m_pQuestRouter;
+    }
+
+    void PhaseGamePacketDispatcher::SetPartyRouter(NetPartyRouter* pRouter) noexcept
+    {
+        m_pPartyRouter = pRouter;
+        if (pRouter)
+        {
+            RegisterRouter(pRouter);
+        }
+    }
+
+    NetPartyRouter* PhaseGamePacketDispatcher::GetPartyRouter() const noexcept
+    {
+        return m_pPartyRouter;
+    }
+
+    void PhaseGamePacketDispatcher::SetGuildRouter(NetGuildRouter* pRouter) noexcept
+    {
+        m_pGuildRouter = pRouter;
+        if (pRouter)
+        {
+            RegisterRouter(pRouter);
+        }
+    }
+
+    NetGuildRouter* PhaseGamePacketDispatcher::GetGuildRouter() const noexcept
+    {
+        return m_pGuildRouter;
+    }
+
     void PhaseGamePacketDispatcher::RegisterDefaultRouters(UserInterface::Contracts::IGameEventSink* pEventSink)
     {
         m_defaultCombatRouter = std::make_unique<NetCombatRouter>(pEventSink);
         m_defaultItemRouter = std::make_unique<NetItemRouter>(pEventSink);
         m_defaultActorRouter = std::make_unique<NetActorRouter>(pEventSink);
+        m_defaultShopRouter = std::make_unique<NetShopRouter>(pEventSink);
+        m_defaultExchangeRouter = std::make_unique<NetExchangeRouter>(pEventSink);
+        m_defaultQuestRouter = std::make_unique<NetQuestRouter>(pEventSink);
+        m_defaultPartyRouter = std::make_unique<NetPartyRouter>(pEventSink);
+        m_defaultGuildRouter = std::make_unique<NetGuildRouter>(pEventSink);
 
         SetCombatRouter(m_defaultCombatRouter.get());
         SetItemRouter(m_defaultItemRouter.get());
         SetActorRouter(m_defaultActorRouter.get());
+        SetShopRouter(m_defaultShopRouter.get());
+        SetExchangeRouter(m_defaultExchangeRouter.get());
+        SetQuestRouter(m_defaultQuestRouter.get());
+        SetPartyRouter(m_defaultPartyRouter.get());
+        SetGuildRouter(m_defaultGuildRouter.get());
 
-        EterBase::ModernLogger::Info("PhaseGamePacketDispatcher: Zainicjalizowano domyslne routery fazy gry (Combat, Item, Actor)");
+        EterBase::ModernLogger::Info("PhaseGamePacketDispatcher: Zainicjalizowano domyslne routery fazy gry (Combat, Item, Actor, Shop, Exchange, Quest, Party, Guild)");
     }
 
     UserInterface::Contracts::IPacketRouter* PhaseGamePacketDispatcher::GetRouterForHeader(uint8_t bHeader) const noexcept
@@ -191,6 +291,33 @@ namespace UserInterface::Network::Routers
         case 0x0B21: // GC::OBSERVER_REMOVE
         case 0x0B22: // GC::OBSERVER_MOVE
             return m_pActorRouter;
+
+        case 0x0802: // GC::MYSHOP
+        case 0x0810: // GC::SHOP
+        case 0x0811: // GC::SHOP_SIGN
+            return m_pShopRouter;
+
+        case 0x051C: // GC::EXCHANGE
+            return m_pExchangeRouter;
+
+        case 0x0910: // GC::SCRIPT
+        case 0x0911: // GC::QUEST_CONFIRM
+        case 0x0912: // GC::QUEST_INFO
+            return m_pQuestRouter;
+
+        case 0x0710: // GC::PARTY_INVITE
+        case 0x0711: // GC::PARTY_ADD
+        case 0x0712: // GC::PARTY_UPDATE
+        case 0x0713: // GC::PARTY_REMOVE
+        case 0x0714: // GC::PARTY_LINK
+        case 0x0715: // GC::PARTY_UNLINK
+        case 0x0716: // GC::PARTY_PARAMETER
+            return m_pPartyRouter;
+
+        case 0x0730: // GC::GUILD
+        case 0x0731: // GC::REQUEST_MAKE_GUILD
+        case 0x0732: // GC::SYMBOL_DATA
+            return m_pGuildRouter;
 
         default:
             return nullptr;
@@ -407,6 +534,202 @@ namespace UserInterface::Network::Routers
     }
 
     // ====================================================================
+    // Dyspozycja zdeserializowanych pakietow sklepu (Shop)
+    // ====================================================================
+
+    bool PhaseGamePacketDispatcher::DispatchShop(const TPacketGCShop& packet)
+    {
+        if (!m_pShopRouter)
+        {
+            EterBase::ModernLogger::Warn("PhaseGamePacketDispatcher: Brak zarejestrowanego ShopRouter dla Shop");
+            return false;
+        }
+        m_pShopRouter->HandleShop(packet);
+        return true;
+    }
+
+    bool PhaseGamePacketDispatcher::DispatchShopSign(const TPacketGCShopSign& packet)
+    {
+        if (!m_pShopRouter)
+        {
+            EterBase::ModernLogger::Warn("PhaseGamePacketDispatcher: Brak zarejestrowanego ShopRouter dla ShopSign");
+            return false;
+        }
+        m_pShopRouter->HandleShopSign(packet);
+        return true;
+    }
+
+    bool PhaseGamePacketDispatcher::DispatchShopStart(const TPacketGCShopStart& packet)
+    {
+        if (!m_pShopRouter)
+        {
+            EterBase::ModernLogger::Warn("PhaseGamePacketDispatcher: Brak zarejestrowanego ShopRouter dla ShopStart");
+            return false;
+        }
+        m_pShopRouter->HandleShopStart(packet);
+        return true;
+    }
+
+    bool PhaseGamePacketDispatcher::DispatchShopUpdateItem(const TPacketGCShopUpdateItem& packet)
+    {
+        if (!m_pShopRouter)
+        {
+            EterBase::ModernLogger::Warn("PhaseGamePacketDispatcher: Brak zarejestrowanego ShopRouter dla ShopUpdateItem");
+            return false;
+        }
+        m_pShopRouter->HandleShopUpdateItem(packet);
+        return true;
+    }
+
+    bool PhaseGamePacketDispatcher::DispatchShopUpdatePrice(const TPacketGCShopUpdatePrice& packet)
+    {
+        if (!m_pShopRouter)
+        {
+            EterBase::ModernLogger::Warn("PhaseGamePacketDispatcher: Brak zarejestrowanego ShopRouter dla ShopUpdatePrice");
+            return false;
+        }
+        m_pShopRouter->HandleShopUpdatePrice(packet);
+        return true;
+    }
+
+    // ====================================================================
+    // Dyspozycja zdeserializowanych pakietow handlu p2p (Exchange)
+    // ====================================================================
+
+    bool PhaseGamePacketDispatcher::DispatchExchange(const TPacketGCExchange& packet)
+    {
+        if (!m_pExchangeRouter)
+        {
+            EterBase::ModernLogger::Warn("PhaseGamePacketDispatcher: Brak zarejestrowanego ExchangeRouter dla Exchange");
+            return false;
+        }
+        m_pExchangeRouter->HandleExchange(packet);
+        return true;
+    }
+
+    // ====================================================================
+    // Dyspozycja zdeserializowanych pakietow zadan (Quest)
+    // ====================================================================
+
+    bool PhaseGamePacketDispatcher::DispatchQuestInfo(const TPacketGCQuestInfo& packet)
+    {
+        if (!m_pQuestRouter)
+        {
+            EterBase::ModernLogger::Warn("PhaseGamePacketDispatcher: Brak zarejestrowanego QuestRouter dla QuestInfo");
+            return false;
+        }
+        m_pQuestRouter->HandleQuestInfo(packet);
+        return true;
+    }
+
+    bool PhaseGamePacketDispatcher::DispatchQuestConfirm(const TPacketGCQuestConfirm& packet)
+    {
+        if (!m_pQuestRouter)
+        {
+            EterBase::ModernLogger::Warn("PhaseGamePacketDispatcher: Brak zarejestrowanego QuestRouter dla QuestConfirm");
+            return false;
+        }
+        m_pQuestRouter->HandleQuestConfirm(packet);
+        return true;
+    }
+
+    // ====================================================================
+    // Dyspozycja zdeserializowanych pakietow druzyny (Party)
+    // ====================================================================
+
+    bool PhaseGamePacketDispatcher::DispatchPartyInvite(const TPacketGCPartyInvite& packet)
+    {
+        if (!m_pPartyRouter)
+        {
+            EterBase::ModernLogger::Warn("PhaseGamePacketDispatcher: Brak zarejestrowanego PartyRouter dla PartyInvite");
+            return false;
+        }
+        m_pPartyRouter->HandlePartyInvite(packet);
+        return true;
+    }
+
+    bool PhaseGamePacketDispatcher::DispatchPartyAdd(const TPacketGCPartyAdd& packet)
+    {
+        if (!m_pPartyRouter)
+        {
+            EterBase::ModernLogger::Warn("PhaseGamePacketDispatcher: Brak zarejestrowanego PartyRouter dla PartyAdd");
+            return false;
+        }
+        m_pPartyRouter->HandlePartyAdd(packet);
+        return true;
+    }
+
+    bool PhaseGamePacketDispatcher::DispatchPartyUpdate(const TPacketGCPartyUpdate& packet)
+    {
+        if (!m_pPartyRouter)
+        {
+            EterBase::ModernLogger::Warn("PhaseGamePacketDispatcher: Brak zarejestrowanego PartyRouter dla PartyUpdate");
+            return false;
+        }
+        m_pPartyRouter->HandlePartyUpdate(packet);
+        return true;
+    }
+
+    bool PhaseGamePacketDispatcher::DispatchPartyRemove(const TPacketGCPartyRemove& packet)
+    {
+        if (!m_pPartyRouter)
+        {
+            EterBase::ModernLogger::Warn("PhaseGamePacketDispatcher: Brak zarejestrowanego PartyRouter dla PartyRemove");
+            return false;
+        }
+        m_pPartyRouter->HandlePartyRemove(packet);
+        return true;
+    }
+
+    bool PhaseGamePacketDispatcher::DispatchPartyParameter(const TPacketGCPartyParameter& packet)
+    {
+        if (!m_pPartyRouter)
+        {
+            EterBase::ModernLogger::Warn("PhaseGamePacketDispatcher: Brak zarejestrowanego PartyRouter dla PartyParameter");
+            return false;
+        }
+        m_pPartyRouter->HandlePartyParameter(packet);
+        return true;
+    }
+
+    // ====================================================================
+    // Dyspozycja zdeserializowanych pakietow gildii (Guild)
+    // ====================================================================
+
+    bool PhaseGamePacketDispatcher::DispatchGuild(const TPacketGCGuild& packet)
+    {
+        if (!m_pGuildRouter)
+        {
+            EterBase::ModernLogger::Warn("PhaseGamePacketDispatcher: Brak zarejestrowanego GuildRouter dla Guild");
+            return false;
+        }
+        m_pGuildRouter->HandleGuild(packet);
+        return true;
+    }
+
+    bool PhaseGamePacketDispatcher::DispatchGuildWar(const TPacketGCGuildWar& packet)
+    {
+        if (!m_pGuildRouter)
+        {
+            EterBase::ModernLogger::Warn("PhaseGamePacketDispatcher: Brak zarejestrowanego GuildRouter dla GuildWar");
+            return false;
+        }
+        m_pGuildRouter->HandleGuildWar(packet);
+        return true;
+    }
+
+    bool PhaseGamePacketDispatcher::DispatchGuildWarPoint(const TPacketGuildWarPoint& packet)
+    {
+        if (!m_pGuildRouter)
+        {
+            EterBase::ModernLogger::Warn("PhaseGamePacketDispatcher: Brak zarejestrowanego GuildRouter dla GuildWarPoint");
+            return false;
+        }
+        m_pGuildRouter->HandleGuildWarPoint(packet);
+        return true;
+    }
+
+    // ====================================================================
     // Uniwersalna dyspozycja zdeserializowanego rekordu na bazie naglowka (O(1))
     // ====================================================================
 
@@ -454,6 +777,29 @@ namespace UserInterface::Network::Routers
             return DispatchObserverMove(*reinterpret_cast<const TPacketGCObserverMove*>(pData));
         case 0x05: // GC::SYNC_POSITION
             return DispatchSyncPosition(*reinterpret_cast<const TPacketGCSyncPosition*>(pData));
+
+        case 0x26: // GC::SHOP
+            return DispatchShop(*reinterpret_cast<const TPacketGCShop*>(pData));
+        case 0x32: // GC::SHOP_SIGN
+            return DispatchShopSign(*reinterpret_cast<const TPacketGCShopSign*>(pData));
+
+        case 0x19: // GC::EXCHANGE
+            return DispatchExchange(*reinterpret_cast<const TPacketGCExchange*>(pData));
+
+        case 0x25: // GC::QUEST_INFO
+            return DispatchQuestInfo(*reinterpret_cast<const TPacketGCQuestInfo*>(pData));
+
+        case 0x2E: // GC::PARTY_INVITE
+            return DispatchPartyInvite(*reinterpret_cast<const TPacketGCPartyInvite*>(pData));
+        case 0x2F: // GC::PARTY_ADD
+            return DispatchPartyAdd(*reinterpret_cast<const TPacketGCPartyAdd*>(pData));
+        case 0x30: // GC::PARTY_UPDATE
+            return DispatchPartyUpdate(*reinterpret_cast<const TPacketGCPartyUpdate*>(pData));
+        case 0x31: // GC::PARTY_REMOVE
+            return DispatchPartyRemove(*reinterpret_cast<const TPacketGCPartyRemove*>(pData));
+
+        case 0x33: // GC::GUILD
+            return DispatchGuild(*reinterpret_cast<const TPacketGCGuild*>(pData));
 
         default:
             EterBase::ModernLogger::Trace("PhaseGamePacketDispatcher: Nieobslugiwany naglowek 8-bitowy 0x{:02X}", bHeader);
@@ -506,6 +852,33 @@ namespace UserInterface::Network::Routers
             return DispatchSyncPosition(*reinterpret_cast<const TPacketGCSyncPosition*>(pData));
         case 0x0B22: // GC::OBSERVER_MOVE
             return DispatchObserverMove(*reinterpret_cast<const TPacketGCObserverMove*>(pData));
+
+        case 0x0810: // GC::SHOP
+            return DispatchShop(*reinterpret_cast<const TPacketGCShop*>(pData));
+        case 0x0811: // GC::SHOP_SIGN
+            return DispatchShopSign(*reinterpret_cast<const TPacketGCShopSign*>(pData));
+
+        case 0x051C: // GC::EXCHANGE
+            return DispatchExchange(*reinterpret_cast<const TPacketGCExchange*>(pData));
+
+        case 0x0911: // GC::QUEST_CONFIRM
+            return DispatchQuestConfirm(*reinterpret_cast<const TPacketGCQuestConfirm*>(pData));
+        case 0x0912: // GC::QUEST_INFO
+            return DispatchQuestInfo(*reinterpret_cast<const TPacketGCQuestInfo*>(pData));
+
+        case 0x0710: // GC::PARTY_INVITE
+            return DispatchPartyInvite(*reinterpret_cast<const TPacketGCPartyInvite*>(pData));
+        case 0x0711: // GC::PARTY_ADD
+            return DispatchPartyAdd(*reinterpret_cast<const TPacketGCPartyAdd*>(pData));
+        case 0x0712: // GC::PARTY_UPDATE
+            return DispatchPartyUpdate(*reinterpret_cast<const TPacketGCPartyUpdate*>(pData));
+        case 0x0713: // GC::PARTY_REMOVE
+            return DispatchPartyRemove(*reinterpret_cast<const TPacketGCPartyRemove*>(pData));
+        case 0x0716: // GC::PARTY_PARAMETER
+            return DispatchPartyParameter(*reinterpret_cast<const TPacketGCPartyParameter*>(pData));
+
+        case 0x0730: // GC::GUILD
+            return DispatchGuild(*reinterpret_cast<const TPacketGCGuild*>(pData));
 
         default:
             if (wHeader <= 0xFF)

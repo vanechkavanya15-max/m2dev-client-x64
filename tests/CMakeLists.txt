@@ -396,6 +396,11 @@ add_executable(test_c26_phase_game_routers
     ${CMAKE_SOURCE_DIR}/src/UserInterface/Network/Routers/NetCombatRouter.cpp
     ${CMAKE_SOURCE_DIR}/src/UserInterface/Network/Routers/NetItemRouter.cpp
     ${CMAKE_SOURCE_DIR}/src/UserInterface/Network/Routers/NetActorRouter.cpp
+    ${CMAKE_SOURCE_DIR}/src/UserInterface/Network/Routers/NetShopRouter.cpp
+    ${CMAKE_SOURCE_DIR}/src/UserInterface/Network/Routers/NetExchangeRouter.cpp
+    ${CMAKE_SOURCE_DIR}/src/UserInterface/Network/Routers/NetQuestRouter.cpp
+    ${CMAKE_SOURCE_DIR}/src/UserInterface/Network/Routers/NetPartyRouter.cpp
+    ${CMAKE_SOURCE_DIR}/src/UserInterface/Network/Routers/NetGuildRouter.cpp
     ${CMAKE_SOURCE_DIR}/src/UserInterface/Network/Routers/PhaseGamePacketDispatcher.cpp
 )
 target_include_directories(test_c26_phase_game_routers PRIVATE
@@ -501,6 +506,11 @@ add_executable(test_c26_multi_server_protocol
     ${CMAKE_SOURCE_DIR}/src/UserInterface/Network/Routers/NetCombatRouter.cpp
     ${CMAKE_SOURCE_DIR}/src/UserInterface/Network/Routers/NetItemRouter.cpp
     ${CMAKE_SOURCE_DIR}/src/UserInterface/Network/Routers/NetActorRouter.cpp
+    ${CMAKE_SOURCE_DIR}/src/UserInterface/Network/Routers/NetShopRouter.cpp
+    ${CMAKE_SOURCE_DIR}/src/UserInterface/Network/Routers/NetExchangeRouter.cpp
+    ${CMAKE_SOURCE_DIR}/src/UserInterface/Network/Routers/NetQuestRouter.cpp
+    ${CMAKE_SOURCE_DIR}/src/UserInterface/Network/Routers/NetPartyRouter.cpp
+    ${CMAKE_SOURCE_DIR}/src/UserInterface/Network/Routers/NetGuildRouter.cpp
     ${CMAKE_SOURCE_DIR}/src/UserInterface/Network/Routers/PhaseGamePacketDispatcher.cpp
 )
 target_include_directories(test_c26_multi_server_protocol PRIVATE
@@ -519,5 +529,24 @@ target_link_libraries(test_c26_multi_server_protocol PRIVATE
     ws2_32
 )
 add_test(NAME MultiServerProtocolTest COMMAND test_c26_multi_server_protocol)
+
+add_executable(test_c26_test_harness_engine
+    test_c26_test_harness_engine.cpp
+    ${CMAKE_SOURCE_DIR}/src/UserInterface/TestHarness/DeterministicTickController.cpp
+    ${CMAKE_SOURCE_DIR}/src/UserInterface/TestHarness/CrashSentinel.cpp
+)
+target_include_directories(test_c26_test_harness_engine PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/Client
+    ${CMAKE_SOURCE_DIR}/src/UserInterface
+    ${CMAKE_SOURCE_DIR}/src/UserInterface/TestHarness
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/extern/include
+)
+target_link_libraries(test_c26_test_harness_engine PRIVATE
+    Dbghelp
+    ws2_32
+)
+add_test(NAME TestHarnessEngineTest COMMAND test_c26_test_harness_engine)
 
 

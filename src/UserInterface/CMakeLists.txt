@@ -67,6 +67,7 @@ target_include_directories(UserInterface PRIVATE
 	${CMAKE_CURRENT_SOURCE_DIR}/TextTail
 	${CMAKE_CURRENT_SOURCE_DIR}/GroundDrop
 	${CMAKE_CURRENT_SOURCE_DIR}/PlayerControllers
+	${CMAKE_CURRENT_SOURCE_DIR}/TestHarness
 )
 
 GroupSourcesByFolder(UserInterface)

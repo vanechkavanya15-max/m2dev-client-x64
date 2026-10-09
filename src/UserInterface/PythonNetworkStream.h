@@ -297,8 +297,12 @@ class CPythonNetworkStream : public CNetworkStream, public CSingleton<CPythonNet
 
 		// ETC
 		DWORD GetMainActorVID();
+		void SetMainActorVID(DWORD dwVID) { m_dwMainActorVID = dwVID; }
 		DWORD GetMainActorRace();
+		void SetMainActorRace(DWORD dwRace) { m_dwMainActorRace = dwRace; }
 		DWORD GetMainActorEmpire();
+		void SetMainActorEmpire(DWORD dwEmpire) { m_dwMainActorEmpire = dwEmpire; }
+		const std::string& GetPhase() const noexcept { return m_strPhase; }
 		DWORD GetMainActorSkillGroup();
 		void SetEmpireID(DWORD dwEmpireID);
 		DWORD GetEmpireID();

@@ -24,6 +24,10 @@
 #include <utf8.h>
 #include <sodium.h>
 #include "EterLib/FontManager.h"
+#include "TestHarness/CrashSentinel.h"
+#include "TestHarness/DeterministicTickController.h"
+#include "TestHarness/MockWorldDriver.h"
+#include "TestHarness/TestHarnessServer.h"
 
 extern "C" {
 	extern int _fltused;
@@ -294,6 +298,12 @@ void __ErrorPythonLibraryIsNotExist()
 
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
+	// Filar 4: TestHarnessEngine - Inicjalizacja CrashSentinel na wypadek access violation
+	UserInterface::TestHarness::CrashSentinel::Instance().Initialize();
+	UserInterface::TestHarness::DeterministicTickController::Instance().InitFromCommandLine(lpCmdLine);
+	UserInterface::TestHarness::MockWorldDriver::Instance().InitFromCommandLine(lpCmdLine);
+	UserInterface::TestHarness::TestHarnessServer::Instance().Start();
+
 	LoadConfig("config/locale.cfg");
 
 	int nArgc = 0;
@@ -303,6 +313,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	::CoUninitialize();
 
 Clean:
+	UserInterface::TestHarness::TestHarnessServer::Instance().Stop();
+	UserInterface::TestHarness::CrashSentinel::Instance().Shutdown();
 	SAFE_FREE_GLOBAL (szArgv);
 	return 0;
 }
