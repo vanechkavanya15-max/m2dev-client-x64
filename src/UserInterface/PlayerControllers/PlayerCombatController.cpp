@@ -167,10 +167,7 @@ namespace UserInterface::PlayerControllers
 
             if (pkInstMain->NEW_IsClickableDistanceDestInstance(*pkInstVictim))
             {
-                if (!pkInstMain->IsAttacking())
-                {
-                    pkInstMain->NEW_AttackToDestInstanceDirection(*pkInstVictim);
-                }
+                pkInstMain->NEW_AttackToDestInstanceDirection(*pkInstVictim);
             }
             else
             {

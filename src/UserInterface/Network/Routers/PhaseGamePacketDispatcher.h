@@ -5,6 +5,11 @@
 #include "NetCombatRouter.h"
 #include "NetItemRouter.h"
 #include "NetActorRouter.h"
+#include "NetShopRouter.h"
+#include "NetExchangeRouter.h"
+#include "NetQuestRouter.h"
+#include "NetPartyRouter.h"
+#include "NetGuildRouter.h"
 #include <array>
 #include <vector>
 #include <memory>
@@ -52,6 +57,21 @@ namespace UserInterface::Network::Routers
         void SetActorRouter(NetActorRouter* pRouter) noexcept;
         [[nodiscard]] NetActorRouter* GetActorRouter() const noexcept;
 
+        void SetShopRouter(NetShopRouter* pRouter) noexcept;
+        [[nodiscard]] NetShopRouter* GetShopRouter() const noexcept;
+
+        void SetExchangeRouter(NetExchangeRouter* pRouter) noexcept;
+        [[nodiscard]] NetExchangeRouter* GetExchangeRouter() const noexcept;
+
+        void SetQuestRouter(NetQuestRouter* pRouter) noexcept;
+        [[nodiscard]] NetQuestRouter* GetQuestRouter() const noexcept;
+
+        void SetPartyRouter(NetPartyRouter* pRouter) noexcept;
+        [[nodiscard]] NetPartyRouter* GetPartyRouter() const noexcept;
+
+        void SetGuildRouter(NetGuildRouter* pRouter) noexcept;
+        [[nodiscard]] NetGuildRouter* GetGuildRouter() const noexcept;
+
         // Inicjalizacja domyslnego zestawu routerow
         void RegisterDefaultRouters(UserInterface::Contracts::IGameEventSink* pEventSink = nullptr);
 
@@ -90,6 +110,42 @@ namespace UserInterface::Network::Routers
         bool DispatchObserverMove(const TPacketGCObserverMove& packet);
         bool DispatchSyncPosition(const TPacketGCSyncPosition& packet);
 
+        // ====================================================================
+        // Metody dyspozycji zdeserializowanych pakietow sklepu (Shop)
+        // ====================================================================
+        bool DispatchShop(const TPacketGCShop& packet);
+        bool DispatchShopSign(const TPacketGCShopSign& packet);
+        bool DispatchShopStart(const TPacketGCShopStart& packet);
+        bool DispatchShopUpdateItem(const TPacketGCShopUpdateItem& packet);
+        bool DispatchShopUpdatePrice(const TPacketGCShopUpdatePrice& packet);
+
+        // ====================================================================
+        // Metody dyspozycji zdeserializowanych pakietow handlu p2p (Exchange)
+        // ====================================================================
+        bool DispatchExchange(const TPacketGCExchange& packet);
+
+        // ====================================================================
+        // Metody dyspozycji zdeserializowanych pakietow zadan (Quest)
+        // ====================================================================
+        bool DispatchQuestInfo(const TPacketGCQuestInfo& packet);
+        bool DispatchQuestConfirm(const TPacketGCQuestConfirm& packet);
+
+        // ====================================================================
+        // Metody dyspozycji zdeserializowanych pakietow druzyny (Party)
+        // ====================================================================
+        bool DispatchPartyInvite(const TPacketGCPartyInvite& packet);
+        bool DispatchPartyAdd(const TPacketGCPartyAdd& packet);
+        bool DispatchPartyUpdate(const TPacketGCPartyUpdate& packet);
+        bool DispatchPartyRemove(const TPacketGCPartyRemove& packet);
+        bool DispatchPartyParameter(const TPacketGCPartyParameter& packet);
+
+        // ====================================================================
+        // Metody dyspozycji zdeserializowanych pakietow gildii (Guild)
+        // ====================================================================
+        bool DispatchGuild(const TPacketGCGuild& packet);
+        bool DispatchGuildWar(const TPacketGCGuildWar& packet);
+        bool DispatchGuildWarPoint(const TPacketGuildWarPoint& packet);
+
         // Uniwersalna dyspozycja zdeserializowanego rekordu na bazie naglowka (O(1))
         bool DispatchPacket(uint8_t bHeader, const void* pData);
         bool DispatchPacket(uint16_t wHeader, const void* pData);
@@ -102,6 +158,11 @@ namespace UserInterface::Network::Routers
         NetCombatRouter* m_pCombatRouter{nullptr};
         NetItemRouter* m_pItemRouter{nullptr};
         NetActorRouter* m_pActorRouter{nullptr};
+        NetShopRouter* m_pShopRouter{nullptr};
+        NetExchangeRouter* m_pExchangeRouter{nullptr};
+        NetQuestRouter* m_pQuestRouter{nullptr};
+        NetPartyRouter* m_pPartyRouter{nullptr};
+        NetGuildRouter* m_pGuildRouter{nullptr};
 
         // Lista zarejestrowanych routerow
         std::vector<UserInterface::Contracts::IPacketRouter*> m_registeredRouters;
@@ -110,6 +171,11 @@ namespace UserInterface::Network::Routers
         std::unique_ptr<NetCombatRouter> m_defaultCombatRouter;
         std::unique_ptr<NetItemRouter> m_defaultItemRouter;
         std::unique_ptr<NetActorRouter> m_defaultActorRouter;
+        std::unique_ptr<NetShopRouter> m_defaultShopRouter;
+        std::unique_ptr<NetExchangeRouter> m_defaultExchangeRouter;
+        std::unique_ptr<NetQuestRouter> m_defaultQuestRouter;
+        std::unique_ptr<NetPartyRouter> m_defaultPartyRouter;
+        std::unique_ptr<NetGuildRouter> m_defaultGuildRouter;
     };
 }
 
