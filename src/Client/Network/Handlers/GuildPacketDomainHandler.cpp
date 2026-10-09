@@ -117,6 +117,8 @@ EterBase::PacketResult<void> GuildPacketDomainHandler::HandleSubList(std::span<c
                 const char* namePtr = reinterpret_cast<const char*>(payload.data() + offset);
                 memberName = std::string(namePtr, strnlen(namePtr, CHARACTER_NAME_MAX_LEN));
                 offset += CHARACTER_NAME_MAX_LEN + 1;
+            } else {
+                return std::unexpected(EterBase::PacketError::BufferUnderflow);
             }
         }
 
@@ -133,9 +135,22 @@ EterBase::PacketResult<void> GuildPacketDomainHandler::HandleSubGrade(std::span<
         return std::unexpected(EterBase::PacketError::BufferUnderflow);
     }
     uint8_t count = payload[0];
+    constexpr size_t itemSize = 1 + sizeof(TPacketGCGuildSubGrade);
+    if (payload.size() < 1 + count * itemSize) {
+        return std::unexpected(EterBase::PacketError::BufferUnderflow);
+    }
+
     size_t offset = 1;
-    for (uint8_t i = 0; i < count && offset + 1 + sizeof(TPacketGCGuildSubGrade) <= payload.size(); ++i) {
-        offset += 1 + sizeof(TPacketGCGuildSubGrade);
+    for (uint8_t i = 0; i < count; ++i) {
+        uint8_t gradeIndex = payload[offset];
+        offset += 1;
+        TPacketGCGuildSubGrade gradePacket{};
+        std::memcpy(&gradePacket, payload.data() + offset, sizeof(TPacketGCGuildSubGrade));
+        offset += sizeof(TPacketGCGuildSubGrade);
+
+        std::string gradeName(gradePacket.grade_name, strnlen(gradePacket.grade_name, GUILD_GRADE_NAME_MAX_LEN));
+        Client::Core::Events::GuildGradeSyncEvent event(gradeIndex, std::move(gradeName), gradePacket.auth_flag);
+        Client::Core::EventBus::GetInstance().Publish(event);
     }
     EterBase::ModernLogger::Debug("GuildPacketDomainHandler: Zsynchronizowano {} rang gildii", count);
     return {};

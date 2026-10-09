@@ -43,7 +43,7 @@ EterBase::PacketResult<void> QuestDialogDomainHandler::HandleQuestInfoPacket(std
     }
 
     const auto* info = reinterpret_cast<const TPacketGCQuestInfo*>(payload.data());
-    if (payload.size() < info->length) {
+    if (info->length < sizeof(TPacketGCQuestInfo) || payload.size() < info->length) {
         return std::unexpected(EterBase::PacketError::BufferUnderflow);
     }
 

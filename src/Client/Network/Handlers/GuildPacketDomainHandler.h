@@ -113,6 +113,18 @@ struct GuildInviteReceivedEvent : public Client::Core::IEvent {
         : guildId(id), guildName(std::move(name)) {}
 };
 
+/**
+ * @brief Zdarzenie synchronizacji danych rangi gildii.
+ */
+struct GuildGradeSyncEvent : public Client::Core::IEvent {
+    uint8_t gradeNumber{0};
+    std::string gradeName;
+    uint8_t authFlag{0};
+
+    GuildGradeSyncEvent(uint8_t num, std::string name, uint8_t auth)
+        : gradeNumber(num), gradeName(std::move(name)), authFlag(auth) {}
+};
+
 } // namespace Client::Core::Events
 
 namespace Client::Network::Handlers {
