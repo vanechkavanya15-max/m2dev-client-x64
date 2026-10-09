@@ -28,10 +28,13 @@ public:
     // Zarzadzanie aktywna animacja
     bool SetAnimation(int animIndex, bool loop = true);
     bool SetAnimation(const std::string& animName, bool loop = true);
+    bool SetAnimation(const GltfMotionData* pMotion, bool loop = true);
     bool PlayMotion(int animIndex, bool loop = true) { return SetAnimation(animIndex, loop); }
     bool PlayMotion(const std::string& animName, bool loop = true) { return SetAnimation(animName, loop); }
+    bool PlayMotion(const GltfMotionData* pMotion, bool loop = true) { return SetAnimation(pMotion, loop); }
     int GetCurrentAnimationIndex() const { return m_currentAnimIndex; }
     const GltfMotionData* GetCurrentAnimation() const;
+    bool HaveBlendThing() const;
 
     // Sterowanie czasem animacji
     float GetCurrentTime() const { return m_currentTime; }
@@ -94,6 +97,7 @@ private:
     bool m_bHasParentBoneMatrix;
 
     int m_currentAnimIndex;
+    const GltfMotionData* m_pExternalMotion;
     float m_currentTime;
     float m_prevTime;
     float m_duration;

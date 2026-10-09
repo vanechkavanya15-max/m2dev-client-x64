@@ -42,7 +42,30 @@ public:
     bool RegisterActor(const ActorRecord& record);
     bool UnregisterActor(EntityVid vid);
     std::optional<ActorRecord> GetActor(EntityVid vid) const;
-    [[nodiscard]] const ActorRecord* FindActor(EntityVid vid) const;
+    [[nodiscard]] bool HasActor(EntityVid vid) const;
+
+    template <typename VisitorFn>
+    bool VisitActor(EntityVid vid, VisitorFn&& visitor) const {
+        std::shared_lock lock(m_mutex);
+        auto it = m_actors.find(vid);
+        if (it != m_actors.end()) {
+            std::forward<VisitorFn>(visitor)(it->second);
+            return true;
+        }
+        return false;
+    }
+
+    template <typename VisitorFn>
+    bool ModifyActor(EntityVid vid, VisitorFn&& visitor) {
+        std::unique_lock lock(m_mutex);
+        auto it = m_actors.find(vid);
+        if (it != m_actors.end()) {
+            std::forward<VisitorFn>(visitor)(it->second);
+            return true;
+        }
+        return false;
+    }
+
     bool UpdatePosition(EntityVid vid, float x, float y, float z, float rotation);
     void SetDead(EntityVid vid, bool isDead);
     [[nodiscard]] bool IsAlive(EntityVid vid) const;

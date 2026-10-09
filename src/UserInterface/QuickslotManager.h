@@ -63,11 +63,10 @@ public:
     void RequestUseLocalQuickSlot(DWORD dwLocalSlotIndex);
 
     // Dostep do lezacej nizej domeny Gameplay
-    [[nodiscard]] Client::Gameplay::QuickslotDomain& GetDomain() noexcept { return m_domain; }
-    [[nodiscard]] const Client::Gameplay::QuickslotDomain& GetDomain() const noexcept { return m_domain; }
+    [[nodiscard]] Client::Gameplay::QuickslotDomain& GetDomain() noexcept;
+    [[nodiscard]] const Client::Gameplay::QuickslotDomain& GetDomain() const noexcept;
 
 private:
-    Client::Gameplay::QuickslotDomain m_domain;
     std::array<TQuickSlot, QUICKSLOT_MAX_NUM> m_quickSlots{};
 
     SkillClickHandler m_skillClickHandler;

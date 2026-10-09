@@ -18,9 +18,29 @@ SpatialHashGrid::CellCoords SpatialHashGrid::GetCellCoords(float x, float y) con
 
 void SpatialHashGrid::Insert(EterBase::EntityId id, float x, float y) {
     std::unique_lock lock(m_mutex);
-    if (m_entityPositions.contains(id)) {
-        lock.unlock();
-        Update(id, x, y);
+    auto it = m_entityPositions.find(id);
+    if (it != m_entityPositions.end()) {
+        CellCoords oldCoords = GetCellCoords(it->second.x, it->second.y);
+        CellCoords newCoords = GetCellCoords(x, y);
+        it->second = {x, y};
+
+        if (oldCoords != newCoords) {
+            auto oldCellIt = m_cells.find(oldCoords);
+            if (oldCellIt != m_cells.end()) {
+                auto& oldCell = oldCellIt->second;
+                auto oldIt = std::find(oldCell.begin(), oldCell.end(), id);
+                if (oldIt != oldCell.end()) {
+                    if (oldIt != oldCell.end() - 1) {
+                        std::iter_swap(oldIt, oldCell.end() - 1);
+                    }
+                    oldCell.pop_back();
+                }
+                if (oldCell.empty()) {
+                    m_cells.erase(oldCellIt);
+                }
+            }
+            m_cells[newCoords].push_back(id);
+        }
         return;
     }
 
@@ -30,13 +50,31 @@ void SpatialHashGrid::Insert(EterBase::EntityId id, float x, float y) {
 }
 
 void SpatialHashGrid::Update(EterBase::EntityId id, float x, float y) {
+    (void)UpdateIfMoved(id, x, y);
+}
+
+bool SpatialHashGrid::UpdateIfMoved(EterBase::EntityId id, float x, float y) {
+    // 2026 Optimistic Read: Sprawdz najpierw shared_lockiem czy pozycja w ogole sie zmienila.
+    // Dla nieruchomych bytow calkowicie eliminuje exclusive lock contention w petli klatki.
+    {
+        std::shared_lock readLock(m_mutex);
+        auto it = m_entityPositions.find(id);
+        if (it != m_entityPositions.end() && it->second.x == x && it->second.y == y) {
+            return false;
+        }
+    }
+
     std::unique_lock lock(m_mutex);
     auto it = m_entityPositions.find(id);
     if (it == m_entityPositions.end()) {
         m_entityPositions[id] = {x, y};
         CellCoords coords = GetCellCoords(x, y);
         m_cells[coords].push_back(id);
-        return;
+        return true;
+    }
+
+    if (it->second.x == x && it->second.y == y) {
+        return false;
     }
 
     CellCoords oldCoords = GetCellCoords(it->second.x, it->second.y);
@@ -45,16 +83,15 @@ void SpatialHashGrid::Update(EterBase::EntityId id, float x, float y) {
     it->second = {x, y};
 
     if (oldCoords == newCoords) {
-        return; // Still in the same cell
+        return true; // Ta sama komorka siatki, zero alokacji/rehashowania m_cells
     }
 
-    // Remove from old cell
+    // Przeniesienie miedzy komorkami
     auto oldCellIt = m_cells.find(oldCoords);
     if (oldCellIt != m_cells.end()) {
         auto& oldCell = oldCellIt->second;
         auto oldIt = std::find(oldCell.begin(), oldCell.end(), id);
         if (oldIt != oldCell.end()) {
-            // Swap and pop for O(1) removal
             if (oldIt != oldCell.end() - 1) {
                 std::iter_swap(oldIt, oldCell.end() - 1);
             }
@@ -65,8 +102,8 @@ void SpatialHashGrid::Update(EterBase::EntityId id, float x, float y) {
         }
     }
 
-    // Add to new cell
     m_cells[newCoords].push_back(id);
+    return true;
 }
 
 void SpatialHashGrid::Remove(EterBase::EntityId id) {

@@ -29,13 +29,9 @@ std::optional<ActorRecord> ActorRegistry::GetActor(EntityVid vid) const {
     return std::nullopt;
 }
 
-const ActorRecord* ActorRegistry::FindActor(EntityVid vid) const {
+bool ActorRegistry::HasActor(EntityVid vid) const {
     std::shared_lock lock(m_mutex);
-    auto it = m_actors.find(vid);
-    if (it != m_actors.end()) {
-        return &it->second;
-    }
-    return nullptr;
+    return m_actors.contains(vid);
 }
 
 bool ActorRegistry::UpdatePosition(EntityVid vid, float x, float y, float z, float rotation) {

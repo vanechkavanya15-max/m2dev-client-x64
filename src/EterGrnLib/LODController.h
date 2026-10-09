@@ -5,6 +5,7 @@
 #include <deque>
 #include "Thing.h"
 #include "ModelInstance.h"
+#include "Eterlib/GrpCollisionObject.h"
 #include "EterModelLib/GltfTypes.h"
 
 namespace EterModelLib
@@ -12,7 +13,7 @@ namespace EterModelLib
 	class CGltfModelInstance;
 }
 
-class CGrannyLODController : public CGraphicBase
+class CGrannyLODController : public CGraphicCollisionObject
 {
 	friend class CGraphicThingInstance;
 
@@ -277,7 +278,7 @@ class CGrannyLODController : public CGraphicBase
 
 		BOOL	isModelInstance();
 		CGrannyModelInstance*	GetModelInstance();
-		bool	HaveBlendThing() { return 0 != GetModelInstance() ? GetModelInstance()->HaveBlendThing() : false; }		// NOTE: GetModelInstance() == 0일 때 클라 크래쉬나는 문제 수정(2012. 05. 07)
+		bool	HaveBlendThing();
 
 		bool	isGltfModelInstance() const;
 		bool	IsGltf() const { return isGltfModelInstance(); }

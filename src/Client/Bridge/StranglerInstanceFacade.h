@@ -3,7 +3,11 @@
 #include <memory>
 #include <string_view>
 #include <cstdint>
+#include <unordered_map>
+#include <shared_mutex>
+#include <optional>
 #include "Client/Core/WorldContext.h"
+#include "Client/Actor/EntityHandle.h"
 #include "EterBase/Result.h"
 
 namespace Client::Bridge {
@@ -46,11 +50,30 @@ public:
     /// @brief Ustawia instancje glownego gracza (MainActor)
     [[nodiscard]] EterBase::VoidResult<> SetMainInstance(uint32_t vid, float x, float y, float z, float rotation, std::string_view name);
 
+    /// @brief Rejestruje byt w GenerationalRegistry i zwraca bezpieczny EntityHandle
+    [[nodiscard]] EterBase::Result<::Client::Actor::EntityHandle, EterBase::EntityError> RegisterGenerational(uint32_t vid);
+
+    /// @brief Uniewaznia EntityHandle w GenerationalRegistry, inkrementujac numer generacji
+    [[nodiscard]] EterBase::Result<void, EterBase::EntityError> UnregisterGenerational(::Client::Actor::EntityHandle handle);
+
+    /// @brief Rozwiazuje EntityHandle na VID bytu (zwraca nullopt jesli nie istnieje lub byt zmarł/uniewazniony)
+    [[nodiscard]] std::optional<uint32_t> ResolveGenerational(::Client::Actor::EntityHandle handle) const;
+
+    /// @brief Pobiera aktualny EntityHandle dla danego VID
+    [[nodiscard]] std::optional<::Client::Actor::EntityHandle> GetGenerationalHandle(uint32_t vid) const;
+
+    /// @brief Resetuje caly stan GenerationalRegistry (czysci rejestr zachowujac historie generacji)
+    void ClearGenerational() noexcept;
+
 private:
     StranglerInstanceFacade() = default;
     ~StranglerInstanceFacade() = default;
 
     Client::Core::WorldContext* m_context{nullptr};
+
+    mutable std::shared_mutex m_genMutex;
+    ::Client::Actor::GenerationalRegistry<uint32_t> m_generationalRegistry;
+    std::unordered_map<uint32_t, ::Client::Actor::EntityHandle> m_vidToHandle;
 };
 
 } // namespace Client::Bridge

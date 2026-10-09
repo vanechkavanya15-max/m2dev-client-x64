@@ -16,15 +16,34 @@
 #include "Services/SkillService.h"
 #include "Client/Bridge/StranglerFacade.h"
 
-void CPythonPlayer::SPlayerStatus::SetPoint(UINT ePoint, int64_t lPoint)
+Client::Gameplay::InventoryDomain& CPythonPlayer::GetInventoryDomain() noexcept
 {
-	Client::Bridge::StranglerFacade::Instance().GetWorldContext().SetPoint(ePoint, lPoint);
-	UserInterface::Services::PlayerStatsService::Instance().SetPoint(ePoint, lPoint);
+	return Client::Bridge::StranglerFacade::Instance().GetWorldContext().inventory;
 }
 
-int64_t CPythonPlayer::SPlayerStatus::GetPoint(UINT ePoint) const
+const Client::Gameplay::InventoryDomain& CPythonPlayer::GetInventoryDomain() const noexcept
 {
-	return Client::Bridge::StranglerFacade::Instance().GetWorldContext().GetPoint(ePoint);
+	return Client::Bridge::StranglerFacade::Instance().GetWorldContext().inventory;
+}
+
+Client::Gameplay::SkillDomain& CPythonPlayer::GetSkillDomain() noexcept
+{
+	return Client::Bridge::StranglerFacade::Instance().GetWorldContext().skills;
+}
+
+const Client::Gameplay::SkillDomain& CPythonPlayer::GetSkillDomain() const noexcept
+{
+	return Client::Bridge::StranglerFacade::Instance().GetWorldContext().skills;
+}
+
+Client::Gameplay::PlayerStatsDomain& CPythonPlayer::GetStatsDomain() noexcept
+{
+	return Client::Bridge::StranglerFacade::Instance().GetWorldContext().stats;
+}
+
+const Client::Gameplay::PlayerStatsDomain& CPythonPlayer::GetStatsDomain() const noexcept
+{
+	return Client::Bridge::StranglerFacade::Instance().GetWorldContext().stats;
 }
 
 bool CPythonPlayer::AffectIndexToSkillIndex(DWORD dwAffectIndex, DWORD * pdwSkillIndex)
@@ -209,7 +228,7 @@ bool CPythonPlayer::__IsUsingChargeSkill()
 	if (m_dwSkillSlotIndexReserved >= SKILL_MAX_NUM)
 		return false;
 
-	TSkillInstance & rkSkillInst = m_playerStatus.aSkill[m_dwSkillSlotIndexReserved];
+	TSkillInstance & rkSkillInst = m_aSkill[m_dwSkillSlotIndexReserved];
 
 	CPythonSkill::TSkillData * pSkillData;
 	if (!CPythonSkill::Instance().GetSkillData(rkSkillInst.dwIndex, &pSkillData))
@@ -407,15 +426,16 @@ DWORD CPythonPlayer::__GetEvadeRate()
 
 void CPythonPlayer::__UpdateBattleStatus()
 {
-	m_playerStatus.SetPoint(POINT_NONE, 0);
-	m_playerStatus.SetPoint(POINT_EVADE_RATE, __GetEvadeRate());
-	m_playerStatus.SetPoint(POINT_HIT_RATE, __GetHitRate());
-	m_playerStatus.SetPoint(POINT_MIN_WEP, m_dwWeaponMinPower+m_dwWeaponAddPower);
-	m_playerStatus.SetPoint(POINT_MAX_WEP, m_dwWeaponMaxPower+m_dwWeaponAddPower);
-	m_playerStatus.SetPoint(POINT_MIN_MAGIC_WEP, m_dwWeaponMinMagicPower+m_dwWeaponAddPower);
-	m_playerStatus.SetPoint(POINT_MAX_MAGIC_WEP, m_dwWeaponMaxMagicPower+m_dwWeaponAddPower);
-	m_playerStatus.SetPoint(POINT_MIN_ATK, __GetTotalAtk(m_dwWeaponMinPower, m_dwWeaponAddPower));
-	m_playerStatus.SetPoint(POINT_MAX_ATK, __GetTotalAtk(m_dwWeaponMaxPower, m_dwWeaponAddPower));	
+	auto& ctx = Client::Bridge::StranglerFacade::Instance().GetWorldContext();
+	ctx.SetPoint(POINT_NONE, 0);
+	ctx.SetPoint(POINT_EVADE_RATE, __GetEvadeRate());
+	ctx.SetPoint(POINT_HIT_RATE, __GetHitRate());
+	ctx.SetPoint(POINT_MIN_WEP, m_dwWeaponMinPower+m_dwWeaponAddPower);
+	ctx.SetPoint(POINT_MAX_WEP, m_dwWeaponMaxPower+m_dwWeaponAddPower);
+	ctx.SetPoint(POINT_MIN_MAGIC_WEP, m_dwWeaponMinMagicPower+m_dwWeaponAddPower);
+	ctx.SetPoint(POINT_MAX_MAGIC_WEP, m_dwWeaponMaxMagicPower+m_dwWeaponAddPower);
+	ctx.SetPoint(POINT_MIN_ATK, __GetTotalAtk(m_dwWeaponMinPower, m_dwWeaponAddPower));
+	ctx.SetPoint(POINT_MAX_ATK, __GetTotalAtk(m_dwWeaponMaxPower, m_dwWeaponAddPower));	
 }
 
 void CPythonPlayer::SetStatus(DWORD dwType, long lValue)
@@ -443,6 +463,9 @@ void CPythonPlayer::SetStatus64(DWORD dwType, int64_t lValue)
 		}
 	}
 
+	Client::Bridge::StranglerFacade::Instance().GetWorldContext().SetPoint(dwType, lValue);
+	UserInterface::Services::PlayerStatsService::Instance().SetPoint(dwType, lValue);
+
 	switch (dwType)
 	{
 		case POINT_MIN_WEP:
@@ -455,15 +478,11 @@ void CPythonPlayer::SetStatus64(DWORD dwType, int64_t lValue)
 		case POINT_ST:
 		case POINT_DX:
 		case POINT_IQ:
-			m_playerStatus.SetPoint(dwType, lValue);
 			__UpdateBattleStatus();
 			break;
 		default:
-			m_playerStatus.SetPoint(dwType, lValue);
 			break;
 	}		
-
-	UserInterface::Services::PlayerStatsService::Instance().SetPoint(dwType, lValue);
 }
 
 int64_t CPythonPlayer::GetStatus64(DWORD dwType) const
@@ -475,13 +494,7 @@ int64_t CPythonPlayer::GetStatus64(DWORD dwType) const
 		return 0;
 	}
 
-#if defined(_DEBUG)
-	int64_t legacyPoint = m_playerStatus.GetPoint(dwType);
-	int64_t domainPoint = UserInterface::Services::PlayerStatsService::Instance().GetPoint(dwType);
-	assert(legacyPoint == domainPoint && "Shadow Execution: Stan punktow rozjechal sie miedzy legacy a domena!");
-#endif
-
-	return m_playerStatus.GetPoint(dwType);
+	return Client::Bridge::StranglerFacade::Instance().GetWorldContext().GetPoint(dwType);
 }
 
 int CPythonPlayer::GetStatus(DWORD dwType)
@@ -555,7 +568,7 @@ void CPythonPlayer::ResetSkillCoolTimeForSlot(DWORD dwSlotIndex)
 	if (dwSlotIndex >= SKILL_MAX_NUM)
 		return;
 
-	TSkillInstance& rkSkillInst = m_playerStatus.aSkill[dwSlotIndex];
+	TSkillInstance& rkSkillInst = m_aSkill[dwSlotIndex];
 
 	// If this skill is a toggle and currently active, deactivate it so UI/state is consistent.
 	// __DeactivateSkillSlot is a private/protected helper on this class.
@@ -708,16 +721,16 @@ void CPythonPlayer::MoveItemData(TItemPos SrcCell, TItemPos DstCell)
 	auto mappedDst = MapItemPosToDomain(DstCell);
 	if (mappedSrc.has_value() && mappedDst.has_value())
 	{
-		auto swapRes = m_inventoryDomain.SwapItem(mappedSrc->first, mappedSrc->second, mappedDst->first, mappedDst->second);
+		auto swapRes = GetInventoryDomain().SwapItem(mappedSrc->first, mappedSrc->second, mappedDst->first, mappedDst->second);
 		if (!swapRes.has_value())
 		{
-			auto srcItemRes = m_inventoryDomain.GetItem(mappedSrc->first, mappedSrc->second);
-			auto dstItemRes = m_inventoryDomain.GetItem(mappedDst->first, mappedDst->second);
+			auto srcItemRes = GetInventoryDomain().GetItem(mappedSrc->first, mappedSrc->second);
+			auto dstItemRes = GetInventoryDomain().GetItem(mappedDst->first, mappedDst->second);
 			if (srcItemRes.has_value() && !dstItemRes.has_value())
 			{
 				auto item = srcItemRes.value();
-				(void)m_inventoryDomain.RemoveItem(mappedSrc->first, mappedSrc->second);
-				(void)m_inventoryDomain.SetItem(mappedDst->first, mappedDst->second, item);
+				(void)GetInventoryDomain().RemoveItem(mappedSrc->first, mappedSrc->second);
+				(void)GetInventoryDomain().SetItem(mappedDst->first, mappedDst->second, item);
 			}
 		}
 	}
@@ -741,7 +754,7 @@ const TItemData * CPythonPlayer::GetItemData(TItemPos Cell) const
 	if (!pCompat)
 		return NULL;
 
-	auto itemRes = m_inventoryDomain.GetItem(mapped->first, mapped->second);
+	auto itemRes = GetInventoryDomain().GetItem(mapped->first, mapped->second);
 	if (itemRes.has_value())
 	{
 		const auto& item = itemRes.value();
@@ -823,16 +836,16 @@ void CPythonPlayer::SetItemData(TItemPos Cell, const TItemData & c_rkItemInst)
 				domainItem.attributes[i].value = c_rkItemInst.aAttr[i].sValue;
 			}
 
-			(void)m_inventoryDomain.RemoveItem(window, slot);
-			auto setRes = m_inventoryDomain.SetItem(window, slot, domainItem);
+			(void)GetInventoryDomain().RemoveItem(window, slot);
+			auto setRes = GetInventoryDomain().SetItem(window, slot, domainItem);
 			if (!setRes.has_value())
 			{
-				TraceError("CPythonPlayer::SetItemData m_inventoryDomain.SetItem error: %d\n", static_cast<int>(setRes.error()));
+				TraceError("CPythonPlayer::SetItemData GetInventoryDomain().SetItem error: %d\n", static_cast<int>(setRes.error()));
 			}
 		}
 		else
 		{
-			(void)m_inventoryDomain.RemoveItem(window, slot);
+			(void)GetInventoryDomain().RemoveItem(window, slot);
 		}
 	}
 
@@ -886,7 +899,7 @@ DWORD CPythonPlayer::GetItemIndex(TItemPos Cell)
 	if (!mapped.has_value())
 		return 0;
 
-	auto itemRes = m_inventoryDomain.GetItem(mapped->first, mapped->second);
+	auto itemRes = GetInventoryDomain().GetItem(mapped->first, mapped->second);
 	if (!itemRes.has_value())
 		return 0;
 
@@ -902,7 +915,7 @@ DWORD CPythonPlayer::GetItemFlags(TItemPos Cell)
 	if (!mapped.has_value())
 		return 0;
 
-	auto itemRes = m_inventoryDomain.GetItem(mapped->first, mapped->second);
+	auto itemRes = GetInventoryDomain().GetItem(mapped->first, mapped->second);
 	if (!itemRes.has_value())
 		return 0;
 
@@ -918,7 +931,7 @@ DWORD CPythonPlayer::GetItemCount(TItemPos Cell)
 	if (!mapped.has_value())
 		return 0;
 
-	auto itemRes = m_inventoryDomain.GetItem(mapped->first, mapped->second);
+	auto itemRes = GetInventoryDomain().GetItem(mapped->first, mapped->second);
 	if (!itemRes.has_value())
 		return 0;
 
@@ -930,7 +943,7 @@ DWORD CPythonPlayer::GetItemCountByVnum(DWORD dwVnum)
 	DWORD dwCount = 0;
 	for (uint16_t i = 0; i < Client::Gameplay::InventoryDomain::INVENTORY_MAX_NUM; ++i)
 	{
-		auto itemRes = m_inventoryDomain.GetItem(Client::Gameplay::InventoryWindow::Inventory, EterBase::ItemSlot(i));
+		auto itemRes = GetInventoryDomain().GetItem(Client::Gameplay::InventoryWindow::Inventory, EterBase::ItemSlot(i));
 		if (itemRes.has_value() && itemRes->vnum.get() == dwVnum)
 		{
 			dwCount += itemRes->count;
@@ -948,7 +961,7 @@ DWORD CPythonPlayer::GetItemMetinSocket(TItemPos Cell, DWORD dwMetinSocketIndex)
 	if (!mapped.has_value())
 		return 0;
 
-	auto itemRes = m_inventoryDomain.GetItem(mapped->first, mapped->second);
+	auto itemRes = GetInventoryDomain().GetItem(mapped->first, mapped->second);
 	if (!itemRes.has_value() || dwMetinSocketIndex >= itemRes->sockets.size())
 		return 0;
 
@@ -967,7 +980,7 @@ void CPythonPlayer::GetItemAttribute(TItemPos Cell, DWORD dwAttrSlotIndex, BYTE 
 	if (!mapped.has_value())
 		return;
 
-	auto itemRes = m_inventoryDomain.GetItem(mapped->first, mapped->second);
+	auto itemRes = GetInventoryDomain().GetItem(mapped->first, mapped->second);
 	if (!itemRes.has_value() || dwAttrSlotIndex >= itemRes->attributes.size())
 		return;
 
@@ -984,13 +997,13 @@ void CPythonPlayer::SetItemCount(TItemPos Cell, BYTE byCount)
 	if (mapped.has_value())
 	{
 		auto [window, slot] = mapped.value();
-		auto itemRes = m_inventoryDomain.GetItem(window, slot);
+		auto itemRes = GetInventoryDomain().GetItem(window, slot);
 		if (itemRes.has_value())
 		{
 			auto item = itemRes.value();
 			item.count = byCount;
-			(void)m_inventoryDomain.RemoveItem(window, slot);
-			(void)m_inventoryDomain.SetItem(window, slot, item);
+			(void)GetInventoryDomain().RemoveItem(window, slot);
+			(void)GetInventoryDomain().SetItem(window, slot, item);
 		}
 	}
 
@@ -1021,15 +1034,15 @@ void CPythonPlayer::SetItemMetinSocket(TItemPos Cell, DWORD dwMetinSocketIndex, 
 	if (mapped.has_value())
 	{
 		auto [window, slot] = mapped.value();
-		auto itemRes = m_inventoryDomain.GetItem(window, slot);
+		auto itemRes = GetInventoryDomain().GetItem(window, slot);
 		if (itemRes.has_value())
 		{
 			auto item = itemRes.value();
 			if (dwMetinSocketIndex < item.sockets.size())
 			{
 				item.sockets[dwMetinSocketIndex] = dwMetinNumber;
-				(void)m_inventoryDomain.RemoveItem(window, slot);
-				(void)m_inventoryDomain.SetItem(window, slot, item);
+				(void)GetInventoryDomain().RemoveItem(window, slot);
+				(void)GetInventoryDomain().SetItem(window, slot, item);
 			}
 		}
 	}
@@ -1062,7 +1075,7 @@ void CPythonPlayer::SetItemAttribute(TItemPos Cell, DWORD dwAttrIndex, BYTE byTy
 	if (mapped.has_value())
 	{
 		auto [window, slot] = mapped.value();
-		auto itemRes = m_inventoryDomain.GetItem(window, slot);
+		auto itemRes = GetInventoryDomain().GetItem(window, slot);
 		if (itemRes.has_value())
 		{
 			auto item = itemRes.value();
@@ -1070,8 +1083,8 @@ void CPythonPlayer::SetItemAttribute(TItemPos Cell, DWORD dwAttrIndex, BYTE byTy
 			{
 				item.attributes[dwAttrIndex].type = byType;
 				item.attributes[dwAttrIndex].value = sValue;
-				(void)m_inventoryDomain.RemoveItem(window, slot);
-				(void)m_inventoryDomain.SetItem(window, slot, item);
+				(void)GetInventoryDomain().RemoveItem(window, slot);
+				(void)GetInventoryDomain().SetItem(window, slot, item);
 			}
 		}
 	}
@@ -1148,7 +1161,7 @@ char CPythonPlayer::IsItem(TItemPos Cell)
 	if (!mapped.has_value())
 		return 0;
 
-	auto itemRes = m_inventoryDomain.GetItem(mapped->first, mapped->second);
+	auto itemRes = GetInventoryDomain().GetItem(mapped->first, mapped->second);
 	return (itemRes.has_value() && itemRes->vnum.get() != 0) ? 1 : 0;
 }
 
@@ -1242,8 +1255,12 @@ void CPythonPlayer::SetSkill(DWORD dwSlotIndex, DWORD dwSkillIndex)
 	if (dwSlotIndex >= SKILL_MAX_NUM)
 		return;
 
-	m_playerStatus.aSkill[dwSlotIndex].dwIndex = dwSkillIndex;
+	m_aSkill[dwSlotIndex].dwIndex = dwSkillIndex;
 	m_skillSlotDict[dwSkillIndex] = dwSlotIndex;
+	if (dwSkillIndex != 0)
+	{
+		GetSkillDomain().RegisterSkill(Client::Gameplay::SkillId(dwSkillIndex), 0);
+	}
 }
 
 int CPythonPlayer::GetSkillIndex(DWORD dwSlotIndex)
@@ -1251,7 +1268,7 @@ int CPythonPlayer::GetSkillIndex(DWORD dwSlotIndex)
 	if (dwSlotIndex >= SKILL_MAX_NUM)
 		return 0;
 
-	return m_playerStatus.aSkill[dwSlotIndex].dwIndex;
+	return m_aSkill[dwSlotIndex].dwIndex;
 }
 
 bool CPythonPlayer::GetSkillSlotIndex(DWORD dwSkillIndex, DWORD* pdwSlotIndex)
@@ -1272,7 +1289,7 @@ int CPythonPlayer::GetSkillGrade(DWORD dwSlotIndex)
 	if (dwSlotIndex >= SKILL_MAX_NUM)
 		return 0;
 
-	return m_playerStatus.aSkill[dwSlotIndex].iGrade;
+	return m_aSkill[dwSlotIndex].iGrade;
 }
 
 int CPythonPlayer::GetSkillLevel(DWORD dwSlotIndex)
@@ -1280,7 +1297,7 @@ int CPythonPlayer::GetSkillLevel(DWORD dwSlotIndex)
 	if (dwSlotIndex >= SKILL_MAX_NUM)
 		return 0;
 
-	return m_playerStatus.aSkill[dwSlotIndex].iLevel;
+	return m_aSkill[dwSlotIndex].iLevel;
 }
 
 float CPythonPlayer::GetSkillCurrentEfficientPercentage(DWORD dwSlotIndex)
@@ -1288,7 +1305,7 @@ float CPythonPlayer::GetSkillCurrentEfficientPercentage(DWORD dwSlotIndex)
 	if (dwSlotIndex >= SKILL_MAX_NUM)
 		return 0;
 
-	return m_playerStatus.aSkill[dwSlotIndex].fcurEfficientPercentage;
+	return m_aSkill[dwSlotIndex].fcurEfficientPercentage;
 }
 
 float CPythonPlayer::GetSkillNextEfficientPercentage(DWORD dwSlotIndex)
@@ -1296,7 +1313,7 @@ float CPythonPlayer::GetSkillNextEfficientPercentage(DWORD dwSlotIndex)
 	if (dwSlotIndex >= SKILL_MAX_NUM)
 		return 0;
 
-	return m_playerStatus.aSkill[dwSlotIndex].fnextEfficientPercentage;
+	return m_aSkill[dwSlotIndex].fnextEfficientPercentage;
 }
 
 void CPythonPlayer::SetSkillLevel(DWORD dwSlotIndex, DWORD dwSkillLevel)
@@ -1304,8 +1321,13 @@ void CPythonPlayer::SetSkillLevel(DWORD dwSlotIndex, DWORD dwSkillLevel)
 	if (dwSlotIndex >= SKILL_MAX_NUM)
 		return;
 
-	m_playerStatus.aSkill[dwSlotIndex].iGrade = -1;
-	m_playerStatus.aSkill[dwSlotIndex].iLevel = dwSkillLevel;
+	m_aSkill[dwSlotIndex].iGrade = -1;
+	m_aSkill[dwSlotIndex].iLevel = dwSkillLevel;
+	DWORD dwSkillIndex = m_aSkill[dwSlotIndex].dwIndex;
+	if (dwSkillIndex != 0)
+	{
+		GetSkillDomain().SetSkillLevel(Client::Gameplay::SkillId(dwSkillIndex), static_cast<Client::Gameplay::SkillLevel>(dwSkillLevel));
+	}
 }
 
 void CPythonPlayer::SetSkillLevel_(DWORD dwSkillIndex, DWORD dwSkillGrade, DWORD dwSkillLevel)
@@ -1320,46 +1342,45 @@ void CPythonPlayer::SetSkillLevel_(DWORD dwSkillIndex, DWORD dwSkillGrade, DWORD
 	switch (dwSkillGrade)
 	{
 		case 0:
-			m_playerStatus.aSkill[dwSlotIndex].iGrade = dwSkillGrade;
-			m_playerStatus.aSkill[dwSlotIndex].iLevel = dwSkillLevel;
+			m_aSkill[dwSlotIndex].iGrade = dwSkillGrade;
+			m_aSkill[dwSlotIndex].iLevel = dwSkillLevel;
 			break;
 		case 1:
-			m_playerStatus.aSkill[dwSlotIndex].iGrade = dwSkillGrade;
-			m_playerStatus.aSkill[dwSlotIndex].iLevel = dwSkillLevel-20+1;
+			m_aSkill[dwSlotIndex].iGrade = dwSkillGrade;
+			m_aSkill[dwSlotIndex].iLevel = dwSkillLevel-20+1;
 			break;
 		case 2:
-			m_playerStatus.aSkill[dwSlotIndex].iGrade = dwSkillGrade;
-			m_playerStatus.aSkill[dwSlotIndex].iLevel = dwSkillLevel-30+1;
+			m_aSkill[dwSlotIndex].iGrade = dwSkillGrade;
+			m_aSkill[dwSlotIndex].iLevel = dwSkillLevel-30+1;
 			break;
 		case 3:
-			m_playerStatus.aSkill[dwSlotIndex].iGrade = dwSkillGrade;
-			m_playerStatus.aSkill[dwSlotIndex].iLevel = dwSkillLevel-40+1;
+			m_aSkill[dwSlotIndex].iGrade = dwSkillGrade;
+			m_aSkill[dwSlotIndex].iLevel = dwSkillLevel-40+1;
 			break;
 	}
 
 	const DWORD SKILL_MAX_LEVEL = 40;
 
-
-
-
-
 	if (dwSkillLevel>SKILL_MAX_LEVEL)
 	{
-		m_playerStatus.aSkill[dwSlotIndex].fcurEfficientPercentage = 0.0f;
-		m_playerStatus.aSkill[dwSlotIndex].fnextEfficientPercentage = 0.0f;
+		m_aSkill[dwSlotIndex].fcurEfficientPercentage = 0.0f;
+		m_aSkill[dwSlotIndex].fnextEfficientPercentage = 0.0f;
 
 		TraceError("CPythonPlayer::SetSkillLevel(SlotIndex=%d, SkillLevel=%d)", dwSlotIndex, dwSkillLevel);
 		return;
 	}
 
-	if (m_playerStatus.aSkill[dwSlotIndex].iLevel <= 0)
+	if (m_aSkill[dwSlotIndex].iLevel <= 0)
 	{
 		ResetSkillCoolTimeForSlot(dwSlotIndex);
 	}
 
-	m_playerStatus.aSkill[dwSlotIndex].fcurEfficientPercentage = GetSkillPower(dwSkillLevel)/100.0f;
-	m_playerStatus.aSkill[dwSlotIndex].fnextEfficientPercentage = GetSkillPower(dwSkillLevel+1)/100.0f;
+	m_aSkill[dwSlotIndex].fcurEfficientPercentage = GetSkillPower(dwSkillLevel)/100.0f;
+	m_aSkill[dwSlotIndex].fnextEfficientPercentage = GetSkillPower(dwSkillLevel+1)/100.0f;
 
+	GetSkillDomain().SetSkillMastery(Client::Gameplay::SkillId(dwSkillIndex), static_cast<uint8_t>(dwSkillGrade), static_cast<uint8_t>(m_aSkill[dwSlotIndex].iLevel));
+	GetSkillDomain().SetSkillLevel(Client::Gameplay::SkillId(dwSkillIndex), static_cast<Client::Gameplay::SkillLevel>(dwSkillLevel));
+	UserInterface::Services::SkillService::Instance().SetSkillLevel(EterBase::SkillId(dwSkillIndex), static_cast<uint8_t>(dwSkillLevel), static_cast<uint8_t>(dwSkillGrade));
 }
 
 void CPythonPlayer::SetSkillCoolTime(DWORD dwSkillIndex)
@@ -1377,7 +1398,13 @@ void CPythonPlayer::SetSkillCoolTime(DWORD dwSkillIndex)
 		return;
 	}
 
-	m_playerStatus.aSkill[dwSlotIndex].isCoolTime=true;
+	m_aSkill[dwSlotIndex].isCoolTime=true;
+	float fCoolTime = m_aSkill[dwSlotIndex].fCoolTime;
+	uint32_t coolTimeMs = fCoolTime > 0.0f ? static_cast<uint32_t>(fCoolTime * 1000.0f) : 0;
+	if (coolTimeMs > 0)
+	{
+		GetSkillDomain().StartCooldown(Client::Gameplay::SkillId(dwSkillIndex), std::chrono::milliseconds(coolTimeMs));
+	}
 	UserInterface::Core::EventBus::GetInstance().Publish(
 		UserInterface::Services::SkillCooltimeStartEvent{
 			EterBase::SkillId(dwSkillIndex),
@@ -1401,7 +1428,8 @@ void CPythonPlayer::EndSkillCoolTime(DWORD dwSkillIndex)
 		return;
 	}
 
-	m_playerStatus.aSkill[dwSlotIndex].isCoolTime=false;
+	m_aSkill[dwSlotIndex].isCoolTime=false;
+	GetSkillDomain().ResetCooldown(Client::Gameplay::SkillId(dwSkillIndex));
 }
 
 float CPythonPlayer::GetSkillCoolTime(DWORD dwSlotIndex)
@@ -1409,7 +1437,7 @@ float CPythonPlayer::GetSkillCoolTime(DWORD dwSlotIndex)
 	if (dwSlotIndex >= SKILL_MAX_NUM)
 		return 0.0f;
 
-	return m_playerStatus.aSkill[dwSlotIndex].fCoolTime;
+	return m_aSkill[dwSlotIndex].fCoolTime;
 }
 
 float CPythonPlayer::GetSkillElapsedCoolTime(DWORD dwSlotIndex)
@@ -1417,7 +1445,7 @@ float CPythonPlayer::GetSkillElapsedCoolTime(DWORD dwSlotIndex)
 	if (dwSlotIndex >= SKILL_MAX_NUM)
 		return 0.0f;
 
-	return CTimer::Instance().GetCurrentSecond() - m_playerStatus.aSkill[dwSlotIndex].fLastUsedTime;
+	return CTimer::Instance().GetCurrentSecond() - m_aSkill[dwSlotIndex].fLastUsedTime;
 }
 
 void CPythonPlayer::__ActivateSkillSlot(DWORD dwSlotIndex)
@@ -1428,7 +1456,12 @@ void CPythonPlayer::__ActivateSkillSlot(DWORD dwSlotIndex)
 		return;
 	}
 
-	m_playerStatus.aSkill[dwSlotIndex].bActive = TRUE;
+	m_aSkill[dwSlotIndex].bActive = TRUE;
+	DWORD dwSkillIndex = m_aSkill[dwSlotIndex].dwIndex;
+	if (dwSkillIndex != 0)
+	{
+		GetSkillDomain().ToggleSkill(Client::Gameplay::SkillId(dwSkillIndex), true);
+	}
 	PyCallClassMemberFunc(m_ppyGameWindow, "ActivateSkillSlot", Py_BuildValue("(i)", dwSlotIndex));
 }
 
@@ -1440,7 +1473,12 @@ void CPythonPlayer::__DeactivateSkillSlot(DWORD dwSlotIndex)
 		return;
 	}
 
-	m_playerStatus.aSkill[dwSlotIndex].bActive = FALSE;
+	m_aSkill[dwSlotIndex].bActive = FALSE;
+	DWORD dwSkillIndex = m_aSkill[dwSlotIndex].dwIndex;
+	if (dwSkillIndex != 0)
+	{
+		GetSkillDomain().ToggleSkill(Client::Gameplay::SkillId(dwSkillIndex), false);
+	}
 	PyCallClassMemberFunc(m_ppyGameWindow, "DeactivateSkillSlot", Py_BuildValue("(i)", dwSlotIndex));
 }
 
@@ -1457,7 +1495,7 @@ BOOL CPythonPlayer::IsSkillActive(DWORD dwSlotIndex)
 	if (dwSlotIndex >= SKILL_MAX_NUM)
 		return FALSE;
 
-	return m_playerStatus.aSkill[dwSlotIndex].bActive;
+	return m_aSkill[dwSlotIndex].bActive;
 }
 
 BOOL CPythonPlayer::IsToggleSkill(DWORD dwSlotIndex)
@@ -1465,7 +1503,7 @@ BOOL CPythonPlayer::IsToggleSkill(DWORD dwSlotIndex)
 	if (dwSlotIndex >= SKILL_MAX_NUM)
 		return FALSE;
 
-	DWORD dwSkillIndex = m_playerStatus.aSkill[dwSlotIndex].dwIndex;
+	DWORD dwSkillIndex = m_aSkill[dwSlotIndex].dwIndex;
 
 	CPythonSkill::TSkillData * pSkillData;
 	if (!CPythonSkill::Instance().GetSkillData(dwSkillIndex, &pSkillData))
@@ -1922,7 +1960,7 @@ void CPythonPlayer::NEW_ClearSkillData(bool bAll)
 
 	for (int i = 0; i < SKILL_MAX_NUM; ++i)
 	{
-		DWORD dwSkillIndex = m_playerStatus.aSkill[i].dwIndex;
+		DWORD dwSkillIndex = m_aSkill[i].dwIndex;
 		CPythonSkill::TSkillData* pSkillData = NULL;
 
 		// Skip empty slots
@@ -1938,19 +1976,19 @@ void CPythonPlayer::NEW_ClearSkillData(bool bAll)
 					   pSkillData->byType == CPythonSkill::SKILL_TYPE_GUILD))
 			continue;
 
-		ZeroMemory(&m_playerStatus.aSkill[i], sizeof(TSkillInstance));
+		ZeroMemory(&m_aSkill[i], sizeof(TSkillInstance));
 	}
 
 	for (int j = 0; j < SKILL_MAX_NUM; ++j)
 	{
 		// 2004.09.30.myevan.스킬갱신시 스킬 포인트업[+] 버튼이 안나와 처리
-		m_playerStatus.aSkill[j].iGrade = 0;
-		m_playerStatus.aSkill[j].fcurEfficientPercentage = 0.0f;
-		m_playerStatus.aSkill[j].fnextEfficientPercentage = 0.05f;
+		m_aSkill[j].iGrade = 0;
+		m_aSkill[j].fcurEfficientPercentage = 0.0f;
+		m_aSkill[j].fnextEfficientPercentage = 0.05f;
 
-		m_playerStatus.aSkill[j].isCoolTime = false;
-		m_playerStatus.aSkill[j].fCoolTime = 0.0f;
-		m_playerStatus.aSkill[j].fLastUsedTime = 0.0f;
+		m_aSkill[j].isCoolTime = false;
+		m_aSkill[j].fCoolTime = 0.0f;
+		m_aSkill[j].fLastUsedTime = 0.0f;
 
 		//ResetSkillCoolTimeForSlot(j);
 		for (int iGrade = 0; iGrade < CPythonSkill::SKILL_GRADE_COUNT; ++iGrade)
@@ -1959,6 +1997,11 @@ void CPythonPlayer::NEW_ClearSkillData(bool bAll)
 				CPythonSkill::SKILL_TYPE_ACTIVE,
 				j + iGrade * CPythonSkill::SKILL_GRADE_STEP_COUNT);
 		}
+	}
+
+	if (bAll)
+	{
+		GetSkillDomain().Clear();
 	}
 
 	if (m_ppyGameWindow)
@@ -1991,8 +2034,8 @@ void CPythonPlayer::ClearSkillDict()
 
 void CPythonPlayer::Clear()
 {
-	memset(&m_playerStatus, 0, sizeof(m_playerStatus));
-	m_inventoryDomain.Clear();
+	memset(m_aSkill, 0, sizeof(m_aSkill));
+	GetInventoryDomain().Clear();
 	m_quickslotManager.Clear();
 	memset(m_itemDataCompat, 0, sizeof(m_itemDataCompat));
 	memset(m_dsItemDataCompat, 0, sizeof(m_dsItemDataCompat));

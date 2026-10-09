@@ -93,4 +93,34 @@ TEST_CASE("SpatialHashGrid Basic Operations") {
         CHECK_FALSE(grid.QueryNearest(100.0f, 100.0f, 0.0f).has_value());
         CHECK_FALSE(grid.QueryNearest(100.0f, 100.0f, -50.0f).has_value());
     }
+
+    SUBCASE("UpdateIfMoved optimistic checking avoids redundant locks") {
+        EterBase::EntityId id50{50};
+        grid.Insert(id50, 200.0f, 300.0f);
+
+        // Same position -> false (no modification needed, 0 lock contention)
+        CHECK_FALSE(grid.UpdateIfMoved(id50, 200.0f, 300.0f));
+
+        // Different position -> true (updated)
+        CHECK(grid.UpdateIfMoved(id50, 250.0f, 350.0f));
+
+        // Same new position -> false
+        CHECK_FALSE(grid.UpdateIfMoved(id50, 250.0f, 350.0f));
+    }
+
+    SUBCASE("QueryRadiusVisitor zero-heap-allocation traversal") {
+        EterBase::EntityId id60{60};
+        EterBase::EntityId id61{61};
+        grid.Insert(id60, 100.0f, 100.0f);
+        grid.Insert(id61, 120.0f, 100.0f);
+
+        size_t count = 0;
+        grid.QueryRadiusVisitor(100.0f, 100.0f, 50.0f, [&](EterBase::EntityId id, float x, float y) {
+            ++count;
+            CHECK((id == id60 || id == id61));
+            CHECK((x == 100.0f || x == 120.0f));
+            CHECK(y == 100.0f);
+        });
+        CHECK(count == 2);
+    }
 }

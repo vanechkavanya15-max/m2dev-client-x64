@@ -157,10 +157,13 @@ void CPythonCharacterManager::Update()
 		CInstanceBase* pkInstEach = c->second;
 		pkInstEach->Update();
 
-		// Synchronize spatial grid coordinates
-		TPixelPosition curPos;
-		pkInstEach->NEW_GetPixelPosition(&curPos);
-		m_spatialGrid.Update(EntityVid(pkInstEach->GetVirtualID()), curPos.x, curPos.y);
+		// Synchronize spatial grid coordinates only if entity is moving or changed position
+		if (pkInstEach->m_GraphicThingInstance.IsMovement())
+		{
+			TPixelPosition curPos;
+			pkInstEach->NEW_GetPixelPosition(&curPos);
+			m_spatialGrid.UpdateIfMoved(EntityVid(pkInstEach->GetVirtualID()), curPos.x, curPos.y);
+		}
 
 		if (pkInstMain)
 		{

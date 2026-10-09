@@ -173,14 +173,26 @@ Matrix4x4 Matrix4x4::TRS(const Vector3& translation, const Quaternion& rotation,
 }
 
 void EvaluateHierarchy(const std::vector<int32_t>& parentIndices, const std::vector<Matrix4x4>& localTransforms, std::vector<Matrix4x4>& outWorldTransforms) {
-    outWorldTransforms.resize(localTransforms.size());
-    for(size_t i=0; i<localTransforms.size(); ++i) {
+    size_t count = localTransforms.size();
+    outWorldTransforms.resize(count);
+    if (count == 0) return;
+
+    std::vector<uint8_t> computed(count, 0);
+
+    auto computeNode = [&](auto& self, size_t i) -> void {
+        if (computed[i]) return;
         int p = parentIndices[i];
-        if (p >= 0 && p < (int)i) {
+        if (p >= 0 && static_cast<size_t>(p) < count && static_cast<size_t>(p) != i) {
+            self(self, static_cast<size_t>(p));
             outWorldTransforms[i] = localTransforms[i] * outWorldTransforms[p];
         } else {
             outWorldTransforms[i] = localTransforms[i];
         }
+        computed[i] = 1;
+    };
+
+    for (size_t i = 0; i < count; ++i) {
+        computeNode(computeNode, i);
     }
 }
 void ComputeSkinningMatrices(const std::vector<Matrix4x4>& worldTransforms, const std::vector<Matrix4x4>& invBindMatrices, std::vector<Matrix4x4>& outSkinMatrices) {

@@ -1,8 +1,19 @@
 #include "StdAfx.h"
 #include "QuickslotManager.h"
 #include "PythonNetworkStream.h"
+#include "Client/Bridge/StranglerFacade.h"
 #include <algorithm>
 #include <cstring>
+
+Client::Gameplay::QuickslotDomain& QuickslotManager::GetDomain() noexcept
+{
+    return Client::Bridge::StranglerFacade::Instance().GetWorldContext().quickslot;
+}
+
+const Client::Gameplay::QuickslotDomain& QuickslotManager::GetDomain() const noexcept
+{
+    return Client::Bridge::StranglerFacade::Instance().GetWorldContext().quickslot;
+}
 
 QuickslotManager::QuickslotManager()
 {
@@ -11,18 +22,18 @@ QuickslotManager::QuickslotManager()
 
 void QuickslotManager::Clear() noexcept
 {
-    m_domain.Clear();
+    GetDomain().Clear();
     m_quickSlots.fill(TQuickSlot{0, 0});
 }
 
 int QuickslotManager::GetQuickPage() const
 {
-    return m_domain.GetPage();
+    return GetDomain().GetPage();
 }
 
 void QuickslotManager::SetQuickPage(int nQuickPageIndex)
 {
-    m_domain.SetPage(nQuickPageIndex);
+    GetDomain().SetPage(nQuickPageIndex);
     if (m_pageChangeHandler)
     {
         m_pageChangeHandler();
@@ -31,7 +42,7 @@ void QuickslotManager::SetQuickPage(int nQuickPageIndex)
 
 DWORD QuickslotManager::LocalQuickSlotIndexToGlobalQuickSlotIndex(DWORD dwLocalSlotIndex) const
 {
-    return m_domain.LocalToGlobalIndex(dwLocalSlotIndex);
+    return GetDomain().LocalToGlobalIndex(dwLocalSlotIndex);
 }
 
 void QuickslotManager::GetGlobalQuickSlotData(DWORD dwGlobalSlotIndex, DWORD* pdwWndType, DWORD* pdwWndItemPos) const
@@ -39,7 +50,7 @@ void QuickslotManager::GetGlobalQuickSlotData(DWORD dwGlobalSlotIndex, DWORD* pd
     if (!pdwWndType || !pdwWndItemPos)
         return;
 
-    auto slotRes = m_domain.GetSlot(dwGlobalSlotIndex);
+    auto slotRes = GetDomain().GetSlot(dwGlobalSlotIndex);
     if (slotRes.has_value())
     {
         *pdwWndType = slotRes->type;
@@ -57,7 +68,7 @@ void QuickslotManager::GetLocalQuickSlotData(DWORD dwSlotPos, DWORD* pdwWndType,
     if (!pdwWndType || !pdwWndItemPos)
         return;
 
-    auto slotRes = m_domain.GetLocalSlot(dwSlotPos);
+    auto slotRes = GetDomain().GetLocalSlot(dwSlotPos);
     if (slotRes.has_value())
     {
         *pdwWndType = slotRes->type;
@@ -95,7 +106,7 @@ void QuickslotManager::AddQuickSlot(int QuickslotIndex, char IconType, char Icon
 
     m_quickSlots[QuickslotIndex].Type = static_cast<uint8_t>(IconType);
     m_quickSlots[QuickslotIndex].Position = static_cast<uint8_t>(IconPosition);
-    (void)m_domain.SetSlot(QuickslotIndex, Client::Gameplay::QuickslotItem{
+    (void)GetDomain().SetSlot(QuickslotIndex, Client::Gameplay::QuickslotItem{
         static_cast<uint8_t>(IconType),
         static_cast<uint8_t>(IconPosition)
     });
@@ -108,7 +119,7 @@ void QuickslotManager::DeleteQuickSlot(int QuickslotIndex)
 
     m_quickSlots[QuickslotIndex].Type = 0;
     m_quickSlots[QuickslotIndex].Position = 0;
-    (void)m_domain.ClearSlot(QuickslotIndex);
+    (void)GetDomain().ClearSlot(QuickslotIndex);
 }
 
 void QuickslotManager::MoveQuickSlot(int Source, int Target)
@@ -119,7 +130,7 @@ void QuickslotManager::MoveQuickSlot(int Source, int Target)
         return;
 
     std::swap(m_quickSlots[Source], m_quickSlots[Target]);
-    (void)m_domain.SwapSlots(Source, Target);
+    (void)GetDomain().SwapSlots(Source, Target);
 }
 
 void QuickslotManager::RemoveQuickSlotByValue(int iType, int iPosition)

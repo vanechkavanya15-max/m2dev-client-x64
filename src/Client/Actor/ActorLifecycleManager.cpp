@@ -7,7 +7,7 @@ ActorLifecycleManager::ActorLifecycleManager(World::ActorRegistry& registry) noe
 }
 
 [[nodiscard]] Core::Result<void, Core::EntityError> ActorLifecycleManager::SpawnActor(const World::ActorRecord& record) const noexcept {
-    if (m_registry.FindActor(record.vid) != nullptr) {
+    if (m_registry.HasActor(record.vid)) {
         return std::unexpected(Core::EntityError::AlreadyExists);
     }
 

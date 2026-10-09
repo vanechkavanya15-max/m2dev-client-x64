@@ -221,7 +221,7 @@ TEST_CASE("WorldContext - Koordynacja aktorow i zapytan przestrzennych (Actors +
     CHECK(ctx.UnregisterActor(EntityVid{2002}));
     CHECK(ctx.actors.Count() == 3);
     CHECK(ctx.spatialGrid.Count() == 3);
-    CHECK_FALSE(ctx.actors.FindActor(EterBase::EntityId{2002}));
+    CHECK_FALSE(ctx.actors.HasActor(EterBase::EntityId{2002}));
 }
 
 TEST_CASE("WorldContext - Koordynacja umiejetnosci i zuzycia many (Skills + SP)") {

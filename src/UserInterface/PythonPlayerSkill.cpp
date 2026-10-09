@@ -14,7 +14,7 @@ void CPythonPlayer::ClearAffects()
 	// MR-12: Deactivate all active toggle skills when affects are cleared (e.g., on death)
 	for (int i = 0; i < SKILL_MAX_NUM; ++i)
 	{
-		TSkillInstance & rkSkillInst = m_playerStatus.aSkill[i];
+		TSkillInstance & rkSkillInst = m_aSkill[i];
 		
 		// Skip empty skill slots
 		if (0 == rkSkillInst.dwIndex)
@@ -87,7 +87,7 @@ bool CPythonPlayer::FindSkillSlotIndexBySkillIndex(DWORD dwSkillIndex, DWORD * p
 {
 	for (int i = 0; i < SKILL_MAX_NUM; ++i)
 	{
-		TSkillInstance & rkSkillInst = m_playerStatus.aSkill[i];
+		TSkillInstance & rkSkillInst = m_aSkill[i];
 		if (dwSkillIndex == rkSkillInst.dwIndex)
 		{
 			*pdwSkillSlotIndex = i;
@@ -103,7 +103,7 @@ void CPythonPlayer::ChangeCurrentSkillNumberOnly(DWORD dwSlotIndex)
 	if (dwSlotIndex >= SKILL_MAX_NUM)
 		return;
 
-	TSkillInstance & rkSkillInst = m_playerStatus.aSkill[dwSlotIndex];
+	TSkillInstance & rkSkillInst = m_aSkill[dwSlotIndex];
 
 	CPythonSkill::TSkillData * pSkillData;
 	if (!CPythonSkill::Instance().GetSkillData(rkSkillInst.dwIndex, &pSkillData))
@@ -134,7 +134,7 @@ void CPythonPlayer::ClickSkillSlot(DWORD dwSlotIndex)
 	if (dwSlotIndex >= SKILL_MAX_NUM)
 		return;
 
-	TSkillInstance & rkSkillInst = m_playerStatus.aSkill[dwSlotIndex];
+	TSkillInstance & rkSkillInst = m_aSkill[dwSlotIndex];
 
 	CPythonSkill::TSkillData * pSkillData;
 	if (!CPythonSkill::Instance().GetSkillData(rkSkillInst.dwIndex, &pSkillData))
@@ -196,7 +196,7 @@ bool CPythonPlayer::__CheckSkillUsable(DWORD dwSlotIndex)
 	if (dwSlotIndex >= SKILL_MAX_NUM)
 		return false;
 
-	TSkillInstance & rkSkillInst = m_playerStatus.aSkill[dwSlotIndex];
+	TSkillInstance & rkSkillInst = m_aSkill[dwSlotIndex];
 
 	CPythonSkill::TSkillData * pSkillData;
 	if (!CPythonSkill::Instance().GetSkillData(rkSkillInst.dwIndex, &pSkillData))
@@ -395,8 +395,8 @@ bool CPythonPlayer::__CheckRestSkillCoolTime(DWORD dwSlotIndex)
 	if (dwSlotIndex >= SKILL_MAX_NUM)
 		return false;
 
-	float fElapsedTime = CTimer::Instance().GetCurrentSecond() - m_playerStatus.aSkill[dwSlotIndex].fLastUsedTime;
-	if (fElapsedTime >= m_playerStatus.aSkill[dwSlotIndex].fCoolTime)
+	float fElapsedTime = CTimer::Instance().GetCurrentSecond() - m_aSkill[dwSlotIndex].fLastUsedTime;
+	if (fElapsedTime >= m_aSkill[dwSlotIndex].fCoolTime)
 		return false;	
 
 	return true;
@@ -500,7 +500,7 @@ bool CPythonPlayer::__UseSkill(DWORD dwSlotIndex)
 		return false;
 	}
 
-	TSkillInstance & rkSkillInst = m_playerStatus.aSkill[dwSlotIndex];
+	TSkillInstance & rkSkillInst = m_aSkill[dwSlotIndex];
 
 	if (__CheckSpecialSkill(rkSkillInst.dwIndex))
 	{
@@ -802,7 +802,7 @@ bool CPythonPlayer::__UseSkill(DWORD dwSlotIndex)
 
 void CPythonPlayer::__SendUseSkill(DWORD dwSkillSlotIndex, DWORD dwTargetVID)
 {
-	TSkillInstance & rkSkillInst = m_playerStatus.aSkill[dwSkillSlotIndex];
+	TSkillInstance & rkSkillInst = m_aSkill[dwSkillSlotIndex];
 
 	CPythonNetworkStream& rkNetStream=CPythonNetworkStream::Instance();
 	rkNetStream.SendUseSkillPacket(rkSkillInst.dwIndex, dwTargetVID);
@@ -812,7 +812,7 @@ void CPythonPlayer::__SendUseSkill(DWORD dwSkillSlotIndex, DWORD dwTargetVID)
 
 BYTE CPythonPlayer::__GetSkillType(DWORD dwSkillSlotIndex)
 {
-	TSkillInstance & rkSkillInst = m_playerStatus.aSkill[dwSkillSlotIndex];
+	TSkillInstance & rkSkillInst = m_aSkill[dwSkillSlotIndex];
 
 	CPythonSkill::TSkillData * pkSkillData;
 	CPythonSkill& rkPythonSkill = CPythonSkill::Instance();
@@ -826,7 +826,7 @@ BYTE CPythonPlayer::__GetSkillType(DWORD dwSkillSlotIndex)
 
 void CPythonPlayer::__RunCoolTime(DWORD dwSkillSlotIndex)
 {
-	TSkillInstance & rkSkillInst = m_playerStatus.aSkill[dwSkillSlotIndex];
+	TSkillInstance & rkSkillInst = m_aSkill[dwSkillSlotIndex];
 
 	CPythonSkill::TSkillData * pkSkillData;
 	if (!CPythonSkill::Instance().GetSkillData(rkSkillInst.dwIndex, &pkSkillData))
@@ -909,7 +909,7 @@ void CPythonPlayer::UseGuildSkill(DWORD dwSkillSlotIndex)
 		return;
 	}
 
-	TSkillInstance & rkSkillInst = m_playerStatus.aSkill[dwSkillSlotIndex];
+	TSkillInstance & rkSkillInst = m_aSkill[dwSkillSlotIndex];
 
 	DWORD dwSkillIndex = rkSkillInst.dwIndex;
 

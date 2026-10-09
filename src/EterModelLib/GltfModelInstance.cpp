@@ -13,6 +13,7 @@ CGltfModelInstance::CGltfModelInstance()
     , m_parentBoneIndex(-1)
     , m_bHasParentBoneMatrix(false)
     , m_currentAnimIndex(-1)
+    , m_pExternalMotion(nullptr)
     , m_currentTime(0.0f)
     , m_prevTime(0.0f)
     , m_duration(0.0f)
@@ -30,6 +31,7 @@ CGltfModelInstance::CGltfModelInstance(const CGltfModel* pModel)
     , m_parentBoneIndex(-1)
     , m_bHasParentBoneMatrix(false)
     , m_currentAnimIndex(-1)
+    , m_pExternalMotion(nullptr)
     , m_currentTime(0.0f)
     , m_prevTime(0.0f)
     , m_duration(0.0f)
@@ -125,6 +127,7 @@ void CGltfModelInstance::SetModel(const CGltfModel* pModel)
 {
     m_pModel = pModel;
     m_currentAnimIndex = -1;
+    m_pExternalMotion = nullptr;
     m_currentTime = 0.0f;
     m_prevTime = 0.0f;
     m_duration = 0.0f;
@@ -151,6 +154,10 @@ void CGltfModelInstance::SetModel(const CGltfModel* pModel)
 
 const GltfMotionData* CGltfModelInstance::GetCurrentAnimation() const
 {
+    if (m_pExternalMotion)
+    {
+        return m_pExternalMotion;
+    }
     if (!m_pModel || m_currentAnimIndex < 0)
     {
         return nullptr;
@@ -176,6 +183,7 @@ bool CGltfModelInstance::SetAnimation(int animIndex, bool loop)
         return false;
     }
 
+    m_pExternalMotion = nullptr;
     m_currentAnimIndex = animIndex;
     m_isLoop = loop;
     m_currentTime = 0.0f;
@@ -201,6 +209,41 @@ bool CGltfModelInstance::SetAnimation(const std::string& animName, bool loop)
     }
 
     return SetAnimation(animIndex, loop);
+}
+
+bool CGltfModelInstance::SetAnimation(const GltfMotionData* pMotion, bool loop)
+{
+    if (!pMotion)
+    {
+        return false;
+    }
+
+    m_pExternalMotion = pMotion;
+    m_currentAnimIndex = -1;
+    m_isLoop = loop;
+    m_currentTime = 0.0f;
+    m_prevTime = 0.0f;
+    m_duration = pMotion->duration;
+    m_isFinished = false;
+
+    UpdateTransforms(0.0f);
+    return true;
+}
+
+bool CGltfModelInstance::HaveBlendThing() const
+{
+    if (!m_pModel || !m_pModel->IsLoaded())
+        return false;
+
+    const auto& materials = m_pModel->GetModelData().materials;
+    for (const auto& mat : materials)
+    {
+        if (!mat.opacityTexture.empty())
+            return true;
+        if (mat.name.size() >= 5 && !_strnicmp(mat.name.c_str(), "blend", 5))
+            return true;
+    }
+    return false;
 }
 
 void CGltfModelInstance::SetCurrentTime(float time)
@@ -328,10 +371,14 @@ void CGltfModelInstance::UpdateTransforms(float time)
     {
         for (const auto& channel : pMotion->channels)
         {
-            int jointIdx = channel.jointIndex;
-            if ((jointIdx < 0 || static_cast<size_t>(jointIdx) >= boneCount) && !channel.targetNodeName.empty())
+            int jointIdx = -1;
+            if (!channel.targetNodeName.empty())
             {
                 jointIdx = m_pModel->FindBoneIndex(channel.targetNodeName);
+            }
+            if (jointIdx < 0)
+            {
+                jointIdx = channel.jointIndex;
             }
 
             if (jointIdx < 0 || static_cast<size_t>(jointIdx) >= boneCount)
@@ -562,12 +609,13 @@ void CGltfModelInstance::DeformVertices()
             continue;
         }
 
+        float invTotalWeight = 1.0f / totalWeight;
         float outX = 0.0f, outY = 0.0f, outZ = 0.0f;
         float normX = 0.0f, normY = 0.0f, normZ = 0.0f;
 
         for (int i = 0; i < 4; ++i)
         {
-            float w = weights[i];
+            float w = weights[i] * invTotalWeight;
             if (w <= 0.0f)
             {
                 continue;

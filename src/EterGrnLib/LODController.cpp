@@ -496,7 +496,8 @@ void CGrannyLODController::BlendRenderWithOneTexture()
 {
 	if (m_pGltfModelInstance)
 	{
-		RenderGltfModel();
+		if (HaveBlendThing())
+			RenderGltfModel();
 		return;
 	}
 
@@ -520,12 +521,20 @@ void CGrannyLODController::BlendRenderWithTwoTexture()
 {
 	if (m_pGltfModelInstance)
 	{
-		RenderGltfModel();
+		if (HaveBlendThing())
+			RenderGltfModel();
 		return;
 	}
 
 	assert(m_pCurrentModelInstance != NULL);
 	m_pCurrentModelInstance->BlendRenderWithTwoTexture();
+}
+
+bool CGrannyLODController::HaveBlendThing()
+{
+	if (m_pGltfModelInstance)
+		return m_pGltfModelInstance->HaveBlendThing();
+	return (0 != GetModelInstance()) ? GetModelInstance()->HaveBlendThing() : false;
 }
 
 void CGrannyLODController::Update(float fElapsedTime, float fDistanceFromCenter, float fDistanceFromCamera)
@@ -825,6 +834,18 @@ void CGrannyLODController::GetBoundBox(D3DXVECTOR3 * vtMin, D3DXVECTOR3 * vtMax)
 
 bool CGrannyLODController::Intersect(const D3DXMATRIX * c_pMatrix, float * u, float * v, float * t)
 {
+	if (m_pGltfModelInstance)
+	{
+		D3DXVECTOR3 vtMin, vtMax;
+		GetBoundBox(&vtMin, &vtMax);
+		return IntersectCube(c_pMatrix,
+			vtMin.x, vtMin.y, vtMin.z,
+			vtMax.x, vtMax.y, vtMax.z,
+			ms_vtPickRayOrig,
+			ms_vtPickRayDir,
+			u, v, t);
+	}
+
 	if (!m_pCurrentModelInstance)
 		return false;
 	return m_pCurrentModelInstance->Intersect(c_pMatrix, u, v, t);
@@ -854,7 +875,13 @@ void CGrannyLODController::SetMotionPointer(const CGrannyMotion * c_pMotion, flo
 {
 	if (m_pGltfModelInstance && c_pMotion)
 	{
-		if (c_pMotion->GetGltfAnimationPointer() != NULL)
+		const GltfMotionData* pGltfMotion = c_pMotion->GetGltfAnimationPointer();
+		if (pGltfMotion != NULL)
+		{
+			m_pGltfModelInstance->SetPlaySpeed(speedRatio);
+			m_pGltfModelInstance->PlayMotion(pGltfMotion, iLoopCount == 0);
+		}
+		else
 		{
 			m_pGltfModelInstance->SetPlaySpeed(speedRatio);
 			m_pGltfModelInstance->PlayMotion(c_pMotion->GetName(), iLoopCount == 0);
@@ -871,7 +898,13 @@ void CGrannyLODController::ChangeMotionPointer(const CGrannyMotion * c_pMotion, 
 {
 	if (m_pGltfModelInstance && c_pMotion)
 	{
-		if (c_pMotion->GetGltfAnimationPointer() != NULL)
+		const GltfMotionData* pGltfMotion = c_pMotion->GetGltfAnimationPointer();
+		if (pGltfMotion != NULL)
+		{
+			m_pGltfModelInstance->SetPlaySpeed(speedRatio);
+			m_pGltfModelInstance->PlayMotion(pGltfMotion, iLoopCount == 0);
+		}
+		else
 		{
 			m_pGltfModelInstance->SetPlaySpeed(speedRatio);
 			m_pGltfModelInstance->PlayMotion(c_pMotion->GetName(), iLoopCount == 0);
@@ -1043,6 +1076,10 @@ void CGrannyLODController::RenderGltfModel()
 
 	STATEMANAGER.SetTransform(D3DTS_WORLD, &m_matWorld);
 
+	STATEMANAGER.SetRenderState(D3DRS_ALPHATESTENABLE, TRUE);
+	STATEMANAGER.SetRenderState(D3DRS_ALPHAREF, 0x80);
+	STATEMANAGER.SetRenderState(D3DRS_ALPHAFUNC, D3DCMP_GREATER);
+
 	for (size_t s = 0; s < modelData.submeshes.size(); ++s)
 	{
 		const GltfSubmesh& submesh = modelData.submeshes[s];
@@ -1053,10 +1090,14 @@ void CGrannyLODController::RenderGltfModel()
 		if (primitiveCount == 0 || (submesh.indexOffset + submesh.indexCount) > modelData.indices.size())
 			continue;
 
+		bool isBlend = false;
 		LPDIRECT3DTEXTURE9 pD3DTexture = NULL;
 		if (submesh.materialIndex >= 0 && submesh.materialIndex < (int)modelData.materials.size())
 		{
 			const GltfMaterial& mat = modelData.materials[submesh.materialIndex];
+			if (!mat.opacityTexture.empty() || (!mat.name.empty() && !_strnicmp(mat.name.c_str(), "blend", 5)))
+				isBlend = true;
+
 			if (!mat.diffuseTexture.empty())
 			{
 				extern const std::string& GetModelLocalPath();
@@ -1090,6 +1131,17 @@ void CGrannyLODController::RenderGltfModel()
 					}
 				}
 			}
+		}
+
+		if (isBlend)
+		{
+			STATEMANAGER.SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+			STATEMANAGER.SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+			STATEMANAGER.SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		}
+		else
+		{
+			STATEMANAGER.SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
 		}
 
 		STATEMANAGER.SetTexture(0, pD3DTexture);

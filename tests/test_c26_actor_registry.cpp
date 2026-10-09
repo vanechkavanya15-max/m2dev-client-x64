@@ -102,16 +102,32 @@ TEST_CASE("ActorRegistry tests") {
         CHECK_FALSE(registry.GetActor(vid2).has_value());
     }
 
-    SUBCASE("FindActor pointer lookup without heap allocation") {
+    SUBCASE("VisitActor functional visitor lookup and HasActor") {
         registry.RegisterActor(record1);
-        const ActorRecord* ptr1 = registry.FindActor(vid1);
-        REQUIRE(ptr1 != nullptr);
-        CHECK(ptr1->vid == vid1);
-        CHECK(ptr1->name == "Actor1");
-        CHECK(ptr1->race == 1);
+        CHECK(registry.HasActor(vid1));
+        CHECK_FALSE(registry.HasActor(vid2));
 
-        const ActorRecord* ptr2 = registry.FindActor(vid2);
-        CHECK(ptr2 == nullptr);
+        bool visited1 = registry.VisitActor(vid1, [&](const ActorRecord& actor) {
+            CHECK(actor.vid == vid1);
+            CHECK(actor.name == "Actor1");
+            CHECK(actor.race == 1);
+        });
+        CHECK(visited1);
+
+        bool visited2 = registry.VisitActor(vid2, [](const ActorRecord&) {
+            FAIL("Should not visit non-existent actor");
+        });
+        CHECK_FALSE(visited2);
+
+        // Test safe in-place mutation through visitor
+        bool modified = registry.ModifyActor(vid1, [](ActorRecord& actor) {
+            actor.race = 99;
+        });
+        CHECK(modified);
+
+        auto updated = registry.GetActor(vid1);
+        REQUIRE(updated.has_value());
+        CHECK(updated->race == 99);
     }
 
     SUBCASE("MainActor lifecycle management") {

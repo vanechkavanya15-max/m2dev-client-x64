@@ -4,6 +4,15 @@
 #include "ThingInstance.h"
 #include "EterModelLib/GltfModel.h"
 
+// SUPPORT_LOCAL_TEXTURE
+static std::string gs_modelLocalPath;
+
+const std::string& GetModelLocalPath()
+{
+	return gs_modelLocalPath;
+}
+// END_OF_SUPPORT_LOCAL_TEXTURE
+
 CGraphicThing::CGraphicThing(const char* c_szFileName) : CResource(c_szFileName)
 {
 	Initialize();	
@@ -304,6 +313,17 @@ bool CGraphicThing::OnLoad(int iSize, const void * c_pvBuf)
 	if (!c_pvBuf || iSize <= 0)
 		return false;
 
+	// SUPPORT_LOCAL_TEXTURE
+	const std::string& fileName = GetFileNameString();
+	if (!fileName.empty())
+	{
+		size_t sepPos = fileName.find_last_of("\\/");
+		if (sepPos != std::string::npos)
+			gs_modelLocalPath = fileName.substr(0, sepPos + 1);
+		else
+			gs_modelLocalPath.clear();
+	}
+
 	// Detekcja plikow glTF 2.0 (binarny .glb z magic 'glTF' / 0x46546C67 lub JSON '{"asset"')
 	const unsigned char* pBytes = (const unsigned char*)c_pvBuf;
 	bool isGltf = false;
@@ -348,15 +368,6 @@ bool CGraphicThing::OnLoad(int iSize, const void * c_pvBuf)
 	LoadMotions();
 	return true;
 }
-
-// SUPPORT_LOCAL_TEXTURE
-static std::string gs_modelLocalPath;
-
-const std::string& GetModelLocalPath()
-{
-	return gs_modelLocalPath;
-}
-// END_OF_SUPPORT_LOCAL_TEXTURE
 
 bool CGraphicThing::LoadModels()
 {

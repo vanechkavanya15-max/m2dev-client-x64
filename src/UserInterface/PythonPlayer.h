@@ -4,6 +4,8 @@
 #include "Packet.h"
 #include "PythonSkill.h"
 #include "Client/Gameplay/InventoryDomain.h"
+#include "Client/Gameplay/SkillDomain.h"
+#include "Client/Gameplay/PlayerStatsDomain.h"
 #include "QuickslotManager.h"
 #include "PlayerControllers/PlayerMovementController.h"
 #include "PlayerControllers/PlayerCombatController.h"
@@ -148,14 +150,6 @@ class CPythonPlayer : public CSingleton<CPythonPlayer>, public IAbstractPlayer
 			DIR_RIGHT,
 		};
 
-		typedef struct SPlayerStatus
-		{		    
-			TSkillInstance		aSkill[SKILL_MAX_NUM];
-
-			void SetPoint(UINT ePoint, int64_t lPoint);
-			int64_t GetPoint(UINT ePoint) const;
-		} TPlayerStatus;
-
 		typedef struct SPartyMemberInfo
 		{
 			SPartyMemberInfo(DWORD _dwPID, const char * c_szName) : dwPID(_dwPID), strName(c_szName), dwVID(0) {}
@@ -214,8 +208,12 @@ class CPythonPlayer : public CSingleton<CPythonPlayer>, public IAbstractPlayer
 		UserInterface::Services::IInventoryService& GetInventoryService();
 		UserInterface::Services::IPlayerStatsService& GetPlayerStatsService();
 		UserInterface::Services::ISkillService& GetSkillService();
-		Client::Gameplay::InventoryDomain& GetInventoryDomain() noexcept { return m_inventoryDomain; }
-		const Client::Gameplay::InventoryDomain& GetInventoryDomain() const noexcept { return m_inventoryDomain; }
+		Client::Gameplay::InventoryDomain& GetInventoryDomain() noexcept;
+		const Client::Gameplay::InventoryDomain& GetInventoryDomain() const noexcept;
+		Client::Gameplay::SkillDomain& GetSkillDomain() noexcept;
+		const Client::Gameplay::SkillDomain& GetSkillDomain() const noexcept;
+		Client::Gameplay::PlayerStatsDomain& GetStatsDomain() noexcept;
+		const Client::Gameplay::PlayerStatsDomain& GetStatsDomain() const noexcept;
 		QuickslotManager& GetQuickslotManager() noexcept { return m_quickslotManager; }
 		const QuickslotManager& GetQuickslotManager() const noexcept { return m_quickslotManager; }
 
@@ -661,8 +659,7 @@ class CPythonPlayer : public CSingleton<CPythonPlayer>, public IAbstractPlayer
 
 		float					m_fCmrRotSpd;
 
-		TPlayerStatus						m_playerStatus;
-		Client::Gameplay::InventoryDomain	m_inventoryDomain;
+		TSkillInstance						m_aSkill[SKILL_MAX_NUM];
 		QuickslotManager					m_quickslotManager;
 		mutable TItemData					m_itemDataCompat[c_Inventory_Count];
 		mutable TItemData					m_dsItemDataCompat[c_DragonSoul_Inventory_Count];

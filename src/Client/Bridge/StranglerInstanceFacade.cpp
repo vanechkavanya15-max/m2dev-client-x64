@@ -1,4 +1,5 @@
 #include "StranglerInstanceFacade.h"
+#include "StranglerFacade.h"
 #include <string>
 
 namespace Client::Bridge {
@@ -17,14 +18,18 @@ void StranglerInstanceFacade::ClearWorldContext() noexcept {
 }
 
 Client::Core::WorldContext* StranglerInstanceFacade::GetWorldContext() const noexcept {
-    return m_context;
+    if (m_context) {
+        return m_context;
+    }
+    return &StranglerFacade::Instance().GetWorldContext();
 }
 
 EterBase::VoidResult<> StranglerInstanceFacade::RegisterInstance(
     uint32_t vid, uint32_t race, uint8_t type, float x, float y, float z, float rotation, std::string_view name) {
     
-    if (!m_context) {
-        return EterBase::MakeError("Brak ustawionego WorldContext w StranglerInstanceFacade");
+    auto* ctx = GetWorldContext();
+    if (!ctx) {
+        return EterBase::MakeError("Brak dostepnego WorldContext w StranglerInstanceFacade");
     }
 
     Client::World::ActorRecord record{
@@ -41,19 +46,41 @@ EterBase::VoidResult<> StranglerInstanceFacade::RegisterInstance(
         .isDead = false
     };
 
-    if (!m_context->RegisterActor(record)) {
+    if (!ctx->RegisterActor(record)) {
         return EterBase::MakeError("Nie udalo sie zarejestrowac aktora w ActorRegistry");
+    }
+
+    // Rejestracja powiazania w GenerationalRegistry
+    {
+        std::unique_lock genLock(m_genMutex);
+        if (!m_vidToHandle.contains(vid)) {
+            auto handleRes = m_generationalRegistry.Insert(vid);
+            if (handleRes) {
+                m_vidToHandle[vid] = *handleRes;
+            }
+        }
     }
 
     return {};
 }
 
 EterBase::VoidResult<> StranglerInstanceFacade::UnregisterInstance(uint32_t vid) {
-    if (!m_context) {
-        return EterBase::MakeError("Brak ustawionego WorldContext w StranglerInstanceFacade");
+    auto* ctx = GetWorldContext();
+    if (!ctx) {
+        return EterBase::MakeError("Brak dostepnego WorldContext w StranglerInstanceFacade");
     }
 
-    if (!m_context->UnregisterActor(Client::Core::EntityVid{vid})) {
+    // Uniewaznienie powiazania w GenerationalRegistry
+    {
+        std::unique_lock genLock(m_genMutex);
+        auto it = m_vidToHandle.find(vid);
+        if (it != m_vidToHandle.end()) {
+            (void)m_generationalRegistry.Erase(it->second);
+            m_vidToHandle.erase(it);
+        }
+    }
+
+    if (!ctx->UnregisterActor(Client::Core::EntityVid{vid})) {
         return EterBase::MakeError("Aktor o zadanym VID nie istnieje w ActorRegistry");
     }
 
@@ -61,11 +88,12 @@ EterBase::VoidResult<> StranglerInstanceFacade::UnregisterInstance(uint32_t vid)
 }
 
 EterBase::VoidResult<> StranglerInstanceFacade::UpdatePosition(uint32_t vid, float x, float y, float z, float rotation) {
-    if (!m_context) {
-        return EterBase::MakeError("Brak ustawionego WorldContext w StranglerInstanceFacade");
+    auto* ctx = GetWorldContext();
+    if (!ctx) {
+        return EterBase::MakeError("Brak dostepnego WorldContext w StranglerInstanceFacade");
     }
 
-    if (!m_context->UpdateActorPosition(Client::Core::EntityVid{vid}, x, y, z, rotation)) {
+    if (!ctx->UpdateActorPosition(Client::Core::EntityVid{vid}, x, y, z, rotation)) {
         return EterBase::MakeError("Aktor o zadanym VID nie istnieje, aktualizacja pozycji niemozliwa");
     }
 
@@ -73,28 +101,76 @@ EterBase::VoidResult<> StranglerInstanceFacade::UpdatePosition(uint32_t vid, flo
 }
 
 EterBase::VoidResult<> StranglerInstanceFacade::SetDead(uint32_t vid, bool isDead) {
-    if (!m_context) {
-        return EterBase::MakeError("Brak ustawionego WorldContext w StranglerInstanceFacade");
+    auto* ctx = GetWorldContext();
+    if (!ctx) {
+        return EterBase::MakeError("Brak dostepnego WorldContext w StranglerInstanceFacade");
     }
 
-    auto record = m_context->actors.GetActor(Client::World::EntityVid(vid));
+    auto record = ctx->actors.GetActor(Client::World::EntityVid(vid));
     if (!record) {
         return EterBase::MakeError("Aktor o zadanym VID nie istnieje, zmiana stanu niemozliwa");
     }
 
-    m_context->actors.SetDead(Client::World::EntityVid(vid), isDead);
+    ctx->actors.SetDead(Client::World::EntityVid(vid), isDead);
     return {};
 }
 
 EterBase::VoidResult<> StranglerInstanceFacade::SetMainInstance(
     uint32_t vid, float x, float y, float z, float rotation, std::string_view name) {
     
-    if (!m_context) {
-        return EterBase::MakeError("Brak ustawionego WorldContext w StranglerInstanceFacade");
+    auto* ctx = GetWorldContext();
+    if (!ctx) {
+        return EterBase::MakeError("Brak dostepnego WorldContext w StranglerInstanceFacade");
     }
 
-    m_context->SetLocalPlayer(Client::Core::EntityVid{vid}, x, y, z, rotation, std::string(name));
+    ctx->SetLocalPlayer(Client::Core::EntityVid{vid}, x, y, z, rotation, std::string(name));
     return {};
+}
+
+EterBase::Result<Client::Actor::EntityHandle, EterBase::EntityError> StranglerInstanceFacade::RegisterGenerational(uint32_t vid) {
+    std::unique_lock lock(m_genMutex);
+    auto it = m_vidToHandle.find(vid);
+    if (it != m_vidToHandle.end()) {
+        return it->second;
+    }
+    auto handleRes = m_generationalRegistry.Insert(vid);
+    if (handleRes) {
+        m_vidToHandle[vid] = *handleRes;
+    }
+    return handleRes;
+}
+
+EterBase::Result<void, EterBase::EntityError> StranglerInstanceFacade::UnregisterGenerational(Client::Actor::EntityHandle handle) {
+    std::unique_lock lock(m_genMutex);
+    auto vidRes = m_generationalRegistry.Get(handle);
+    if (vidRes) {
+        m_vidToHandle.erase(*vidRes.value());
+    }
+    return m_generationalRegistry.Erase(handle);
+}
+
+std::optional<uint32_t> StranglerInstanceFacade::ResolveGenerational(Client::Actor::EntityHandle handle) const {
+    std::shared_lock lock(m_genMutex);
+    auto res = m_generationalRegistry.Get(handle);
+    if (res) {
+        return *res.value();
+    }
+    return std::nullopt;
+}
+
+std::optional<Client::Actor::EntityHandle> StranglerInstanceFacade::GetGenerationalHandle(uint32_t vid) const {
+    std::shared_lock lock(m_genMutex);
+    auto it = m_vidToHandle.find(vid);
+    if (it != m_vidToHandle.end()) {
+        return it->second;
+    }
+    return std::nullopt;
+}
+
+void StranglerInstanceFacade::ClearGenerational() noexcept {
+    std::unique_lock lock(m_genMutex);
+    m_generationalRegistry.Clear();
+    m_vidToHandle.clear();
 }
 
 } // namespace Client::Bridge
