@@ -349,12 +349,28 @@ class HarnessBridge:
 
         try:
             win32file.WriteFile(self.pipe_handle, full_msg)
-            # Odczyt naglowka odpowiedzi
-            _, resp_hdr = win32file.ReadFile(self.pipe_handle, 4)
-            if len(resp_hdr) == 4:
-                resp_len = struct.unpack("<I", resp_hdr)[0]
-                _, resp_data = win32file.ReadFile(self.pipe_handle, resp_len)
-                return json.loads(resp_data.decode("utf-8"))
+            # Odczyt naglowka odpowiedzi (dokladnie 4 bajty)
+            hdr_parts = bytearray()
+            while len(hdr_parts) < 4:
+                _, chunk = win32file.ReadFile(self.pipe_handle, 4 - len(hdr_parts))
+                if not chunk:
+                    break
+                hdr_parts.extend(chunk)
+
+            if len(hdr_parts) == 4:
+                resp_len = struct.unpack("<I", bytes(hdr_parts))[0]
+                if resp_len > PIPE_BUF_SIZE:
+                    return None
+
+                body_parts = bytearray()
+                while len(body_parts) < resp_len:
+                    _, chunk = win32file.ReadFile(self.pipe_handle, resp_len - len(body_parts))
+                    if not chunk:
+                        break
+                    body_parts.extend(chunk)
+
+                if len(body_parts) == resp_len:
+                    return json.loads(body_parts.decode("utf-8"))
         except Exception:
             self._close_pipe()
 

@@ -84,6 +84,6 @@ namespace Network::Protocol::Drivers
 
         // Delegacja do PhaseGamePacketDispatcher dla architektury x64
         return UserInterface::Network::Routers::PhaseGamePacketDispatcher::Instance().DispatchPacket(
-            unifiedOpcode, payload.data());
+            unifiedOpcode, payload.data(), payload.size());
     }
 }

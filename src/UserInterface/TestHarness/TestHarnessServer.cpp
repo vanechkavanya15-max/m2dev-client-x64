@@ -74,6 +74,21 @@ namespace UserInterface::TestHarness
         if (!m_isRunning.exchange(false, std::memory_order_relaxed))
             return;
 
+        // Natychmiastowe anulowanie oczekujacych zadan przed join watku (eliminuje 5s timeout)
+        {
+            std::lock_guard<std::mutex> lock(m_queueMutex);
+            for (auto& task : m_pendingTasks)
+            {
+                if (task)
+                {
+                    try {
+                        task->promiseResult.set_value("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32000,\"message\":\"Server stopped\"}}");
+                    } catch (...) {}
+                }
+            }
+            m_pendingTasks.clear();
+        }
+
         // Budzimy watek I/O przez probe polaczenia z potokiem
         HANDLE hClient = CreateFileA(
             m_pipeName.c_str(),
@@ -93,19 +108,6 @@ namespace UserInterface::TestHarness
         {
             m_ioThread.join();
         }
-
-        // Czyszczenie zadan
-        std::lock_guard<std::mutex> lock(m_queueMutex);
-        for (auto& task : m_pendingTasks)
-        {
-            if (task)
-            {
-                try {
-                    task->promiseResult.set_value("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32000,\"message\":\"Server stopped\"}}");
-                } catch (...) {}
-            }
-        }
-        m_pendingTasks.clear();
     }
 
     void TestHarnessServer::ProcessMainThreadQueue()
@@ -292,6 +294,11 @@ namespace UserInterface::TestHarness
 
     std::string TestHarnessServer::HandleGetState(const std::string& id)
     {
+        if (!CPythonPlayer::InstancePtr() || !CPythonCharacterManager::InstancePtr())
+        {
+            return std::format("{{\"jsonrpc\":\"2.0\",\"id\":{},\"result\":{{\"status\":\"not_initialized\"}}}}", id);
+        }
+
         CPythonPlayer& rkPlayer = CPythonPlayer::Instance();
         CPythonCharacterManager& rkChrMgr = CPythonCharacterManager::Instance();
         CInstanceBase* pMainActor = rkChrMgr.GetMainActorPtr();
@@ -509,6 +516,11 @@ namespace UserInterface::TestHarness
 
     std::string TestHarnessServer::HandleAuditState(const std::string& id)
     {
+        if (!CPythonPlayer::InstancePtr())
+        {
+            return std::format("{{\"jsonrpc\":\"2.0\",\"id\":{},\"result\":{{\"verdict\":\"NOT_INITIALIZED\",\"discrepancies\":[]}}}}", id);
+        }
+
         CPythonPlayer& rkPlayer = CPythonPlayer::Instance();
 
         // Pobranie stanu C++

@@ -733,7 +733,16 @@ namespace UserInterface::Network::Routers
     // Uniwersalna dyspozycja zdeserializowanego rekordu na bazie naglowka (O(1))
     // ====================================================================
 
-    bool PhaseGamePacketDispatcher::DispatchPacket(uint8_t bHeader, const void* pData)
+#define M2_VERIFY_PAYLOAD8(StructType) \
+    do { \
+        if (payloadSize > 0 && payloadSize < sizeof(StructType)) { \
+            EterBase::ModernLogger::Warn("PhaseGamePacketDispatcher: Payload za krotki dla 0x{:02X} (got {}, expected >= {})", \
+                static_cast<uint32_t>(bHeader), payloadSize, sizeof(StructType)); \
+            return false; \
+        } \
+    } while (0)
+
+    bool PhaseGamePacketDispatcher::DispatchPacket(uint8_t bHeader, const void* pData, size_t payloadSize)
     {
         if (!pData)
             return false;
@@ -742,6 +751,7 @@ namespace UserInterface::Network::Routers
         {
         case 0x0C: // GC::ATTACK
         case 0x1C:
+            M2_VERIFY_PAYLOAD8(TPacketGCAttack);
             return DispatchAttack(*reinterpret_cast<const TPacketGCAttack*>(pData));
         case 0x10: // GC::DAMAGE_INFO
             return DispatchDamageInfo(*reinterpret_cast<const TPacketGCDamageInfo*>(pData));
@@ -807,7 +817,16 @@ namespace UserInterface::Network::Routers
         }
     }
 
-    bool PhaseGamePacketDispatcher::DispatchPacket(uint16_t wHeader, const void* pData)
+#define M2_VERIFY_PAYLOAD16(StructType) \
+    do { \
+        if (payloadSize > 0 && payloadSize < sizeof(StructType)) { \
+            EterBase::ModernLogger::Warn("PhaseGamePacketDispatcher: Payload za krotki dla 0x{:04X} (got {}, expected >= {})", \
+                static_cast<uint32_t>(wHeader), payloadSize, sizeof(StructType)); \
+            return false; \
+        } \
+    } while (0)
+
+    bool PhaseGamePacketDispatcher::DispatchPacket(uint16_t wHeader, const void* pData, size_t payloadSize)
     {
         if (!pData)
             return false;
@@ -816,74 +835,102 @@ namespace UserInterface::Network::Routers
         {
         case 0x0401: // ATTACK
         case 0x0406:
+            M2_VERIFY_PAYLOAD16(TPacketGCAttack);
             return DispatchAttack(*reinterpret_cast<const TPacketGCAttack*>(pData));
         case 0x0410: // GC::DAMAGE_INFO
+            M2_VERIFY_PAYLOAD16(TPacketGCDamageInfo);
             return DispatchDamageInfo(*reinterpret_cast<const TPacketGCDamageInfo*>(pData));
         case 0x0411: // GC::FLY_TARGETING
         case 0x0412: // GC::ADD_FLY_TARGETING
+            M2_VERIFY_PAYLOAD16(TPacketGCFlyTargeting);
             return DispatchFlyTargeting(*reinterpret_cast<const TPacketGCFlyTargeting*>(pData));
         case 0x0413: // GC::CREATE_FLY
+            M2_VERIFY_PAYLOAD16(TPacketGCCreateFly);
             return DispatchFly(*reinterpret_cast<const TPacketGCCreateFly*>(pData));
         case 0x0415: // GC::DUEL_START
+            M2_VERIFY_PAYLOAD16(TPacketGCDuelStart);
             return DispatchDuelStart(*reinterpret_cast<const TPacketGCDuelStart*>(pData));
 
         case 0x0510: // GC::ITEM_DEL
+            M2_VERIFY_PAYLOAD16(TPacketGCItemDel);
             return DispatchItemDel(*reinterpret_cast<const TPacketGCItemDel*>(pData));
         case 0x0511: // GC::ITEM_SET
+            M2_VERIFY_PAYLOAD16(TPacketGCItemSet);
             return DispatchItemSet(*reinterpret_cast<const TPacketGCItemSet*>(pData));
         case 0x0515: // GC::ITEM_GROUND_ADD
+            M2_VERIFY_PAYLOAD16(TPacketGCItemGroundAdd);
             return DispatchItemGroundAdd(*reinterpret_cast<const TPacketGCItemGroundAdd*>(pData));
         case 0x0516: // GC::ITEM_GROUND_DEL
+            M2_VERIFY_PAYLOAD16(TPacketGCItemGroundDel);
             return DispatchItemGroundDel(*reinterpret_cast<const TPacketGCItemGroundDel*>(pData));
         case 0x0519: // GC::QUICKSLOT_ADD
+            M2_VERIFY_PAYLOAD16(TPacketGCQuickSlotAdd);
             return DispatchQuickSlotAdd(*reinterpret_cast<const TPacketGCQuickSlotAdd*>(pData));
         case 0x051A: // GC::QUICKSLOT_DEL
+            M2_VERIFY_PAYLOAD16(TPacketGCQuickSlotDel);
             return DispatchQuickSlotDel(*reinterpret_cast<const TPacketGCQuickSlotDel*>(pData));
         case 0x051B: // GC::QUICKSLOT_SWAP
+            M2_VERIFY_PAYLOAD16(TPacketGCQuickSlotSwap);
             return DispatchQuickSlotSwap(*reinterpret_cast<const TPacketGCQuickSlotSwap*>(pData));
 
         case 0x0205: // GC::CHARACTER_ADD
+            M2_VERIFY_PAYLOAD16(TPacketGCCharacterAdd);
             return DispatchCharacterAdd(*reinterpret_cast<const TPacketGCCharacterAdd*>(pData));
         case 0x0207: // GC::CHAR_ADDITIONAL_INFO
+            M2_VERIFY_PAYLOAD16(TPacketGCCharacterAdditionalInfo);
             return DispatchCharacterAdditionalInfo(*reinterpret_cast<const TPacketGCCharacterAdditionalInfo*>(pData));
         case 0x0208: // GC::CHARACTER_DEL
+            M2_VERIFY_PAYLOAD16(TPacketGCCharacterDelete);
             return DispatchCharacterDelete(*reinterpret_cast<const TPacketGCCharacterDelete*>(pData));
         case 0x0304: // GC::SYNC_POSITION
+            M2_VERIFY_PAYLOAD16(TPacketGCSyncPosition);
             return DispatchSyncPosition(*reinterpret_cast<const TPacketGCSyncPosition*>(pData));
         case 0x0B22: // GC::OBSERVER_MOVE
+            M2_VERIFY_PAYLOAD16(TPacketGCObserverMove);
             return DispatchObserverMove(*reinterpret_cast<const TPacketGCObserverMove*>(pData));
 
         case 0x0810: // GC::SHOP
+            M2_VERIFY_PAYLOAD16(TPacketGCShop);
             return DispatchShop(*reinterpret_cast<const TPacketGCShop*>(pData));
         case 0x0811: // GC::SHOP_SIGN
+            M2_VERIFY_PAYLOAD16(TPacketGCShopSign);
             return DispatchShopSign(*reinterpret_cast<const TPacketGCShopSign*>(pData));
 
         case 0x051C: // GC::EXCHANGE
+            M2_VERIFY_PAYLOAD16(TPacketGCExchange);
             return DispatchExchange(*reinterpret_cast<const TPacketGCExchange*>(pData));
 
         case 0x0911: // GC::QUEST_CONFIRM
+            M2_VERIFY_PAYLOAD16(TPacketGCQuestConfirm);
             return DispatchQuestConfirm(*reinterpret_cast<const TPacketGCQuestConfirm*>(pData));
         case 0x0912: // GC::QUEST_INFO
+            M2_VERIFY_PAYLOAD16(TPacketGCQuestInfo);
             return DispatchQuestInfo(*reinterpret_cast<const TPacketGCQuestInfo*>(pData));
 
         case 0x0710: // GC::PARTY_INVITE
+            M2_VERIFY_PAYLOAD16(TPacketGCPartyInvite);
             return DispatchPartyInvite(*reinterpret_cast<const TPacketGCPartyInvite*>(pData));
         case 0x0711: // GC::PARTY_ADD
+            M2_VERIFY_PAYLOAD16(TPacketGCPartyAdd);
             return DispatchPartyAdd(*reinterpret_cast<const TPacketGCPartyAdd*>(pData));
         case 0x0712: // GC::PARTY_UPDATE
+            M2_VERIFY_PAYLOAD16(TPacketGCPartyUpdate);
             return DispatchPartyUpdate(*reinterpret_cast<const TPacketGCPartyUpdate*>(pData));
         case 0x0713: // GC::PARTY_REMOVE
+            M2_VERIFY_PAYLOAD16(TPacketGCPartyRemove);
             return DispatchPartyRemove(*reinterpret_cast<const TPacketGCPartyRemove*>(pData));
         case 0x0716: // GC::PARTY_PARAMETER
+            M2_VERIFY_PAYLOAD16(TPacketGCPartyParameter);
             return DispatchPartyParameter(*reinterpret_cast<const TPacketGCPartyParameter*>(pData));
 
         case 0x0730: // GC::GUILD
+            M2_VERIFY_PAYLOAD16(TPacketGCGuild);
             return DispatchGuild(*reinterpret_cast<const TPacketGCGuild*>(pData));
 
         default:
             if (wHeader <= 0xFF)
             {
-                return DispatchPacket(static_cast<uint8_t>(wHeader), pData);
+                return DispatchPacket(static_cast<uint8_t>(wHeader), pData, payloadSize);
             }
             EterBase::ModernLogger::Trace("PhaseGamePacketDispatcher: Nieobslugiwany naglowek 16-bitowy 0x{:04X}", wHeader);
             return false;

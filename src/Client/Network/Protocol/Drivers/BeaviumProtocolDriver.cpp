@@ -158,7 +158,7 @@ namespace Network::Protocol::Drivers
                         .dwVID = mv.dwVID,
                         .lX = mv.lX,
                         .lY = mv.lY,
-                        .fRot = static_cast<float>(mv.dwRot) / 1000000.0f,
+                        .fRot = static_cast<float>(static_cast<double>(mv.dwRot) / 1000000.0),
                         .dwTime = mv.dwTime
                     });
                 }
@@ -197,9 +197,9 @@ namespace Network::Protocol::Drivers
             break;
         }
 
-        // 3. Delegacja do dyspozytora pakietow PhaseGamePacketDispatcher
+        // 3. Delegacja do dyspozytora pakietow PhaseGamePacketDispatcher z walidacja dlugosci bufora
         UserInterface::Network::Routers::PhaseGamePacketDispatcher::Instance().DispatchPacket(
-            bHeader, payload.data());
+            bHeader, payload.data(), payload.size());
 
         return true;
     }

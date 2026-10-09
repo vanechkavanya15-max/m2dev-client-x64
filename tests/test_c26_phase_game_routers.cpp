@@ -728,6 +728,46 @@ void TestNetworkStreamBridgeAndFraming()
     std::cout << "[PASS] Symulacja NetworkStream i weryfikacja framingu x64 zakonczona sukcesem.\n";
 }
 
+void TestNegativeAndTruncatedPackets()
+{
+    std::cout << "[TEST] Rozpoczecie testow negatywnych i ucietych buforow...\n";
+
+    MockGameEventSink sink;
+    auto& dispatcher = PhaseGamePacketDispatcher::Instance();
+    dispatcher.RegisterDefaultRouters(&sink);
+
+    // 1. DispatchPacket z nullptr -> musi zwrocic false
+    assert(!dispatcher.DispatchPacket(static_cast<uint16_t>(0x0401), nullptr, 0));
+    assert(!dispatcher.DispatchPacket(static_cast<uint8_t>(0x0C), nullptr, 0));
+
+    // 2. DispatchPacket z obcietym buforem (payloadSize < sizeof(TPacketGCAttack))
+    TPacketGCAttack attackPacket{};
+    attackPacket.header = 0x0401;
+    attackPacket.length = sizeof(TPacketGCAttack);
+    attackPacket.dwVID = 555;
+    attackPacket.dwVictimVID = 666;
+
+    // Za krotki bufor (np. tylko 4 bajty zamiast pelnego rozmiaru TPacketGCAttack)
+    bool res = dispatcher.DispatchPacket(attackPacket.header, &attackPacket, 4);
+    assert(!res); // Walidacja dlugosci odrzucila uciety pakiet
+
+    // 3. DispatchPacket z poprawnym buforem
+    res = dispatcher.DispatchPacket(attackPacket.header, &attackPacket, sizeof(TPacketGCAttack));
+    assert(res);
+    assert(sink.lastAttackEvent.dwAttackerVID == 555);
+
+    // 4. DispatchPacket 8-bitowy z obcietym buforem
+    res = dispatcher.DispatchPacket(static_cast<uint8_t>(0x0C), &attackPacket, 2);
+    assert(!res);
+
+    // 5. Nieznany naglowek z prawidlowym rozmiarem -> bezpieczne false bez crasha
+    res = dispatcher.DispatchPacket(static_cast<uint16_t>(0xDEAD), &attackPacket, sizeof(TPacketGCAttack));
+    assert(!res);
+
+    dispatcher.ClearRouters();
+    std::cout << "[PASS] Testy negatywne i walidacja ucietych buforow zakonczone sukcesem.\n";
+}
+
 int main()
 {
     std::cout << "========================================================\n";
@@ -744,6 +784,7 @@ int main()
     TestNetGuildRouter();
     TestPhaseGamePacketDispatcher();
     TestNetworkStreamBridgeAndFraming();
+    TestNegativeAndTruncatedPackets();
 
     std::cout << "\n>>> WSZYSTKIE TESTY ZAKONCZONE SUKCESEM (100% PASS) <<<\n";
     return 0;

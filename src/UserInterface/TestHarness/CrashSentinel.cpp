@@ -288,31 +288,22 @@ namespace UserInterface::TestHarness
             path = m_reportPath;
         }
 
-        try
-        {
-            std::ofstream outFile(path, std::ios::out | std::ios::trunc);
-            if (outFile.is_open())
+        auto writeDirect = [](const char* filePath, const char* data, size_t len) {
+            HANDLE hFile = CreateFileA(filePath, GENERIC_WRITE, FILE_SHARE_READ, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+            if (hFile != INVALID_HANDLE_VALUE)
             {
-                outFile << jsonContent;
-                outFile.flush();
-                outFile.close();
+                DWORD written = 0;
+                WriteFile(hFile, data, static_cast<DWORD>(len), &written, nullptr);
+                FlushFileBuffers(hFile);
+                CloseHandle(hFile);
             }
+        };
 
-            // Opcjonalna kopia zapasowa w katalogu log/
-            if (std::filesystem::exists("log"))
-            {
-                std::ofstream logFile("log/crash_sentinel.json", std::ios::out | std::ios::trunc);
-                if (logFile.is_open())
-                {
-                    logFile << jsonContent;
-                    logFile.flush();
-                    logFile.close();
-                }
-            }
-        }
-        catch (...)
+        if (!path.empty())
         {
-            // Bezpieczenstwo wewnatrz obslugi awarii - pomijamy rzucanie wyjatkow
+            writeDirect(path.c_str(), jsonContent.data(), jsonContent.size());
         }
+        writeDirect("crash_sentinel.json", jsonContent.data(), jsonContent.size());
+        writeDirect("log/crash_sentinel.json", jsonContent.data(), jsonContent.size());
     }
 }

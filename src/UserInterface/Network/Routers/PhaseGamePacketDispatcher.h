@@ -146,9 +146,9 @@ namespace UserInterface::Network::Routers
         bool DispatchGuildWar(const TPacketGCGuildWar& packet);
         bool DispatchGuildWarPoint(const TPacketGuildWarPoint& packet);
 
-        // Uniwersalna dyspozycja zdeserializowanego rekordu na bazie naglowka (O(1))
-        bool DispatchPacket(uint8_t bHeader, const void* pData);
-        bool DispatchPacket(uint16_t wHeader, const void* pData);
+        // Uniwersalna dyspozycja zdeserializowanego rekordu na bazie naglowka (O(1)) z walidacja dlugosci bufora
+        bool DispatchPacket(uint8_t bHeader, const void* pData, size_t payloadSize = 0);
+        bool DispatchPacket(uint16_t wHeader, const void* pData, size_t payloadSize = 0);
 
     private:
         // Tablica skokow O(1) dla naglowkow 8-bitowych (0..255)
