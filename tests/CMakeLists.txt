@@ -377,3 +377,17 @@ target_link_libraries(test_c26_protocol_pillar1 PRIVATE
 )
 
 add_test(NAME ProtocolPillar1Test COMMAND test_c26_protocol_pillar1)
+
+add_executable(test_c26_rhi_engine test_c26_rhi_engine.cpp)
+target_include_directories(test_c26_rhi_engine PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/Client
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+target_link_libraries(test_c26_rhi_engine PRIVATE
+    Client2026
+    EterBase
+)
+
+add_test(NAME RHIEngineTest COMMAND test_c26_rhi_engine)
+
