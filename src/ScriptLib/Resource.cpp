@@ -97,6 +97,8 @@ CPythonResource::CPythonResource()
 	m_resManager.RegisterResourceNewFunctionPointer("png", NewImage);
 	m_resManager.RegisterResourceNewFunctionPointer("fnt", NewText);
 	m_resManager.RegisterResourceNewFunctionPointer("gr2", NewThing);
+	m_resManager.RegisterResourceNewFunctionPointer("glb", NewThing);
+	m_resManager.RegisterResourceNewFunctionPointer("gltf", NewThing);
 	m_resManager.RegisterResourceNewFunctionPointer("mde", NewEffectMesh);
 	m_resManager.RegisterResourceNewFunctionPointer("mdatr", NewAttributeData);
 }

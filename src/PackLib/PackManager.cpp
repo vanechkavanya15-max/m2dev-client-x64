@@ -76,6 +76,57 @@ bool CPackManager::GetFileWithPool(std::string_view path, TPackFile& result, CBu
 		}
 	}
 
+	// Transparent Fallback dla migracji GR2 <-> GLB
+	if (buf.size() > 4) {
+		if (buf.ends_with(".gr2")) {
+			std::string glbPath = buf.substr(0, buf.size() - 4) + ".glb";
+			if (m_load_from_pack) {
+				auto itGlb = m_entries.find(glbPath);
+				if (itGlb != m_entries.end()) {
+					return itGlb->second.first->GetFileWithPool(itGlb->second.second, result, pPool);
+				}
+			}
+			std::ifstream ifsGlb(glbPath, std::ios::binary);
+			if (ifsGlb.is_open()) {
+				ifsGlb.seekg(0, std::ios::end);
+				size_t size = ifsGlb.tellg();
+				ifsGlb.seekg(0, std::ios::beg);
+				if (pPool) {
+					result = pPool->Acquire(size);
+					result.resize(size);
+				} else {
+					result.resize(size);
+				}
+				if (ifsGlb.read((char*)result.data(), size)) {
+					return true;
+				}
+			}
+		} else if (buf.ends_with(".glb")) {
+			std::string gr2Path = buf.substr(0, buf.size() - 4) + ".gr2";
+			if (m_load_from_pack) {
+				auto itGr2 = m_entries.find(gr2Path);
+				if (itGr2 != m_entries.end()) {
+					return itGr2->second.first->GetFileWithPool(itGr2->second.second, result, pPool);
+				}
+			}
+			std::ifstream ifsGr2(gr2Path, std::ios::binary);
+			if (ifsGr2.is_open()) {
+				ifsGr2.seekg(0, std::ios::end);
+				size_t size = ifsGr2.tellg();
+				ifsGr2.seekg(0, std::ios::beg);
+				if (pPool) {
+					result = pPool->Acquire(size);
+					result.resize(size);
+				} else {
+					result.resize(size);
+				}
+				if (ifsGr2.read((char*)result.data(), size)) {
+					return true;
+				}
+			}
+		}
+	}
+
 	return false;
 }
 
@@ -94,14 +145,27 @@ bool CPackManager::IsExist(std::string_view path) const
 
 	// Fallback to disk (for files not in packs, like bgm folder)
 	std::error_code ec; // To avoid exceptions from std::filesystem
-	const auto result = std::filesystem::exists(buf, ec);
-	if (ec)
-	{
-		TraceError("std::filesystem::exists failed for path '%s' with error: %s", buf.c_str(), ec.message().c_str());
-		return false;
+	if (std::filesystem::exists(buf, ec))
+		return true;
+
+	// Transparent fallback check for GR2 <-> GLB
+	if (buf.size() > 4) {
+		if (buf.ends_with(".gr2")) {
+			std::string glbPath = buf.substr(0, buf.size() - 4) + ".glb";
+			if (m_load_from_pack && m_entries.find(glbPath) != m_entries.end())
+				return true;
+			if (std::filesystem::exists(glbPath, ec))
+				return true;
+		} else if (buf.ends_with(".glb")) {
+			std::string gr2Path = buf.substr(0, buf.size() - 4) + ".gr2";
+			if (m_load_from_pack && m_entries.find(gr2Path) != m_entries.end())
+				return true;
+			if (std::filesystem::exists(gr2Path, ec))
+				return true;
+		}
 	}
 
-	return result;
+	return false;
 }
 
 void CPackManager::NormalizePath(std::string_view in, std::string& out) const
