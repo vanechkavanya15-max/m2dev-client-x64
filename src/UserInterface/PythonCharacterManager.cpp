@@ -158,7 +158,7 @@ void CPythonCharacterManager::Update()
 		pkInstEach->Update();
 
 		// Synchronize spatial grid coordinates only if entity is moving or changed position
-		if (pkInstEach->m_GraphicThingInstance.IsMovement())
+		if (pkInstEach->GetGraphicThingInstanceRef().IsMovement())
 		{
 			TPixelPosition curPos;
 			pkInstEach->NEW_GetPixelPosition(&curPos);

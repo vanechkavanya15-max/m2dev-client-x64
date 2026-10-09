@@ -66,6 +66,7 @@ const D3DXCOLOR& CInstanceBase::GetIndexedNameColor(UINT eNameColor)
 
 void CInstanceBase::AddDamageEffect(DWORD damage, BYTE flag, BOOL bSelf, BOOL bTarget)
 {
+	m_combatComponent.AddDamage(damage, flag, bSelf != FALSE, bTarget != FALSE);
 	TraceError("AddDamageEffect: damage=%u flag=%u bSelf=%d bTarget=%d IsShowDamage=%d",
 		damage, flag, bSelf, bTarget, CPythonSystem::Instance().IsShowDamage());
 	if(CPythonSystem::Instance().IsShowDamage())
@@ -767,6 +768,7 @@ void CInstanceBase::__SetStoneSmokeFlagContainer(const CAffectFlagContainer& c_r
 
 void CInstanceBase::SetAffectFlagContainer(const CAffectFlagContainer& c_rkAffectFlagContainer)
 {
+	m_combatComponent.SetAffectFlags(c_rkAffectFlagContainer);
 	if (IsBuilding())
 	{
 		return;		

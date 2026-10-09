@@ -12,6 +12,8 @@
 #include "GameLib/ItemManager.h"
 #include "Core/EventBus.h"
 #include "InstanceControllers/IInstanceMountHorseController.h"
+#include "Client/Bridge/StranglerInstanceFacade.h"
+#include "ECS/ECSWorldRegistry.h"
 
 BOOL HAIR_COLOR_ENABLE=FALSE;
 BOOL USE_ARMOR_SPECULAR=FALSE;
@@ -655,6 +657,19 @@ void CInstanceBase::SetMainInstance()
 	rkChrMgr.SetMainInstance(dwVID);
 
 	m_GraphicThingInstance.SetMainInstance();
+
+	// Strangler Fig C++23: Rejestracja gracza glownego w WorldContext
+	if (dwVID != 0)
+	{
+		TPixelPosition pos;
+		NEW_GetPixelPosition(&pos);
+		(void)Client::Bridge::StranglerInstanceFacade::Instance().SetMainInstance(
+			dwVID,
+			pos.x, pos.y, pos.z,
+			GetRotation(),
+			GetNameString()
+		);
+	}
 }
 
 CInstanceBase* CInstanceBase::__GetMainActorPtr()
@@ -839,6 +854,45 @@ bool CInstanceBase::Create(const SCreateData& c_rkCreateData)
 		if (IsFile(strFileName.c_str()))
 			m_GraphicThingInstance.ChangeMaterial(strFileName.c_str());
 	}
+
+	// Strangler Fig C++23: Integracja z nowoczesna domena swiata i aktora
+	(void)Client::Bridge::StranglerInstanceFacade::Instance().RegisterInstance(
+		c_rkCreateData.m_dwVID,
+		c_rkCreateData.m_dwRace,
+		c_rkCreateData.m_bType,
+		static_cast<float>(c_rkCreateData.m_lPosX),
+		static_cast<float>(c_rkCreateData.m_lPosY),
+		0.0f,
+		c_rkCreateData.m_fRot,
+		c_rkCreateData.m_stName
+	);
+
+	if (auto genHandle = Client::Bridge::StranglerInstanceFacade::Instance().RegisterGenerational(c_rkCreateData.m_dwVID))
+	{
+		m_generationalHandle = *genHandle;
+	}
+
+	if (c_rkCreateData.m_isMain)
+	{
+		(void)Client::Bridge::StranglerInstanceFacade::Instance().SetMainInstance(
+			c_rkCreateData.m_dwVID,
+			static_cast<float>(c_rkCreateData.m_lPosX),
+			static_cast<float>(c_rkCreateData.m_lPosY),
+			0.0f,
+			c_rkCreateData.m_fRot,
+			c_rkCreateData.m_stName
+		);
+	}
+
+	// Register entity into modern C++23 ECS SoA tables
+	(void)UserInterface::ECS::ECSWorldRegistry::GetInstance().RegisterEntity(
+		EterBase::EntityId(c_rkCreateData.m_dwVID),
+		static_cast<float>(c_rkCreateData.m_lPosX),
+		static_cast<float>(c_rkCreateData.m_lPosY),
+		0.0f,
+		c_rkCreateData.m_fRot,
+		static_cast<float>(c_rkCreateData.m_dwMovSpd)
+	);
 
 	return true;
 }
@@ -1873,6 +1927,7 @@ void CInstanceBase::Update()
 
 	m_GraphicThingInstance.PhysicsProcess();
 	m_GraphicThingInstance.RotationProcess();
+	m_physicsComponent.UpdateMovement();
 
 	// celine skill fix
 	if (IsUsingSkill())
@@ -2629,6 +2684,7 @@ void CInstanceBase::SetHair(DWORD eHair)
 		return;
 	m_awPart[CRaceData::PART_HAIR] = eHair;
 	m_GraphicThingInstance.SetHair(eHair);
+	m_visualComponent.SetHair(eHair);
 }
 
 void CInstanceBase::ChangeHair(DWORD eHair)
@@ -2652,6 +2708,7 @@ void CInstanceBase::ChangeHair(DWORD eHair)
 
 void CInstanceBase::SetArmor(DWORD dwArmor)
 {
+	m_visualComponent.SetArmor(dwArmor);
 	DWORD dwShape;
 	if (__ArmorVnumToShape(dwArmor, &dwShape))
 	{
@@ -2672,6 +2729,7 @@ void CInstanceBase::SetArmor(DWORD dwArmor)
 
 void CInstanceBase::SetShape(DWORD eShape, float fSpecular)
 {
+	m_visualComponent.SetShape(eShape, fSpecular);
 	if (IsPoly())
 	{
 		m_GraphicThingInstance.SetShape(0);	
@@ -2794,6 +2852,7 @@ bool CInstanceBase::SetWeapon(DWORD eWeapon)
 
 	m_GraphicThingInstance.AttachWeapon(eWeapon);
 	m_awPart[CRaceData::PART_WEAPON] = eWeapon;
+	m_visualComponent.SetWeapon(eWeapon);
 	
 	//Weapon Effect
 	CItemData * pItemData;
@@ -3035,6 +3094,19 @@ void CInstanceBase::DestroyDeviceObjects()
 
 void CInstanceBase::Destroy()
 {	
+	DWORD dwVID = GetVirtualID();
+	if (dwVID != 0)
+	{
+		// Strangler Fig C++23: Wyrejestrowanie z domen i uniewaznienie Generational Handle
+		if (m_generationalHandle.IsValid())
+		{
+			(void)Client::Bridge::StranglerInstanceFacade::Instance().UnregisterGenerational(m_generationalHandle);
+			m_generationalHandle = Client::Actor::EntityHandle{};
+		}
+		(void)Client::Bridge::StranglerInstanceFacade::Instance().UnregisterInstance(dwVID);
+		(void)UserInterface::ECS::ECSWorldRegistry::GetInstance().RemoveEntity(EterBase::EntityId(dwVID));
+	}
+
 	DetachTextTail();
 	
 	DismountHorse();
@@ -3048,6 +3120,10 @@ void CInstanceBase::Destroy()
 		__ClearMainInstance();	
 	
 	m_GraphicThingInstance.Destroy();
+
+	m_visualComponent.Clear();
+	m_physicsComponent.Clear();
+	m_combatComponent.Clear();
 	
 	__Initialize();
 }

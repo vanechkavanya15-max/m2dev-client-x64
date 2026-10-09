@@ -20,6 +20,7 @@ namespace Client::Bridge {
 class StranglerNetworkFacade {
 public:
     StranglerNetworkFacade();
+    explicit StranglerNetworkFacade(Client::Network::ModernPacketDispatcher* dispatcher);
     ~StranglerNetworkFacade();
 
     StranglerNetworkFacade(const StranglerNetworkFacade&) = delete;
@@ -27,24 +28,33 @@ public:
     StranglerNetworkFacade(StranglerNetworkFacade&&) noexcept;
     StranglerNetworkFacade& operator=(StranglerNetworkFacade&&) noexcept;
 
+    static StranglerNetworkFacade& Instance() noexcept;
+
     /**
-     * @brief Rejestruje nowy zmodernizowany handler pod dany opcode.
+     * @brief Rejestruje nowy zmodernizowany handler pod dany opcode (16-bit / 8-bit).
      */
-    void RegisterHandler(uint8_t opcode, Client::Network::IPacketHandler* handler);
+    void RegisterHandler(uint16_t opcode, Client::Network::IPacketHandler* handler);
 
     /**
      * @brief Odrejestrowuje handler dla danego opcode.
      */
-    void UnregisterHandler(uint8_t opcode);
+    void UnregisterHandler(uint16_t opcode);
+
+    [[nodiscard]] bool HasHandler(uint16_t opcode) const noexcept;
 
     /**
      * @brief Przekazuje obsluge pakietu (opcode, payload) do nowoczesnego dispatchera.
      * Uzywa mechaniki Result dla bezpiecznej obslugi bledow bez wyjatkow.
      */
-    [[nodiscard]] EterBase::PacketResult<void> DispatchPacket(uint8_t opcode, std::span<const uint8_t> payload);
+    [[nodiscard]] EterBase::PacketResult<void> DispatchPacket(uint16_t opcode, std::span<const uint8_t> payload);
+
+    void RegisterDefaultHandlers();
+
+    [[nodiscard]] Client::Network::ModernPacketDispatcher& GetDispatcher() noexcept;
 
 private:
-    std::unique_ptr<Client::Network::ModernPacketDispatcher> m_dispatcher;
+    std::unique_ptr<Client::Network::ModernPacketDispatcher> m_ownedDispatcher;
+    Client::Network::ModernPacketDispatcher* m_dispatcher{nullptr};
 };
 
 } // namespace Client::Bridge

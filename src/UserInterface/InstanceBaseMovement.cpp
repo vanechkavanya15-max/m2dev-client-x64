@@ -19,6 +19,7 @@ void CInstanceBase::SetMoveSpeed(UINT uMovSpd)
 
 	m_GraphicThingInstance.SetMoveSpeed(uMovSpd/100.0f);	
 	m_kHorse.SetMoveSpeed(uMovSpd);
+	m_physicsComponent.SetMoveSpeed(uMovSpd);
 }
 
 

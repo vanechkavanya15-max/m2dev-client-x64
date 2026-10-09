@@ -44,7 +44,6 @@ public:
     ModernPacketDispatcher();
     ~ModernPacketDispatcher() = default;
 
-    // Prevent copying and moving (dispatcher is usually a singleton or bound to a specific session)
     ModernPacketDispatcher(const ModernPacketDispatcher&) = delete;
     ModernPacketDispatcher& operator=(const ModernPacketDispatcher&) = delete;
     ModernPacketDispatcher(ModernPacketDispatcher&&) = delete;
@@ -53,13 +52,16 @@ public:
     static ModernPacketDispatcher& Instance() noexcept;
 
     void RegisterHandler(uint16_t opcode, IPacketHandler* handler);
-    void RegisterHandler(uint8_t opcode, IPacketHandler* handler);
+    inline void RegisterHandler(uint8_t opcode, IPacketHandler* handler) { RegisterHandler(static_cast<uint16_t>(opcode), handler); }
+
     void UnregisterHandler(uint16_t opcode);
-    void UnregisterHandler(uint8_t opcode);
+    inline void UnregisterHandler(uint8_t opcode) { UnregisterHandler(static_cast<uint16_t>(opcode)); }
+
     [[nodiscard]] bool HasHandler(uint16_t opcode) const noexcept;
+    [[nodiscard]] inline bool HasHandler(uint8_t opcode) const noexcept { return HasHandler(static_cast<uint16_t>(opcode)); }
 
     void RegisterOwnedHandler(uint16_t opcode, std::unique_ptr<IPacketHandler> handler);
-    void RegisterOwnedHandler(uint8_t opcode, std::unique_ptr<IPacketHandler> handler);
+    inline void RegisterOwnedHandler(uint8_t opcode, std::unique_ptr<IPacketHandler> handler) { RegisterOwnedHandler(static_cast<uint16_t>(opcode), std::move(handler)); }
 
     template<typename HandlerFn>
     void RegisterFunctionHandler(uint16_t opcode, uint16_t minSize, bool dynamicSize, HandlerFn fn) {
@@ -67,7 +69,9 @@ public:
     }
 
     [[nodiscard]] EterBase::PacketResult<void> Dispatch(uint16_t opcode, std::span<const uint8_t> payload);
-    [[nodiscard]] EterBase::PacketResult<void> Dispatch(uint8_t opcode, std::span<const uint8_t> payload);
+    [[nodiscard]] inline EterBase::PacketResult<void> Dispatch(uint8_t opcode, std::span<const uint8_t> payload) { return Dispatch(static_cast<uint16_t>(opcode), payload); }
+
+    void RegisterDefaultHandlers();
 
     void Clear() noexcept;
 

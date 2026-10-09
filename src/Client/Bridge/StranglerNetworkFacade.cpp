@@ -3,8 +3,19 @@
 
 namespace Client::Bridge {
 
+StranglerNetworkFacade& StranglerNetworkFacade::Instance() noexcept {
+    static StranglerNetworkFacade s_instance(&Client::Network::ModernPacketDispatcher::Instance());
+    return s_instance;
+}
+
 StranglerNetworkFacade::StranglerNetworkFacade() 
-    : m_dispatcher(std::make_unique<Client::Network::ModernPacketDispatcher>()) 
+    : m_ownedDispatcher(std::make_unique<Client::Network::ModernPacketDispatcher>()),
+      m_dispatcher(m_ownedDispatcher.get())
+{
+}
+
+StranglerNetworkFacade::StranglerNetworkFacade(Client::Network::ModernPacketDispatcher* dispatcher)
+    : m_dispatcher(dispatcher ? dispatcher : &Client::Network::ModernPacketDispatcher::Instance())
 {
 }
 
@@ -12,23 +23,34 @@ StranglerNetworkFacade::~StranglerNetworkFacade() = default;
 StranglerNetworkFacade::StranglerNetworkFacade(StranglerNetworkFacade&&) noexcept = default;
 StranglerNetworkFacade& StranglerNetworkFacade::operator=(StranglerNetworkFacade&&) noexcept = default;
 
-void StranglerNetworkFacade::RegisterHandler(uint8_t opcode, Client::Network::IPacketHandler* handler) {
-    if (m_dispatcher) {
-        m_dispatcher->RegisterHandler(opcode, handler);
-    }
-}
-
-void StranglerNetworkFacade::UnregisterHandler(uint8_t opcode) {
-    if (m_dispatcher) {
-        m_dispatcher->UnregisterHandler(opcode);
-    }
-}
-
-EterBase::PacketResult<void> StranglerNetworkFacade::DispatchPacket(uint8_t opcode, std::span<const uint8_t> payload) {
+Client::Network::ModernPacketDispatcher& StranglerNetworkFacade::GetDispatcher() noexcept {
     if (!m_dispatcher) {
-        return std::unexpected(EterBase::PacketError::SessionClosed);
+        return Client::Network::ModernPacketDispatcher::Instance();
     }
-    return m_dispatcher->Dispatch(opcode, payload);
+    return *m_dispatcher;
+}
+
+void StranglerNetworkFacade::RegisterHandler(uint16_t opcode, Client::Network::IPacketHandler* handler) {
+    GetDispatcher().RegisterHandler(opcode, handler);
+}
+
+void StranglerNetworkFacade::UnregisterHandler(uint16_t opcode) {
+    GetDispatcher().UnregisterHandler(opcode);
+}
+
+bool StranglerNetworkFacade::HasHandler(uint16_t opcode) const noexcept {
+    if (m_dispatcher) {
+        return m_dispatcher->HasHandler(opcode);
+    }
+    return Client::Network::ModernPacketDispatcher::Instance().HasHandler(opcode);
+}
+
+EterBase::PacketResult<void> StranglerNetworkFacade::DispatchPacket(uint16_t opcode, std::span<const uint8_t> payload) {
+    return GetDispatcher().Dispatch(opcode, payload);
+}
+
+void StranglerNetworkFacade::RegisterDefaultHandlers() {
+    GetDispatcher().RegisterDefaultHandlers();
 }
 
 } // namespace Client::Bridge

@@ -3,6 +3,7 @@
 #include "InstanceBase.h"
 #include "PythonBackground.h"
 #include "PythonCharacterManager.h"
+#include "Client/Bridge/StranglerInstanceFacade.h"
 #include "PRTerrainLib/Terrain.h"
 
 float NEW_UnsignedDegreeToSignedDegree(float fUD)
@@ -707,6 +708,13 @@ void CInstanceBase::Revive()
 	m_GraphicThingInstance.Revive();
 
 	__AttachHorseSaddle();
+
+	DWORD dwVID = GetVirtualID();
+	if (dwVID != 0)
+	{
+		(void)Client::Bridge::StranglerInstanceFacade::Instance().SetDead(dwVID, false);
+	}
+	m_combatComponent.SetDead(false);
 }
 
 void CInstanceBase::Stun()
@@ -733,6 +741,13 @@ void CInstanceBase::Die()
 	OnUntargeted();
 
 	m_GraphicThingInstance.Die();
+
+	DWORD dwVID = GetVirtualID();
+	if (dwVID != 0)
+	{
+		(void)Client::Bridge::StranglerInstanceFacade::Instance().SetDead(dwVID, true);
+	}
+	m_combatComponent.SetDead(true);
 }
 
 void CInstanceBase::Hide()

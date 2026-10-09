@@ -1,6 +1,8 @@
 #include "StdAfx.h"
 #include "InstanceBase.h"
 #include "PythonBackground.h"
+#include "Client/Bridge/StranglerInstanceFacade.h"
+#include "ECS/ECSWorldRegistry.h"
 
 
 
@@ -13,7 +15,28 @@ void CInstanceBase::SCRIPT_SetPixelPosition(float fx, float fy)
 
 void CInstanceBase::NEW_SetPixelPosition(const TPixelPosition & c_rPixelPosition)
 {
-	m_GraphicThingInstance.SetCurPixelPosition(c_rPixelPosition);		
+	m_GraphicThingInstance.SetCurPixelPosition(c_rPixelPosition);
+	m_physicsComponent.SetPixelPosition(c_rPixelPosition);
+
+	DWORD dwVID = GetVirtualID();
+	if (dwVID != 0)
+	{
+		(void)Client::Bridge::StranglerInstanceFacade::Instance().UpdatePosition(
+			dwVID,
+			c_rPixelPosition.x,
+			c_rPixelPosition.y,
+			c_rPixelPosition.z,
+			GetRotation()
+		);
+		UserInterface::ECS::ECSWorldRegistry::GetInstance().GetTransformTable().AddOrUpdate(
+			dwVID,
+			c_rPixelPosition.x,
+			c_rPixelPosition.y,
+			c_rPixelPosition.z,
+			GetRotation(),
+			static_cast<float>(m_physicsComponent.GetMoveSpeed())
+		);
+	}
 }
 
 void CInstanceBase::NEW_GetPixelPosition(TPixelPosition * pPixelPosition)
@@ -24,6 +47,7 @@ void CInstanceBase::NEW_GetPixelPosition(TPixelPosition * pPixelPosition)
 void CInstanceBase::SetRotation(float fRotation)
 {
 	m_GraphicThingInstance.SetRotation(fRotation);
+	m_physicsComponent.SetRotation(fRotation);
 }
 
 void CInstanceBase::BlendRotation(float fRotation, float fBlendTime)

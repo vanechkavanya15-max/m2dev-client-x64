@@ -12,6 +12,8 @@
 #include "Client/Gameplay/CombatError.h"
 #include "InstanceComponents/InstancePhysicsComponent.h"
 #include "InstanceComponents/InstanceCombatComponent.h"
+#include "Client/Bridge/StranglerInstanceFacade.h"
+#include "Client/Actor/EntityHandle.h"
 
 class CInstanceBase
 {	
@@ -1029,6 +1031,13 @@ class CInstanceBase
 
 		[[nodiscard]] UserInterface::InstanceComponents::InstanceCombatComponent& GetCombatComponent() noexcept { return m_combatComponent; }
 		[[nodiscard]] const UserInterface::InstanceComponents::InstanceCombatComponent& GetCombatComponent() const noexcept { return m_combatComponent; }
+
+		// Generational Entity Handle (Use-After-Free / ABA guard C++23)
+		[[nodiscard]] Client::Actor::EntityHandle GetGenerationalHandle() const noexcept { return m_generationalHandle; }
+		void SetGenerationalHandle(Client::Actor::EntityHandle handle) noexcept { m_generationalHandle = handle; }
+
+	private:
+		Client::Actor::EntityHandle m_generationalHandle;
 
 
 	protected:
