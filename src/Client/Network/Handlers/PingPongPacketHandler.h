@@ -1,7 +1,8 @@
-#pragma once
+﻿#pragma once
 
 #include <span>
 #include <cstdint>
+#include <cstring>
 #include "EterBase/Result.h"
 #include "EterBase/EventBus.h"
 
@@ -29,7 +30,14 @@ public:
      * @param payload Dane pakietu PING.
      * @return Sukces lub blad walidacji bufora.
      */
-    [[nodiscard]] static EterBase::PacketResult<void> HandlePingPacket(std::span<const uint8_t> payload);
+    [[nodiscard]] static inline EterBase::PacketResult<void> HandlePingPacket(std::span<const uint8_t> payload) {
+        uint32_t serverTime = 0;
+        if (payload.size() >= sizeof(uint32_t)) {
+            std::memcpy(&serverTime, payload.data(), sizeof(uint32_t));
+        }
+        EterBase::EventBus::GetInstance().Publish(PingReceivedEvent(serverTime));
+        return {};
+    }
 };
 
 } // namespace Client::Network::Handlers
