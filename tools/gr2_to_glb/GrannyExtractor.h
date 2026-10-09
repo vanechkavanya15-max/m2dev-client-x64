@@ -65,6 +65,7 @@ struct ExtractedMaterial {
     std::string name;
     std::string diffuseTexture;
     std::string opacityTexture;
+    bool doubleSided = false;
 };
 
 #include <filesystem>

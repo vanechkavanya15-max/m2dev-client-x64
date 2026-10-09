@@ -33,6 +33,7 @@ enum
 static std::vector<CGraphicVertexBuffer*> gs_vbs[SHARED_VB_NUM];
 
 static CGraphicVertexBuffer gs_emptyVB;
+static LPDIRECT3DVERTEXDECLARATION9 s_pGltfVertexDecl = NULL;
 
 #include <time.h>
 
@@ -458,6 +459,12 @@ void CGrannyLODController::CreateDeviceObjects()
 
 void CGrannyLODController::DestroyDeviceObjects()
 {
+	if (s_pGltfVertexDecl)
+	{
+		s_pGltfVertexDecl->Release();
+		s_pGltfVertexDecl = NULL;
+	}
+
 	std::for_each(m_que_pkModelInst.begin(),
 				  m_que_pkModelInst.end(),
 				  CGrannyModelInstance::FDestroyDeviceObjects());
@@ -1055,7 +1062,6 @@ void CGrannyLODController::RenderGltfModel()
 	if (modelData.indices.empty())
 		return;
 
-	static LPDIRECT3DVERTEXDECLARATION9 s_pGltfVertexDecl = NULL;
 	if (!s_pGltfVertexDecl && ms_lpd3dDevice)
 	{
 		D3DVERTEXELEMENT9 elements[] =
@@ -1080,6 +1086,21 @@ void CGrannyLODController::RenderGltfModel()
 	STATEMANAGER.SetRenderState(D3DRS_ALPHAREF, 0x80);
 	STATEMANAGER.SetRenderState(D3DRS_ALPHAFUNC, D3DCMP_GREATER);
 
+	// Okreslenie lokalnego katalogu dla tekstur z nazwy modelu
+	std::string localPath;
+	if (!pModel->GetName().empty())
+	{
+		const std::string& modelName = pModel->GetName();
+		size_t sepPos = modelName.find_last_of("\\/");
+		if (sepPos != std::string::npos)
+			localPath = modelName.substr(0, sepPos + 1);
+	}
+	if (localPath.empty())
+	{
+		extern const std::string& GetModelLocalPath();
+		localPath = GetModelLocalPath();
+	}
+
 	for (size_t s = 0; s < modelData.submeshes.size(); ++s)
 	{
 		const GltfSubmesh& submesh = modelData.submeshes[s];
@@ -1091,22 +1112,24 @@ void CGrannyLODController::RenderGltfModel()
 			continue;
 
 		bool isBlend = false;
+		bool isTwoSided = false;
 		LPDIRECT3DTEXTURE9 pD3DTexture = NULL;
 		if (submesh.materialIndex >= 0 && submesh.materialIndex < (int)modelData.materials.size())
 		{
 			const GltfMaterial& mat = modelData.materials[submesh.materialIndex];
+			if (mat.doubleSided)
+				isTwoSided = true;
+
 			if (!mat.opacityTexture.empty() || (!mat.name.empty() && !_strnicmp(mat.name.c_str(), "blend", 5)))
 				isBlend = true;
 
 			if (!mat.diffuseTexture.empty())
 			{
-				extern const std::string& GetModelLocalPath();
 				CResourceManager& resMgr = CResourceManager::Instance();
 				CResource* pResource = resMgr.GetResourcePointer(mat.diffuseTexture.c_str());
 
 				if (!pResource || pResource->IsEmpty())
 				{
-					const std::string& localPath = GetModelLocalPath();
 					if (!localPath.empty())
 					{
 						std::string localTex = localPath + mat.diffuseTexture;
@@ -1131,6 +1154,15 @@ void CGrannyLODController::RenderGltfModel()
 					}
 				}
 			}
+		}
+
+		if (isTwoSided)
+		{
+			STATEMANAGER.SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+		}
+		else
+		{
+			STATEMANAGER.SetRenderState(D3DRS_CULLMODE, D3DCULL_CW);
 		}
 
 		if (isBlend)
@@ -1161,4 +1193,11 @@ void CGrannyLODController::RenderGltfModel()
 			sizeof(GltfVertex)
 		);
 	}
+
+	// Przywrocenie domyslnych stanow D3D9 po zakonczeniu renderowania glTF
+	STATEMANAGER.SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+	STATEMANAGER.SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
+	STATEMANAGER.SetRenderState(D3DRS_CULLMODE, D3DCULL_CW);
+	STATEMANAGER.SetTexture(0, NULL);
+	STATEMANAGER.SetTexture(1, NULL);
 }

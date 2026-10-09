@@ -599,6 +599,86 @@ void TestRealBossAssetBridge()
 }
 
 // ------------------------------------------------------------------------------------------------
+// TEST 6: Odwrocona kolejnosc kosci w podpietym modelu (Non-topological joint ordering) i Double-Sided
+// ------------------------------------------------------------------------------------------------
+void TestReverseJointOrderAttachmentAndDoubleSided(CGrannyLODController& bodyController)
+{
+    std::cout << "[RUN] Test 6: Wielokosciowy attachment z odwrocona kolejnoscia kosci i material doubleSided..." << std::endl;
+
+    // Przygotowanie modelu luku z 2 kosciami:
+    // Kosc 0: Bow_Tip (dziecko kosci Bow_Handle o indeksie 1!) -> parentIndex = 1
+    // Kosc 1: Bow_Handle (root attachmentu, parentIndex = -1)
+    GltfModelData bowData;
+    bowData.name = "d:/ymir work/weapon/warrior_bow.glb";
+
+    GltfSubmesh bowMesh;
+    bowMesh.name = "BowMesh";
+    bowMesh.materialIndex = 0;
+    bowMesh.vertexOffset = 0;
+    bowMesh.vertexCount = 2;
+    bowMesh.indexOffset = 0;
+    bowMesh.indexCount = 2;
+    bowData.submeshes.push_back(bowMesh);
+
+    GltfMaterial bowMat;
+    bowMat.name = "BowMaterial";
+    bowMat.doubleSided = true;
+    bowData.materials.push_back(bowMat);
+
+    // Kosc 0: Bow_Tip (dziecko)
+    GltfJoint jTip;
+    jTip.name = "Bow_Tip";
+    jTip.parentIndex = 1; // rodzic to kosc 1 (indeks wyzszy niz dziecko!)
+    jTip.localTranslation = { 0.0f, 5.0f, 0.0f };
+    jTip.inverseBindMatrix = MakeTranslationFloat4x4(0.0f, -5.0f, 0.0f);
+    bowData.skin.joints.push_back(jTip);
+
+    // Kosc 1: Bow_Handle (rodzic)
+    GltfJoint jHandle;
+    jHandle.name = "Bow_Handle";
+    jHandle.parentIndex = -1;
+    jHandle.localTranslation = { 0.0f, 0.0f, 0.0f };
+    jHandle.inverseBindMatrix = MakeIdentityFloat4x4();
+    bowData.skin.joints.push_back(jHandle);
+
+    CGraphicThing* pBowThing = new CGraphicThing(bowData.name.c_str());
+    pBowThing->AddReferenceOnly();
+    bool created = pBowThing->CreateFromGltfModelData(bowData);
+    assert(created);
+
+    // Sprawdzenie flagi doubleSided i nazwy modelu
+    assert(pBowThing->GetGltfModelPointer()->GetModelData().materials[0].doubleSided == true);
+    assert(pBowThing->GetGltfModelPointer()->GetName() == "d:/ymir work/weapon/warrior_bow.glb");
+
+    CGrannyLODController bowController;
+    bowController.AddModel(pBowThing, 0);
+
+    // Podpiecie luku do reki wojownika
+    bodyController.AttachModelInstance(&bowController, "Bip01 R Hand");
+    bowController.UpdateTime(0.0f);
+
+    const Matrix4x4* pHandMat = bodyController.GetGltfModelInstance()->GetBoneMatrixPointer("Bip01 R Hand");
+    assert(pHandMat != nullptr);
+
+    // Kosc 1 (Handle) powinna miec dokladnie macierz dloni
+    const Matrix4x4* pHandleWorld = bowController.GetGltfModelInstance()->GetBoneMatrixPointer(1);
+    assert(pHandleWorld != nullptr);
+    assert(ApproxEqual(pHandleWorld->m[3][0], pHandMat->m[3][0]));
+    assert(ApproxEqual(pHandleWorld->m[3][1], pHandMat->m[3][1]));
+    assert(ApproxEqual(pHandleWorld->m[3][2], pHandMat->m[3][2]));
+
+    // Kosc 0 (Tip) powinna miec macierz dloni przesunieta o T(0, 5, 0)
+    const Matrix4x4* pTipWorld = bowController.GetGltfModelInstance()->GetBoneMatrixPointer(0);
+    assert(pTipWorld != nullptr);
+    assert(ApproxEqual(pTipWorld->m[3][1], pHandMat->m[3][1] + 5.0f));
+
+    bodyController.DetachModelInstance(&bowController);
+    pBowThing->Release();
+
+    std::cout << "[PASS] Test 6: Poprawnie zpropagowano transformacje dla odwroconej hierarchii kosci oraz potwierdzono doubleSided." << std::endl;
+}
+
+// ------------------------------------------------------------------------------------------------
 // Glowny punkt wejscia testu integracyjnego
 // ------------------------------------------------------------------------------------------------
 int main()
@@ -632,6 +712,9 @@ int main()
 
     // Krok 5: Weryfikacja rzeczywistego bossa z gry
     TestRealBossAssetBridge();
+
+    // Krok 6: Odwrocona hierarchia kosci attachmentu i material doubleSided
+    TestReverseJointOrderAttachmentAndDoubleSided(bodyController);
 
     // Czyszczenie zasobow
     if (pBodyThing)

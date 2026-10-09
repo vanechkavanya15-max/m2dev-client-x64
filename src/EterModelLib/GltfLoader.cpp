@@ -181,6 +181,7 @@ bool GltfLoader::ProcessData(cgltf_data* data, GltfModelData& outModelData)
         const cgltf_material& mat = data->materials[i];
         GltfMaterial m;
         m.name = mat.name ? mat.name : "Material_" + std::to_string(i);
+        m.doubleSided = mat.double_sided ? true : false;
 
         std::string matExtras = GetExtrasJsonString(data, mat.extras);
         if (!matExtras.empty())

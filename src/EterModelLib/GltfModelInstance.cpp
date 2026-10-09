@@ -490,20 +490,22 @@ void CGltfModelInstance::UpdateTransforms(float time)
     const Matrix4x4* pAttachMat = GetParentBoneMatrix();
     if (pAttachMat)
     {
+        std::vector<uint8_t> computed(boneCount, 0);
+        auto computeAttachedNode = [&](auto& self, size_t i) -> void {
+            if (computed[i]) return;
+            int p = parentIndices[i];
+            if (p >= 0 && static_cast<size_t>(p) < boneCount && static_cast<size_t>(p) != i) {
+                self(self, static_cast<size_t>(p));
+                m_worldTransforms[i] = m_localTransforms[i] * m_worldTransforms[p];
+            } else {
+                m_worldTransforms[i] = m_localTransforms[i] * (*pAttachMat);
+            }
+            computed[i] = 1;
+        };
+
         for (size_t j = 0; j < boneCount; ++j)
         {
-            if (parentIndices[j] < 0)
-            {
-                m_worldTransforms[j] = m_worldTransforms[j] * (*pAttachMat);
-            }
-        }
-        for (size_t j = 0; j < boneCount; ++j)
-        {
-            int p = parentIndices[j];
-            if (p >= 0 && p < static_cast<int>(j))
-            {
-                m_worldTransforms[j] = m_localTransforms[j] * m_worldTransforms[p];
-            }
+            computeAttachedNode(computeAttachedNode, j);
         }
     }
 

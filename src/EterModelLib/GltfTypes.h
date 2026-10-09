@@ -121,6 +121,7 @@ struct GltfMaterial
     std::string name;
     std::string diffuseTexture;
     std::string opacityTexture;
+    bool doubleSided = false;
 };
 
 struct GltfModelData

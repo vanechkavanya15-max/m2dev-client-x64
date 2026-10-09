@@ -147,6 +147,7 @@ bool GlbWriter::Write(const std::filesystem::path& outputPath, const GrannyExtra
         materials[i].pbr_metallic_roughness.base_color_factor[1] = 1.0f;
         materials[i].pbr_metallic_roughness.base_color_factor[2] = 1.0f;
         materials[i].pbr_metallic_roughness.base_color_factor[3] = 1.0f;
+        materials[i].double_sided = extractedMaterials[i].doubleSided ? 1 : 0;
 
         std::string matJson = BuildMaterialExtrasJson(extractedMaterials[i]);
         if (!matJson.empty()) {

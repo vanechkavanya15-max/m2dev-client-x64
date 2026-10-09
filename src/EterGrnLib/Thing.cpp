@@ -335,7 +335,7 @@ bool CGraphicThing::OnLoad(int iSize, const void * c_pvBuf)
 	if (isGltf)
 	{
 		m_pGltfModel = new EterModelLib::CGltfModel();
-		if (!m_pGltfModel->LoadFromMemory(c_pvBuf, (size_t)iSize))
+		if (!m_pGltfModel->LoadFromMemory(c_pvBuf, (size_t)iSize, GetFileNameString()))
 		{
 			delete m_pGltfModel;
 			m_pGltfModel = NULL;

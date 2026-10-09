@@ -144,6 +144,18 @@ void GrannyExtractor::ExtractMaterials() {
             }
         }
 
+        // Two-Sided rendering check
+        granny_int32 twoSided = 0;
+        granny_data_type_definition twoSidedFieldType[] = {
+            {GrannyInt32Member, "Two-sided"},
+            {GrannyEndMember},
+        };
+        granny_variant twoSideResult;
+        if (GrannyFindMatchingMember(mat->ExtendedData.Type, mat->ExtendedData.Object, "Two-sided", &twoSideResult) && twoSideResult.Type != nullptr) {
+            GrannyConvertSingleObject(twoSideResult.Type, twoSideResult.Object, twoSidedFieldType, &twoSided, NULL);
+        }
+        extMat.doubleSided = (twoSided == 1);
+
         m_materials.push_back(std::move(extMat));
     }
 }
