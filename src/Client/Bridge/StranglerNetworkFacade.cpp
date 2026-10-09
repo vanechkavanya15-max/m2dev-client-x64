@@ -53,4 +53,20 @@ void StranglerNetworkFacade::RegisterDefaultHandlers() {
     GetDispatcher().RegisterDefaultHandlers();
 }
 
+void StranglerNetworkFacade::RegisterPartyHandlers() {
+    GetDispatcher().RegisterDefaultHandlers();
+}
+
+void StranglerNetworkFacade::RegisterGuildHandlers() {
+    GetDispatcher().RegisterDefaultHandlers();
+}
+
+void StranglerNetworkFacade::RegisterQuestDialogHandlers() {
+    GetDispatcher().RegisterDefaultHandlers();
+}
+
+void StranglerNetworkFacade::RegisterRefineExchangeHandlers() {
+    GetDispatcher().RegisterDefaultHandlers();
+}
+
 } // namespace Client::Bridge

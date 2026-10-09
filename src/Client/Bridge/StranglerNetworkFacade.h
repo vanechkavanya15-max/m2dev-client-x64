@@ -50,6 +50,12 @@ public:
 
     void RegisterDefaultHandlers();
 
+    // Dedykowana rejestracja handlerow domenowych
+    void RegisterPartyHandlers();
+    void RegisterGuildHandlers();
+    void RegisterQuestDialogHandlers();
+    void RegisterRefineExchangeHandlers();
+
     [[nodiscard]] Client::Network::ModernPacketDispatcher& GetDispatcher() noexcept;
 
 private:

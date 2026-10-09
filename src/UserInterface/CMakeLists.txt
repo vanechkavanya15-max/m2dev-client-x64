@@ -1,4 +1,9 @@
-file(GLOB_RECURSE FILE_SOURCES "*.h" "*.c" "*.cpp")
+# Modular InstanceBase Architecture:
+# - InstanceBase.cpp (Core entity lifecycle, state loop)
+# - InstanceBaseAppearance.cpp (Armor, hair, weapons, parts, refine effects, sashes/wings)
+# - InstanceBaseMount.cpp (Mount/horse boarding, gallop, race sync)
+# - InstanceBaseTransform.cpp, InstanceBaseBattle.cpp, InstanceBaseMotion.cpp, etc.
+file(GLOB_RECURSE FILE_SOURCES CONFIGURE_DEPENDS "*.h" "*.c" "*.cpp")
 
 add_executable(UserInterface WIN32 ${FILE_SOURCES} ${CMAKE_SOURCE_DIR}/src/UserInterface/UserInterface.rc)
 set_target_properties(UserInterface PROPERTIES LINK_FLAGS "/level='requireAdministrator' /uiAccess='false' /LTCG"

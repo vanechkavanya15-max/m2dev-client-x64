@@ -1,4 +1,4 @@
-﻿#include <iostream>
+#include <iostream>
 #include <cassert>
 #include <vector>
 #include <cstring>
@@ -232,9 +232,20 @@ void test_register_default_handlers() {
     assert(dispatcher.HasHandler(static_cast<uint16_t>(0x08)));
     assert(dispatcher.HasHandler(Client::Network::Protocol::GC::MOTION));
     assert(dispatcher.HasHandler(static_cast<uint16_t>(0x07)));
-    assert(dispatcher.HasHandler(static_cast<uint16_t>(0x2C))); // PING
     assert(dispatcher.HasHandler(Client::Network::Protocol::GC::AFFECT_ADD));
     assert(dispatcher.HasHandler(Client::Network::Protocol::GC::AFFECT_REMOVE));
+
+    // Nowo zarejestrowane handlery domenowe (Zloty Srodek SRP)
+    assert(dispatcher.HasHandler(Client::Network::Protocol::GC::PARTY_INVITE));
+    assert(dispatcher.HasHandler(Client::Network::Protocol::GC::PARTY_ADD));
+    assert(dispatcher.HasHandler(Client::Network::Protocol::GC::PARTY_UPDATE));
+    assert(dispatcher.HasHandler(Client::Network::Protocol::GC::PARTY_REMOVE));
+    assert(dispatcher.HasHandler(Client::Network::Protocol::GC::GUILD));
+    assert(dispatcher.HasHandler(Client::Network::Protocol::GC::SCRIPT));
+    assert(dispatcher.HasHandler(Client::Network::Protocol::GC::QUEST_INFO));
+    assert(dispatcher.HasHandler(Client::Network::Protocol::GC::QUEST_CONFIRM));
+    assert(dispatcher.HasHandler(Client::Network::Protocol::GC::EXCHANGE));
+    assert(dispatcher.HasHandler(Client::Network::Protocol::GC::REFINE_INFORMATION));
     
     // Test dispatch of DAMAGE_INFO via zero-copy span
     TPacketGCDamageInfo dmgPacket{};

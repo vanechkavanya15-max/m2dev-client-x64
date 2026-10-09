@@ -650,14 +650,6 @@ BOOL CInstanceBase::CanCancelSkill()
 	return m_GraphicThingInstance.CanCancelSkill();
 }
 
-BOOL CInstanceBase::CanAttackHorseLevel()
-{
-	if (!IsMountingHorse())
-		return FALSE;
-
-	return m_kHorse.CanAttack();
-}
-
 bool CInstanceBase::IsAffect(UINT uAffect)
 {
 	return m_kAffectFlagContainer.IsSet(uAffect);

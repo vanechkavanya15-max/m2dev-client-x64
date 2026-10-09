@@ -1,4 +1,4 @@
-file(GLOB_RECURSE FILE_SOURCES "*.h" "*.c" "*.cpp")
+file(GLOB_RECURSE FILE_SOURCES CONFIGURE_DEPENDS "*.h" "*.c" "*.cpp")
 
 add_library(Client2026 STATIC ${FILE_SOURCES})
 

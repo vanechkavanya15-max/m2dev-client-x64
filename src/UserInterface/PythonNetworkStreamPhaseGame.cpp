@@ -41,6 +41,10 @@
 #include "PythonNetworkStreamPhaseGameRefine.h"
 #include "PythonNetworkStreamPhaseGameChat.h"
 #include "PythonNetworkStreamPhaseGameSync.h"
+#include "Client/Network/Handlers/PartyPacketDomainHandler.h"
+#include "Client/Network/Handlers/GuildPacketDomainHandler.h"
+#include "Client/Network/Handlers/QuestDialogDomainHandler.h"
+#include "Client/Network/Handlers/RefineExchangeDomainHandler.h"
 
 BOOL gs_bEmpireLanuageEnable = TRUE;
 
@@ -1129,6 +1133,8 @@ bool CPythonNetworkStream::RecvExchangePacket()
 	if (!Recv(sizeof(exchange_packet), &exchange_packet))
 		return false;
 
+	std::span<const uint8_t> span(reinterpret_cast<const uint8_t*>(&exchange_packet), sizeof(exchange_packet));
+	Client::Network::Handlers::RefineExchangeDomainHandler::HandleExchangePacket(span);
 	return PhaseGameExchangeBridge::HandleExchange(this, exchange_packet);
 }
 
@@ -1202,6 +1208,8 @@ bool CPythonNetworkStream::RecvQuestConfirmPacket()
 		return false;
 	}
 
+	std::span<const uint8_t> span(reinterpret_cast<const uint8_t*>(&kQuestConfirmPacket), sizeof(kQuestConfirmPacket));
+	Client::Network::Handlers::QuestDialogDomainHandler::HandleQuestConfirmPacket(span);
 	return PhaseGameQuestBridge::HandleQuestConfirm(this, kQuestConfirmPacket);
 }
 
@@ -1229,14 +1237,8 @@ bool CPythonNetworkStream::SendExchangeStartPacket(DWORD vid)
 	if (!__CanActMainInstance())
 		return true;
 
-	TPacketCGExchange	packet;
-
-	packet.header		= CG::EXCHANGE;
-	packet.length = sizeof(packet);
-	packet.subheader	= ExchangeSub::CG::START;
-	packet.arg1			= vid;
-
-	if (!Send(sizeof(packet), &packet))
+	auto buffer = Client::Network::Handlers::RefineExchangeDomainHandler::EncodeExchangeStart(vid);
+	if (!Send(buffer.size(), buffer.data()))
 	{
 		Tracef("send_trade_start_packet Error\n");
 		return false;
@@ -1251,14 +1253,8 @@ bool CPythonNetworkStream::SendExchangeElkAddPacket(DWORD elk)
 	if (!__CanActMainInstance())
 		return true;
 
-	TPacketCGExchange	packet;
-
-	packet.header		= CG::EXCHANGE;
-	packet.length = sizeof(packet);
-	packet.subheader	= ExchangeSub::CG::ELK_ADD;
-	packet.arg1			= elk;
-
-	if (!Send(sizeof(packet), &packet))
+	auto buffer = Client::Network::Handlers::RefineExchangeDomainHandler::EncodeExchangeElkAdd(elk);
+	if (!Send(buffer.size(), buffer.data()))
 	{
 		Tracef("send_trade_elk_add_packet Error\n");
 		return false;
@@ -1272,15 +1268,8 @@ bool CPythonNetworkStream::SendExchangeItemAddPacket(TItemPos ItemPos, BYTE byDi
 	if (!__CanActMainInstance())
 		return true;
 
-	TPacketCGExchange	packet;
-
-	packet.header		= CG::EXCHANGE;
-	packet.length = sizeof(packet);
-	packet.subheader	= ExchangeSub::CG::ITEM_ADD;
-	packet.Pos			= ItemPos;
-	packet.arg2			= byDisplayPos;
-
-	if (!Send(sizeof(packet), &packet))
+	auto buffer = Client::Network::Handlers::RefineExchangeDomainHandler::EncodeExchangeItemAdd(ItemPos, byDisplayPos);
+	if (!Send(buffer.size(), buffer.data()))
 	{
 		Tracef("send_trade_item_add_packet Error\n");
 		return false;
@@ -1293,38 +1282,15 @@ bool CPythonNetworkStream::SendExchangeItemDelPacket(BYTE pos)
 {
 	assert(!"Can't be called function - CPythonNetworkStream::SendExchangeItemDelPacket");
 	return true;
-
-	if (!__CanActMainInstance())
-		return true;
-
-	TPacketCGExchange	packet;
-
-	packet.header		= CG::EXCHANGE;
-	packet.length = sizeof(packet);
-	packet.subheader	= ExchangeSub::CG::ITEM_DEL;
-	packet.arg1			= pos;
-
-	if (!Send(sizeof(packet), &packet))
-	{
-		Tracef("send_trade_item_del_packet Error\n");
-		return false;
-	}
-
-	return true;
 }
 
 bool CPythonNetworkStream::SendExchangeAcceptPacket()
 {
 	if (!__CanActMainInstance())
 		return true;
-	
-	TPacketCGExchange	packet;
 
-	packet.header		= CG::EXCHANGE;
-	packet.length = sizeof(packet);
-	packet.subheader	= ExchangeSub::CG::ACCEPT;
-
-	if (!Send(sizeof(packet), &packet))
+	auto buffer = Client::Network::Handlers::RefineExchangeDomainHandler::EncodeExchangeAccept();
+	if (!Send(buffer.size(), buffer.data()))
 	{
 		Tracef("send_trade_accept_packet Error\n");
 		return false;
@@ -1338,13 +1304,8 @@ bool CPythonNetworkStream::SendExchangeExitPacket()
 	if (!__CanActMainInstance())
 		return true;
 
-	TPacketCGExchange	packet;
-
-	packet.header		= CG::EXCHANGE;
-	packet.length = sizeof(packet);
-	packet.subheader	= ExchangeSub::CG::CANCEL;
-
-	if (!Send(sizeof(packet), &packet))
+	auto buffer = Client::Network::Handlers::RefineExchangeDomainHandler::EncodeExchangeCancel();
+	if (!Send(buffer.size(), buffer.data()))
 	{
 		Tracef("send_trade_exit_packet Error\n");
 		return false;
@@ -1389,23 +1350,25 @@ bool CPythonNetworkStream::RecvScriptPacket()
 		return false;
 	}
 
-	ScriptPacket.length -= sizeof(TPacketGCScript);
-	
-	static std::string str;
-	str = "";
-	str.resize(ScriptPacket.length+1);
+	size_t scriptLen = ScriptPacket.length - sizeof(TPacketGCScript);
+	std::vector<uint8_t> payloadBuf(ScriptPacket.length);
+	std::memcpy(payloadBuf.data(), &ScriptPacket, sizeof(TPacketGCScript));
 
-	if (!Recv(ScriptPacket.length, &str[0]))
-		return false;
+	if (scriptLen > 0)
+	{
+		if (!Recv(static_cast<int>(scriptLen), payloadBuf.data() + sizeof(TPacketGCScript)))
+			return false;
+	}
 
-	str[str.size()-1] = '\0';
-	
+	Client::Network::Handlers::QuestDialogDomainHandler::HandleScriptPacket(payloadBuf);
+
+	std::string str(reinterpret_cast<const char*>(payloadBuf.data() + sizeof(TPacketGCScript)), scriptLen);
 	int iIndex = CPythonEventManager::Instance().RegisterEventSetFromString(str);
 
 	if (-1 != iIndex)
 	{
 		CPythonEventManager::Instance().SetVisibleLineCount(iIndex, 30);
-		CPythonNetworkStream::Instance().OnScriptEventStart(ScriptPacket.skin,iIndex);
+		CPythonNetworkStream::Instance().OnScriptEventStart(ScriptPacket.skin, iIndex);
 	}
 
 	return true;
@@ -1413,12 +1376,8 @@ bool CPythonNetworkStream::RecvScriptPacket()
 
 bool CPythonNetworkStream::SendScriptAnswerPacket(int iAnswer)
 {
-	TPacketCGScriptAnswer ScriptAnswer;
-
-	ScriptAnswer.header = CG::SCRIPT_ANSWER;
-	ScriptAnswer.length = sizeof(ScriptAnswer);
-	ScriptAnswer.answer = (BYTE) iAnswer;
-	if (!Send(sizeof(TPacketCGScriptAnswer), &ScriptAnswer))
+	auto buffer = Client::Network::Handlers::QuestDialogDomainHandler::EncodeScriptAnswer(iAnswer);
+	if (!Send(buffer.size(), buffer.data()))
 	{
 		Tracen("Send Script Answer Packet Error");
 		return false;
@@ -1429,12 +1388,8 @@ bool CPythonNetworkStream::SendScriptAnswerPacket(int iAnswer)
 
 bool CPythonNetworkStream::SendScriptButtonPacket(unsigned int iIndex)
 {
-	TPacketCGScriptButton ScriptButton;
-
-	ScriptButton.header = CG::SCRIPT_BUTTON;
-	ScriptButton.length = sizeof(ScriptButton);
-	ScriptButton.idx = iIndex;
-	if (!Send(sizeof(TPacketCGScriptButton), &ScriptButton))
+	auto buffer = Client::Network::Handlers::QuestDialogDomainHandler::EncodeScriptButton(iIndex);
+	if (!Send(buffer.size(), buffer.data()))
 	{
 		Tracen("Send Script Button Packet Error");
 		return false;
@@ -1445,20 +1400,13 @@ bool CPythonNetworkStream::SendScriptButtonPacket(unsigned int iIndex)
 
 bool CPythonNetworkStream::SendAnswerMakeGuildPacket(const char * c_szName)
 {
-	TPacketCGAnswerMakeGuild Packet;
-
-	Packet.header = CG::ANSWER_MAKE_GUILD;
-	Packet.length = sizeof(Packet);
-	strncpy(Packet.guild_name, c_szName, GUILD_NAME_MAX_LEN);
-	Packet.guild_name[GUILD_NAME_MAX_LEN] = '\0';
-
-	if (!Send(sizeof(Packet), &Packet))
+	auto buffer = Client::Network::Handlers::GuildPacketDomainHandler::EncodeAnswerMakeGuild(c_szName);
+	if (!Send(buffer.size(), buffer.data()))
 	{
 		Tracen("SendAnswerMakeGuild Packet Error");
 		return false;
 	}
 
-// 	Tracef(" SendAnswerMakeGuildPacket : %s", c_szName);
 	return true;
 }
 
@@ -1466,13 +1414,8 @@ bool CPythonNetworkStream::SendAnswerMakeGuildPacket(const char * c_szName)
 
 bool CPythonNetworkStream::SendQuestConfirmPacket(BYTE byAnswer, DWORD dwPID)
 {
-	TPacketCGQuestConfirm kPacket;
-	kPacket.header = CG::QUEST_CONFIRM;
-	kPacket.length = sizeof(kPacket);
-	kPacket.answer = byAnswer;
-	kPacket.requestPID = dwPID;
-
-	if (!Send(sizeof(kPacket), &kPacket))
+	auto buffer = Client::Network::Handlers::QuestDialogDomainHandler::EncodeQuestConfirm(byAnswer, dwPID);
+	if (!Send(buffer.size(), buffer.data()))
 	{
 		Tracen("SendQuestConfirmPacket Error");
 		return false;
@@ -1484,11 +1427,8 @@ bool CPythonNetworkStream::SendQuestConfirmPacket(BYTE byAnswer, DWORD dwPID)
 
 bool CPythonNetworkStream::SendQuestCancelPacket()
 {
-	TPacketCGQuestCancel Packet;
-	Packet.header = CG::QUEST_CANCEL;
-	Packet.length = sizeof(Packet);
-
-	if (!Send(sizeof(Packet), &Packet))
+	auto buffer = Client::Network::Handlers::QuestDialogDomainHandler::EncodeQuestCancel();
+	if (!Send(buffer.size(), buffer.data()))
 	{
 		Tracen("SendQuestCancelPacket Error");
 		return false;
@@ -1871,12 +1811,8 @@ bool CPythonNetworkStream::RecvMessenger()
 
 bool CPythonNetworkStream::SendPartyInvitePacket(DWORD dwVID)
 {
-	TPacketCGPartyInvite kPartyInvitePacket;
-	kPartyInvitePacket.header = CG::PARTY_INVITE;
-	kPartyInvitePacket.length = sizeof(kPartyInvitePacket);
-	kPartyInvitePacket.vid = dwVID;
-
-	if (!Send(sizeof(kPartyInvitePacket), &kPartyInvitePacket))
+	auto buffer = Client::Network::Handlers::PartyPacketDomainHandler::EncodePartyInvite(dwVID);
+	if (!Send(buffer.size(), buffer.data()))
 	{
 		Tracenf("CPythonNetworkStream::SendPartyInvitePacket [%ud] - PACKET SEND ERROR", dwVID);
 		return false;
@@ -1888,13 +1824,8 @@ bool CPythonNetworkStream::SendPartyInvitePacket(DWORD dwVID)
 
 bool CPythonNetworkStream::SendPartyInviteAnswerPacket(DWORD dwLeaderVID, BYTE byAnswer)
 {
-	TPacketCGPartyInviteAnswer kPartyInviteAnswerPacket;
-	kPartyInviteAnswerPacket.header = CG::PARTY_INVITE_ANSWER;
-	kPartyInviteAnswerPacket.length = sizeof(kPartyInviteAnswerPacket);
-	kPartyInviteAnswerPacket.leader_pid = dwLeaderVID;
-	kPartyInviteAnswerPacket.accept = byAnswer;
-
-	if (!Send(sizeof(kPartyInviteAnswerPacket), &kPartyInviteAnswerPacket))
+	auto buffer = Client::Network::Handlers::PartyPacketDomainHandler::EncodePartyInviteAnswer(dwLeaderVID, byAnswer);
+	if (!Send(buffer.size(), buffer.data()))
 	{
 		Tracenf("CPythonNetworkStream::SendPartyInviteAnswerPacket [%ud %ud] - PACKET SEND ERROR", dwLeaderVID, byAnswer);
 		return false;
@@ -1906,12 +1837,8 @@ bool CPythonNetworkStream::SendPartyInviteAnswerPacket(DWORD dwLeaderVID, BYTE b
 
 bool CPythonNetworkStream::SendPartyRemovePacket(DWORD dwPID)
 {
-	TPacketCGPartyRemove kPartyInviteRemove;
-	kPartyInviteRemove.header = CG::PARTY_REMOVE;
-	kPartyInviteRemove.length = sizeof(kPartyInviteRemove);
-	kPartyInviteRemove.pid = dwPID;
-
-	if (!Send(sizeof(kPartyInviteRemove), &kPartyInviteRemove))
+	auto buffer = Client::Network::Handlers::PartyPacketDomainHandler::EncodePartyRemove(dwPID);
+	if (!Send(buffer.size(), buffer.data()))
 	{
 		Tracenf("CPythonNetworkStream::SendPartyRemovePacket [%ud] - PACKET SEND ERROR", dwPID);
 		return false;
@@ -1923,14 +1850,8 @@ bool CPythonNetworkStream::SendPartyRemovePacket(DWORD dwPID)
 
 bool CPythonNetworkStream::SendPartySetStatePacket(DWORD dwVID, BYTE byState, BYTE byFlag)
 {
-	TPacketCGPartySetState kPartySetState;
-	kPartySetState.header = CG::PARTY_SET_STATE;
-	kPartySetState.length = sizeof(kPartySetState);
-	kPartySetState.dwVID = dwVID;
-	kPartySetState.byState = byState;
-	kPartySetState.byFlag = byFlag;
-
-	if (!Send(sizeof(kPartySetState), &kPartySetState))
+	auto buffer = Client::Network::Handlers::PartyPacketDomainHandler::EncodePartySetState(dwVID, byState, byFlag);
+	if (!Send(buffer.size(), buffer.data()))
 	{
 		Tracenf("CPythonNetworkStream::SendPartySetStatePacket(%ud, %ud) - PACKET SEND ERROR", dwVID, byState);
 		return false;
@@ -1942,13 +1863,8 @@ bool CPythonNetworkStream::SendPartySetStatePacket(DWORD dwVID, BYTE byState, BY
 
 bool CPythonNetworkStream::SendPartyUseSkillPacket(BYTE bySkillIndex, DWORD dwVID)
 {
-	TPacketCGPartyUseSkill kPartyUseSkill;
-	kPartyUseSkill.header = CG::PARTY_USE_SKILL;
-	kPartyUseSkill.length = sizeof(kPartyUseSkill);
-	kPartyUseSkill.bySkillIndex = bySkillIndex;
-	kPartyUseSkill.dwTargetVID = dwVID;
-
-	if (!Send(sizeof(kPartyUseSkill), &kPartyUseSkill))
+	auto buffer = Client::Network::Handlers::PartyPacketDomainHandler::EncodePartyUseSkill(bySkillIndex, dwVID);
+	if (!Send(buffer.size(), buffer.data()))
 	{
 		Tracenf("CPythonNetworkStream::SendPartyUseSkillPacket(%ud, %ud) - PACKET SEND ERROR", bySkillIndex, dwVID);
 		return false;
@@ -1960,12 +1876,8 @@ bool CPythonNetworkStream::SendPartyUseSkillPacket(BYTE bySkillIndex, DWORD dwVI
 
 bool CPythonNetworkStream::SendPartyParameterPacket(BYTE byDistributeMode)
 {
-	TPacketCGPartyParameter kPartyParameter;
-	kPartyParameter.header = CG::PARTY_PARAMETER;
-	kPartyParameter.length = sizeof(kPartyParameter);
-	kPartyParameter.bDistributeMode = byDistributeMode;
-
-	if (!Send(sizeof(kPartyParameter), &kPartyParameter))
+	auto buffer = Client::Network::Handlers::PartyPacketDomainHandler::EncodePartyParameter(byDistributeMode);
+	if (!Send(buffer.size(), buffer.data()))
 	{
 		Tracenf("CPythonNetworkStream::SendPartyParameterPacket(%d) - PACKET SEND ERROR", byDistributeMode);
 		return false;
@@ -1981,6 +1893,8 @@ bool CPythonNetworkStream::RecvPartyInvite()
 	if (!Recv(sizeof(kPartyInvitePacket), &kPartyInvitePacket))
 		return false;
 
+	std::span<const uint8_t> span(reinterpret_cast<const uint8_t*>(&kPartyInvitePacket), sizeof(kPartyInvitePacket));
+	Client::Network::Handlers::PartyPacketDomainHandler::HandlePartyInvite(span);
 	return PhaseGamePartyBridge::HandlePartyInvite(this, kPartyInvitePacket);
 }
 
@@ -1990,6 +1904,8 @@ bool CPythonNetworkStream::RecvPartyAdd()
 	if (!Recv(sizeof(kPartyAddPacket), &kPartyAddPacket))
 		return false;
 
+	std::span<const uint8_t> span(reinterpret_cast<const uint8_t*>(&kPartyAddPacket), sizeof(kPartyAddPacket));
+	Client::Network::Handlers::PartyPacketDomainHandler::HandlePartyAdd(span);
 	return PhaseGamePartyBridge::HandlePartyAdd(this, kPartyAddPacket);
 }
 
@@ -1999,6 +1915,8 @@ bool CPythonNetworkStream::RecvPartyUpdate()
 	if (!Recv(sizeof(kPartyUpdatePacket), &kPartyUpdatePacket))
 		return false;
 
+	std::span<const uint8_t> span(reinterpret_cast<const uint8_t*>(&kPartyUpdatePacket), sizeof(kPartyUpdatePacket));
+	Client::Network::Handlers::PartyPacketDomainHandler::HandlePartyUpdate(span);
 	return PhaseGamePartyBridge::HandlePartyUpdate(this, kPartyUpdatePacket);
 }
 
@@ -2008,6 +1926,8 @@ bool CPythonNetworkStream::RecvPartyRemove()
 	if (!Recv(sizeof(kPartyRemovePacket), &kPartyRemovePacket))
 		return false;
 
+	std::span<const uint8_t> span(reinterpret_cast<const uint8_t*>(&kPartyRemovePacket), sizeof(kPartyRemovePacket));
+	Client::Network::Handlers::PartyPacketDomainHandler::HandlePartyRemove(span);
 	return PhaseGamePartyBridge::HandlePartyRemove(this, kPartyRemovePacket);
 }
 
@@ -2016,6 +1936,9 @@ bool CPythonNetworkStream::RecvPartyLink()
 	TPacketGCPartyLink kPartyLinkPacket;
 	if (!Recv(sizeof(kPartyLinkPacket), &kPartyLinkPacket))
 		return false;
+
+	std::span<const uint8_t> span(reinterpret_cast<const uint8_t*>(&kPartyLinkPacket), sizeof(kPartyLinkPacket));
+	Client::Network::Handlers::PartyPacketDomainHandler::HandlePartyLink(span);
 
 	CPythonPlayer::Instance().LinkPartyMember(kPartyLinkPacket.pid, kPartyLinkPacket.vid);
 	PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "LinkPartyMember", Py_BuildValue("(ii)", kPartyLinkPacket.pid, kPartyLinkPacket.vid));
@@ -2029,6 +1952,9 @@ bool CPythonNetworkStream::RecvPartyUnlink()
 	TPacketGCPartyUnlink kPartyUnlinkPacket;
 	if (!Recv(sizeof(kPartyUnlinkPacket), &kPartyUnlinkPacket))
 		return false;
+
+	std::span<const uint8_t> span(reinterpret_cast<const uint8_t*>(&kPartyUnlinkPacket), sizeof(kPartyUnlinkPacket));
+	Client::Network::Handlers::PartyPacketDomainHandler::HandlePartyUnlink(span);
 
 	CPythonPlayer::Instance().UnlinkPartyMember(kPartyUnlinkPacket.pid);
 
@@ -2052,6 +1978,8 @@ bool CPythonNetworkStream::RecvPartyParameter()
 	if (!Recv(sizeof(kPartyParameterPacket), &kPartyParameterPacket))
 		return false;
 
+	std::span<const uint8_t> span(reinterpret_cast<const uint8_t*>(&kPartyParameterPacket), sizeof(kPartyParameterPacket));
+	Client::Network::Handlers::PartyPacketDomainHandler::HandlePartyParameter(span);
 	return PhaseGamePartyBridge::HandlePartyParameter(this, kPartyParameterPacket);
 }
 
@@ -2064,13 +1992,8 @@ bool CPythonNetworkStream::RecvPartyParameter()
 
 bool CPythonNetworkStream::SendGuildAddMemberPacket(DWORD dwVID)
 {
-	TPacketCGGuild GuildPacket;
-	GuildPacket.header = CG::GUILD;
-	GuildPacket.length = sizeof(GuildPacket) + sizeof(dwVID);
-	GuildPacket.bySubHeader = GuildSub::CG::ADD_MEMBER;
-	if (!Send(sizeof(GuildPacket), &GuildPacket))
-		return false;
-	if (!Send(sizeof(dwVID), &dwVID))
+	auto buffer = Client::Network::Handlers::GuildPacketDomainHandler::EncodeAddMember(dwVID);
+	if (!Send(buffer.size(), buffer.data()))
 		return false;
 
 	Tracef(" SendGuildAddMemberPacket\n", dwVID);
@@ -2079,13 +2002,8 @@ bool CPythonNetworkStream::SendGuildAddMemberPacket(DWORD dwVID)
 
 bool CPythonNetworkStream::SendGuildRemoveMemberPacket(DWORD dwPID)
 {
-	TPacketCGGuild GuildPacket;
-	GuildPacket.header = CG::GUILD;
-	GuildPacket.length = sizeof(GuildPacket) + sizeof(dwPID);
-	GuildPacket.bySubHeader = GuildSub::CG::REMOVE_MEMBER;
-	if (!Send(sizeof(GuildPacket), &GuildPacket))
-		return false;
-	if (!Send(sizeof(dwPID), &dwPID))
+	auto buffer = Client::Network::Handlers::GuildPacketDomainHandler::EncodeRemoveMember(dwPID);
+	if (!Send(buffer.size(), buffer.data()))
 		return false;
 
 	Tracef(" SendGuildRemoveMemberPacket %d\n", dwPID);
@@ -2094,20 +2012,8 @@ bool CPythonNetworkStream::SendGuildRemoveMemberPacket(DWORD dwPID)
 
 bool CPythonNetworkStream::SendGuildChangeGradeNamePacket(BYTE byGradeNumber, const char * c_szName)
 {
-	TPacketCGGuild GuildPacket;
-	GuildPacket.header = CG::GUILD;
-	GuildPacket.length = sizeof(GuildPacket) + sizeof(BYTE) + (GUILD_GRADE_NAME_MAX_LEN + 1);
-	GuildPacket.bySubHeader = GuildSub::CG::CHANGE_GRADE_NAME;
-	if (!Send(sizeof(GuildPacket), &GuildPacket))
-		return false;
-	if (!Send(sizeof(byGradeNumber), &byGradeNumber))
-		return false;
-
-	char szName[GUILD_GRADE_NAME_MAX_LEN+1];
-	strncpy(szName, c_szName, GUILD_GRADE_NAME_MAX_LEN);
-	szName[GUILD_GRADE_NAME_MAX_LEN] = '\0';
-
-	if (!Send(sizeof(szName), &szName))
+	auto buffer = Client::Network::Handlers::GuildPacketDomainHandler::EncodeChangeGradeName(byGradeNumber, c_szName);
+	if (!Send(buffer.size(), buffer.data()))
 		return false;
 
 	Tracef(" SendGuildChangeGradeNamePacket %d, %s\n", byGradeNumber, c_szName);
@@ -2116,15 +2022,8 @@ bool CPythonNetworkStream::SendGuildChangeGradeNamePacket(BYTE byGradeNumber, co
 
 bool CPythonNetworkStream::SendGuildChangeGradeAuthorityPacket(BYTE byGradeNumber, BYTE byAuthority)
 {
-	TPacketCGGuild GuildPacket;
-	GuildPacket.header = CG::GUILD;
-	GuildPacket.length = sizeof(GuildPacket) + sizeof(BYTE) + sizeof(BYTE);
-	GuildPacket.bySubHeader = GuildSub::CG::CHANGE_GRADE_AUTHORITY;
-	if (!Send(sizeof(GuildPacket), &GuildPacket))
-		return false;
-	if (!Send(sizeof(byGradeNumber), &byGradeNumber))
-		return false;
-	if (!Send(sizeof(byAuthority), &byAuthority))
+	auto buffer = Client::Network::Handlers::GuildPacketDomainHandler::EncodeChangeGradeAuthority(byGradeNumber, byAuthority);
+	if (!Send(buffer.size(), buffer.data()))
 		return false;
 
 	Tracef(" SendGuildChangeGradeAuthorityPacket %d, %d\n", byGradeNumber, byAuthority);
@@ -2133,13 +2032,8 @@ bool CPythonNetworkStream::SendGuildChangeGradeAuthorityPacket(BYTE byGradeNumbe
 
 bool CPythonNetworkStream::SendGuildOfferPacket(DWORD dwExperience)
 {
-	TPacketCGGuild GuildPacket;
-	GuildPacket.header = CG::GUILD;
-	GuildPacket.length = sizeof(GuildPacket) + sizeof(dwExperience);
-	GuildPacket.bySubHeader = GuildSub::CG::OFFER;
-	if (!Send(sizeof(GuildPacket), &GuildPacket))
-		return false;
-	if (!Send(sizeof(dwExperience), &dwExperience))
+	auto buffer = Client::Network::Handlers::GuildPacketDomainHandler::EncodeOfferExp(dwExperience);
+	if (!Send(buffer.size(), buffer.data()))
 		return false;
 
 	Tracef(" SendGuildOfferPacket %d\n", dwExperience);
@@ -2148,33 +2042,18 @@ bool CPythonNetworkStream::SendGuildOfferPacket(DWORD dwExperience)
 
 bool CPythonNetworkStream::SendGuildPostCommentPacket(const char * c_szMessage)
 {
-	TPacketCGGuild GuildPacket;
-	BYTE bySize = BYTE(strlen(c_szMessage)) + 1;
-	GuildPacket.header = CG::GUILD;
-	GuildPacket.length = sizeof(GuildPacket) + sizeof(BYTE) + bySize;
-	GuildPacket.bySubHeader = GuildSub::CG::POST_COMMENT;
-	if (!Send(sizeof(GuildPacket), &GuildPacket))
+	auto buffer = Client::Network::Handlers::GuildPacketDomainHandler::EncodePostComment(c_szMessage);
+	if (!Send(buffer.size(), buffer.data()))
 		return false;
 
-	if (!Send(sizeof(bySize), &bySize))
-		return false;
-	if (!Send(bySize, c_szMessage))
-		return false;
-
-	Tracef(" SendGuildPostCommentPacket %d, %s\n", bySize, c_szMessage);
+	Tracef(" SendGuildPostCommentPacket %s\n", c_szMessage);
 	return true;
 }
 
 bool CPythonNetworkStream::SendGuildDeleteCommentPacket(DWORD dwIndex)
 {
-	TPacketCGGuild GuildPacket;
-	GuildPacket.header = CG::GUILD;
-	GuildPacket.length = sizeof(GuildPacket) + sizeof(dwIndex);
-	GuildPacket.bySubHeader = GuildSub::CG::DELETE_COMMENT;
-	if (!Send(sizeof(GuildPacket), &GuildPacket))
-		return false;
-
-	if (!Send(sizeof(dwIndex), &dwIndex))
+	auto buffer = Client::Network::Handlers::GuildPacketDomainHandler::EncodeDeleteComment(dwIndex);
+	if (!Send(buffer.size(), buffer.data()))
 		return false;
 
 	Tracef(" SendGuildDeleteCommentPacket %d\n", dwIndex);
@@ -2189,11 +2068,8 @@ bool CPythonNetworkStream::SendGuildRefreshCommentsPacket(DWORD dwHighestIndex)
 		return true;
 	s_LastTime = timeGetTime();
 
-	TPacketCGGuild GuildPacket;
-	GuildPacket.header = CG::GUILD;
-	GuildPacket.length = sizeof(GuildPacket);
-	GuildPacket.bySubHeader = GuildSub::CG::REFRESH_COMMENT;
-	if (!Send(sizeof(GuildPacket), &GuildPacket))
+	auto buffer = Client::Network::Handlers::GuildPacketDomainHandler::EncodeRefreshComments();
+	if (!Send(buffer.size(), buffer.data()))
 		return false;
 
 	Tracef(" SendGuildRefreshCommentPacket %d\n", dwHighestIndex);
@@ -2202,16 +2078,8 @@ bool CPythonNetworkStream::SendGuildRefreshCommentsPacket(DWORD dwHighestIndex)
 
 bool CPythonNetworkStream::SendGuildChangeMemberGradePacket(DWORD dwPID, BYTE byGrade)
 {
-	TPacketCGGuild GuildPacket;
-	GuildPacket.header = CG::GUILD;
-	GuildPacket.length = sizeof(GuildPacket) + sizeof(dwPID) + sizeof(byGrade);
-	GuildPacket.bySubHeader = GuildSub::CG::CHANGE_MEMBER_GRADE;
-	if (!Send(sizeof(GuildPacket), &GuildPacket))
-		return false;
-
-	if (!Send(sizeof(dwPID), &dwPID))
-		return false;
-	if (!Send(sizeof(byGrade), &byGrade))
+	auto buffer = Client::Network::Handlers::GuildPacketDomainHandler::EncodeChangeMemberGrade(dwPID, byGrade);
+	if (!Send(buffer.size(), buffer.data()))
 		return false;
 
 	Tracef(" SendGuildChangeMemberGradePacket %d, %d\n", dwPID, byGrade);
@@ -2220,16 +2088,8 @@ bool CPythonNetworkStream::SendGuildChangeMemberGradePacket(DWORD dwPID, BYTE by
 
 bool CPythonNetworkStream::SendGuildUseSkillPacket(DWORD dwSkillID, DWORD dwTargetVID)
 {
-	TPacketCGGuild GuildPacket;
-	GuildPacket.header = CG::GUILD;
-	GuildPacket.length = sizeof(GuildPacket);
-	GuildPacket.bySubHeader = GuildSub::CG::USE_SKILL;
-	if (!Send(sizeof(GuildPacket), &GuildPacket))
-		return false;
-
-	if (!Send(sizeof(dwSkillID), &dwSkillID))
-		return false;
-	if (!Send(sizeof(dwTargetVID), &dwTargetVID))
+	auto buffer = Client::Network::Handlers::GuildPacketDomainHandler::EncodeUseSkill(dwSkillID, dwTargetVID);
+	if (!Send(buffer.size(), buffer.data()))
 		return false;
 
 	Tracef(" SendGuildUseSkillPacket %d, %d\n", dwSkillID, dwTargetVID);
@@ -2238,16 +2098,8 @@ bool CPythonNetworkStream::SendGuildUseSkillPacket(DWORD dwSkillID, DWORD dwTarg
 
 bool CPythonNetworkStream::SendGuildChangeMemberGeneralPacket(DWORD dwPID, BYTE byFlag)
 {
-	TPacketCGGuild GuildPacket;
-	GuildPacket.header = CG::GUILD;
-	GuildPacket.length = sizeof(GuildPacket) + sizeof(dwPID) + sizeof(byFlag);
-	GuildPacket.bySubHeader = GuildSub::CG::CHANGE_MEMBER_GENERAL;
-	if (!Send(sizeof(GuildPacket), &GuildPacket))
-		return false;
-
-	if (!Send(sizeof(dwPID), &dwPID))
-		return false;
-	if (!Send(sizeof(byFlag), &byFlag))
+	auto buffer = Client::Network::Handlers::GuildPacketDomainHandler::EncodeChangeMemberGeneral(dwPID, byFlag);
+	if (!Send(buffer.size(), buffer.data()))
 		return false;
 
 	Tracef(" SendGuildChangeMemberGeneralFlagPacket %d, %d\n", dwPID, byFlag);
@@ -2256,16 +2108,8 @@ bool CPythonNetworkStream::SendGuildChangeMemberGeneralPacket(DWORD dwPID, BYTE 
 
 bool CPythonNetworkStream::SendGuildInviteAnswerPacket(DWORD dwGuildID, BYTE byAnswer)
 {
-	TPacketCGGuild GuildPacket;
-	GuildPacket.header = CG::GUILD;
-	GuildPacket.length = sizeof(GuildPacket) + sizeof(dwGuildID) + sizeof(byAnswer);
-	GuildPacket.bySubHeader = GuildSub::CG::GUILD_INVITE_ANSWER;
-	if (!Send(sizeof(GuildPacket), &GuildPacket))
-		return false;
-
-	if (!Send(sizeof(dwGuildID), &dwGuildID))
-		return false;
-	if (!Send(sizeof(byAnswer), &byAnswer))
+	auto buffer = Client::Network::Handlers::GuildPacketDomainHandler::EncodeInviteAnswer(dwGuildID, byAnswer);
+	if (!Send(buffer.size(), buffer.data()))
 		return false;
 
 	Tracef(" SendGuildInviteAnswerPacket %d, %d\n", dwGuildID, byAnswer);
@@ -2290,13 +2134,8 @@ bool CPythonNetworkStream::SendGuildChargeGSPPacket(DWORD dwMoney)
 
 bool CPythonNetworkStream::SendGuildDepositMoneyPacket(DWORD dwMoney)
 {
-	TPacketCGGuild GuildPacket;
-	GuildPacket.header = CG::GUILD;
-	GuildPacket.length = sizeof(GuildPacket) + sizeof(dwMoney);
-	GuildPacket.bySubHeader = GuildSub::CG::DEPOSIT_MONEY;
-	if (!Send(sizeof(GuildPacket), &GuildPacket))
-		return false;
-	if (!Send(sizeof(dwMoney), &dwMoney))
+	auto buffer = Client::Network::Handlers::GuildPacketDomainHandler::EncodeDepositMoney(dwMoney);
+	if (!Send(buffer.size(), buffer.data()))
 		return false;
 
 	Tracef(" SendGuildDepositMoneyPacket %d\n", dwMoney);
@@ -2305,13 +2144,8 @@ bool CPythonNetworkStream::SendGuildDepositMoneyPacket(DWORD dwMoney)
 
 bool CPythonNetworkStream::SendGuildWithdrawMoneyPacket(DWORD dwMoney)
 {
-	TPacketCGGuild GuildPacket;
-	GuildPacket.header = CG::GUILD;
-	GuildPacket.length = sizeof(GuildPacket) + sizeof(dwMoney);
-	GuildPacket.bySubHeader = GuildSub::CG::WITHDRAW_MONEY;
-	if (!Send(sizeof(GuildPacket), &GuildPacket))
-		return false;
-	if (!Send(sizeof(dwMoney), &dwMoney))
+	auto buffer = Client::Network::Handlers::GuildPacketDomainHandler::EncodeWithdrawMoney(dwMoney);
+	if (!Send(buffer.size(), buffer.data()))
 		return false;
 
 	Tracef(" SendGuildWithdrawMoneyPacket %d\n", dwMoney);
@@ -2984,13 +2818,8 @@ void CPythonNetworkStream::__TEST_SetSkillGroupFake(int iIndex)
 
 bool CPythonNetworkStream::SendRefinePacket(BYTE byPos, BYTE byType)
 {
-	TPacketCGRefine kRefinePacket;
-	kRefinePacket.header = CG::REFINE;
-	kRefinePacket.length = sizeof(kRefinePacket);
-	kRefinePacket.pos = byPos;
-	kRefinePacket.type = byType;
-
-	if (!Send(sizeof(kRefinePacket), &kRefinePacket))
+	auto buffer = Client::Network::Handlers::RefineExchangeDomainHandler::EncodeRefine(byPos, byType);
+	if (!Send(buffer.size(), buffer.data()))
 		return false;
 
 	return true;
@@ -2998,12 +2827,8 @@ bool CPythonNetworkStream::SendRefinePacket(BYTE byPos, BYTE byType)
 
 bool CPythonNetworkStream::SendSelectItemPacket(DWORD dwItemPos)
 {
-	TPacketCGScriptSelectItem kScriptSelectItem;
-	kScriptSelectItem.header = CG::SCRIPT_SELECT_ITEM;
-	kScriptSelectItem.length = sizeof(kScriptSelectItem);
-	kScriptSelectItem.selection = dwItemPos;
-
-	if (!Send(sizeof(kScriptSelectItem), &kScriptSelectItem))
+	auto buffer = Client::Network::Handlers::QuestDialogDomainHandler::EncodeScriptSelectItem(dwItemPos);
+	if (!Send(buffer.size(), buffer.data()))
 		return false;
 
 	return true;
@@ -3015,6 +2840,8 @@ bool CPythonNetworkStream::RecvRefineInformationPacket()
 	if (!Recv(sizeof(kRefineInfoPacket), &kRefineInfoPacket))
 		return false;
 
+	std::span<const uint8_t> span(reinterpret_cast<const uint8_t*>(&kRefineInfoPacket), sizeof(kRefineInfoPacket));
+	Client::Network::Handlers::RefineExchangeDomainHandler::HandleRefineInformation(span);
 	return PhaseGameRefineBridge::HandleRefineInformation(this, kRefineInfoPacket);
 }
 
@@ -3024,6 +2851,8 @@ bool CPythonNetworkStream::RecvRefineInformationPacketNew()
 	if (!Recv(sizeof(kRefineInfoPacket), &kRefineInfoPacket))
 		return false;
 
+	std::span<const uint8_t> span(reinterpret_cast<const uint8_t*>(&kRefineInfoPacket), sizeof(kRefineInfoPacket));
+	Client::Network::Handlers::RefineExchangeDomainHandler::HandleRefineInformationNew(span);
 	return PhaseGameRefineBridge::HandleRefineInformationNew(this, kRefineInfoPacket);
 }
 
@@ -3268,12 +3097,8 @@ bool CPythonNetworkStream::RecvDigMotionPacket()
 // 용혼석 강화
 bool CPythonNetworkStream::SendDragonSoulRefinePacket(BYTE bRefineType, TItemPos* pos)
 {
-	TPacketCGDragonSoulRefine pk;
-	pk.header = CG::DRAGON_SOUL_REFINE;
-	pk.length = sizeof(pk);
-	pk.bSubType = bRefineType;
-	memcpy (pk.ItemGrid, pos, sizeof (TItemPos) * DS_REFINE_WINDOW_MAX_NUM);
-	if (!Send(sizeof (pk), &pk))
+	auto buffer = Client::Network::Handlers::RefineExchangeDomainHandler::EncodeDragonSoulRefine(bRefineType, pos, DS_REFINE_WINDOW_MAX_NUM);
+	if (!Send(buffer.size(), buffer.data()))
 	{
 		return false;
 	}

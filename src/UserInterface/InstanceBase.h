@@ -444,6 +444,10 @@ class CInstanceBase
 
 		void MountHorse(UINT eRace);
 		void DismountHorse();		
+		UINT GetHorseLevel();
+		void UpdateHorseMotion();
+		void ProcessHorseDust();
+		int GetHorseMotionMode(BYTE byWeaponSubType);		
 
 		// 스크립트용 테스트 함수. 나중에 없에자
 		void SCRIPT_SetAffect(UINT eAffect, bool isVisible); 
@@ -509,6 +513,10 @@ class CInstanceBase
 		bool					ChangeArmor(DWORD dwArmor);
 		void					ChangeWeapon(DWORD eWeapon);
 		void					ChangeHair(DWORD eHair);
+		void					SetSash(DWORD dwSash);
+		void					ChangeSash(DWORD dwSash);
+		void					SetWing(DWORD dwWing);
+		void					ChangeWing(DWORD dwWing);
 		void					ChangeGuild(DWORD dwGuildID);
 		DWORD					GetWeaponType();
 

@@ -1,4 +1,4 @@
-﻿#include "ModernPacketDispatcher.h"
+#include "ModernPacketDispatcher.h"
 #include "Protocol/ProtocolOpcodes.h"
 #include "Protocol/Protocol.h"
 #include "Handlers/CombatDamagePacketHandler.h"
@@ -11,6 +11,10 @@
 #include "Handlers/SkillMotionPacketHandler.h"
 #include "Handlers/PingPongPacketHandler.h"
 #include "Handlers/AffectStatePacketHandler.h"
+#include "Handlers/PartyPacketDomainHandler.h"
+#include "Handlers/GuildPacketDomainHandler.h"
+#include "Handlers/QuestDialogDomainHandler.h"
+#include "Handlers/RefineExchangeDomainHandler.h"
 
 namespace Client::Network {
 
@@ -174,6 +178,78 @@ void ModernPacketDispatcher::RegisterDefaultHandlers() {
     RegisterFunctionHandler(Protocol::GC::AFFECT_REMOVE, 8, false,
         [](std::span<const uint8_t> payload) {
             return Handlers::AffectStatePacketHandler::HandleAffectRemove(payload);
+        });
+
+    // Party Domain Handlers
+    RegisterFunctionHandler(Protocol::GC::PARTY_INVITE, sizeof(TPacketGCPartyInvite), false,
+        [](std::span<const uint8_t> payload) {
+            return Handlers::PartyPacketDomainHandler::HandlePartyInvite(payload);
+        });
+    RegisterFunctionHandler(Protocol::GC::PARTY_ADD, sizeof(TPacketGCPartyAdd), false,
+        [](std::span<const uint8_t> payload) {
+            return Handlers::PartyPacketDomainHandler::HandlePartyAdd(payload);
+        });
+    RegisterFunctionHandler(Protocol::GC::PARTY_UPDATE, sizeof(TPacketGCPartyUpdate), false,
+        [](std::span<const uint8_t> payload) {
+            return Handlers::PartyPacketDomainHandler::HandlePartyUpdate(payload);
+        });
+    RegisterFunctionHandler(Protocol::GC::PARTY_REMOVE, sizeof(TPacketGCPartyRemove), false,
+        [](std::span<const uint8_t> payload) {
+            return Handlers::PartyPacketDomainHandler::HandlePartyRemove(payload);
+        });
+    RegisterFunctionHandler(Protocol::GC::PARTY_LINK, sizeof(TPacketGCPartyLink), false,
+        [](std::span<const uint8_t> payload) {
+            return Handlers::PartyPacketDomainHandler::HandlePartyLink(payload);
+        });
+    RegisterFunctionHandler(Protocol::GC::PARTY_UNLINK, sizeof(TPacketGCPartyUnlink), false,
+        [](std::span<const uint8_t> payload) {
+            return Handlers::PartyPacketDomainHandler::HandlePartyUnlink(payload);
+        });
+    RegisterFunctionHandler(Protocol::GC::PARTY_PARAMETER, sizeof(TPacketGCPartyParameter), false,
+        [](std::span<const uint8_t> payload) {
+            return Handlers::PartyPacketDomainHandler::HandlePartyParameter(payload);
+        });
+
+    // Guild Domain Handlers
+    RegisterFunctionHandler(Protocol::GC::GUILD, sizeof(TPacketGCGuild), true,
+        [](std::span<const uint8_t> payload) {
+            return Handlers::GuildPacketDomainHandler::HandleGuildPacket(payload);
+        });
+    RegisterFunctionHandler(Protocol::GC::REQUEST_MAKE_GUILD, sizeof(TPacketGCBlank), false,
+        [](std::span<const uint8_t> payload) {
+            return Handlers::GuildPacketDomainHandler::HandleRequestMakeGuild(payload);
+        });
+
+    // Quest Dialog Domain Handlers
+    RegisterFunctionHandler(Protocol::GC::SCRIPT, sizeof(TPacketGCScript), true,
+        [](std::span<const uint8_t> payload) {
+            return Handlers::QuestDialogDomainHandler::HandleScriptPacket(payload);
+        });
+    RegisterFunctionHandler(Protocol::GC::QUEST_INFO, sizeof(TPacketGCQuestInfo), true,
+        [](std::span<const uint8_t> payload) {
+            return Handlers::QuestDialogDomainHandler::HandleQuestInfoPacket(payload);
+        });
+    RegisterFunctionHandler(Protocol::GC::QUEST_CONFIRM, sizeof(TPacketGCQuestConfirm), false,
+        [](std::span<const uint8_t> payload) {
+            return Handlers::QuestDialogDomainHandler::HandleQuestConfirmPacket(payload);
+        });
+
+    // Refine & Exchange Domain Handlers
+    RegisterFunctionHandler(Protocol::GC::REFINE_INFORMATION, sizeof(TPacketGCRefineInformation), false,
+        [](std::span<const uint8_t> payload) {
+            return Handlers::RefineExchangeDomainHandler::HandleRefineInformation(payload);
+        });
+    RegisterFunctionHandler(Protocol::GC::REFINE_INFORMATION_NEW, sizeof(TPacketGCRefineInformationNew), false,
+        [](std::span<const uint8_t> payload) {
+            return Handlers::RefineExchangeDomainHandler::HandleRefineInformationNew(payload);
+        });
+    RegisterFunctionHandler(Protocol::GC::DRAGON_SOUL_REFINE, sizeof(TPacketGCDragonSoulRefine), false,
+        [](std::span<const uint8_t> payload) {
+            return Handlers::RefineExchangeDomainHandler::HandleDragonSoulRefine(payload);
+        });
+    RegisterFunctionHandler(Protocol::GC::EXCHANGE, sizeof(TPacketGCExchange), false,
+        [](std::span<const uint8_t> payload) {
+            return Handlers::RefineExchangeDomainHandler::HandleExchangePacket(payload);
         });
 }
 
