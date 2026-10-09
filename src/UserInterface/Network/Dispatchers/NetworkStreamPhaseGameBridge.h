@@ -3,6 +3,7 @@
 #include <span>
 #include <cstdint>
 #include "../PacketDispatcher.h"
+#include "../Routers/PhaseGamePacketDispatcher.h"
 #include "../../Core/EventBus.h"
 #include "EterBase/Result.h"
 #include "EterBase/StrongTypes.h"
@@ -24,6 +25,9 @@ namespace Network::Dispatchers {
         static inline EterBase::PacketResult<void> RouteGamePacket(uint16_t opcode, std::span<const uint8_t> payload) {
             EterBase::ModernLogger::Trace("NetworkStreamPhaseGameBridge: Routing packet opcode 0x{:04X}, size: {} bytes", opcode, payload.size());
             
+            // Filar 2: Dyspozycja pakietu do routerow domenowych
+            UserInterface::Network::Routers::PhaseGamePacketDispatcher::Instance().DispatchPacket(opcode, payload.data());
+
             auto& dispatcher = Network::PacketDispatcher::Instance();
 
             if (!dispatcher.HasHandler(opcode)) {

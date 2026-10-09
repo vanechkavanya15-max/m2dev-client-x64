@@ -134,6 +134,24 @@ CInstanceBase* CPythonPlayer::NEW_GetMainActorPtr()
 
 void CPythonPlayer::Update()
 {
+	float fElapsedTime = CTimer::Instance().GetElapsedSecond();
+
+	// Filar 2: Scisla sekwencja aktualizacji klatki kontrolerow domenowych (Frame Update Sequence)
+	// 1. Movement Controller Update
+	m_movementController.Update(fElapsedTime);
+
+	// 2. Target Controller Update
+	m_targetController.Update(fElapsedTime);
+
+	// 3. Combat Controller Update
+	m_combatController.UpdateAutoAttack(fElapsedTime);
+
+	// 4. Item Controller Update (Auto-Potion)
+	m_itemController.Update(fElapsedTime);
+
+	// 5. Skill Executor Update
+	m_skillExecutor.Update();
+
 	NEW_RefreshMouseWalkingDirection();
 
 	CPythonPlayerEventHandler& rkPlayerEventHandler=CPythonPlayerEventHandler::GetSingleton();
@@ -1762,34 +1780,38 @@ void CPythonPlayer::RememberChallengeInstance(DWORD dwVID)
 {
 	m_RevengeInstanceSet.erase(dwVID);
 	m_ChallengeInstanceSet.insert(dwVID);
+	m_pkController.RememberChallengeInstance(dwVID);
 }
 void CPythonPlayer::RememberRevengeInstance(DWORD dwVID)
 {
 	m_ChallengeInstanceSet.erase(dwVID);
 	m_RevengeInstanceSet.insert(dwVID);
+	m_pkController.RememberRevengeInstance(dwVID);
 }
 void CPythonPlayer::RememberCantFightInstance(DWORD dwVID)
 {
 	m_CantFightInstanceSet.insert(dwVID);
+	m_pkController.RememberCantFightInstance(dwVID);
 }
 void CPythonPlayer::ForgetInstance(DWORD dwVID)
 {
 	m_ChallengeInstanceSet.erase(dwVID);
 	m_RevengeInstanceSet.erase(dwVID);
 	m_CantFightInstanceSet.erase(dwVID);
+	m_pkController.ForgetInstance(dwVID);
 }
 
 bool CPythonPlayer::IsChallengeInstance(DWORD dwVID)
 {
-	return m_ChallengeInstanceSet.end() != m_ChallengeInstanceSet.find(dwVID);
+	return m_pkController.IsChallengeInstance(dwVID);
 }
 bool CPythonPlayer::IsRevengeInstance(DWORD dwVID)
 {
-	return m_RevengeInstanceSet.end() != m_RevengeInstanceSet.find(dwVID);
+	return m_pkController.IsRevengeInstance(dwVID);
 }
 bool CPythonPlayer::IsCantFightInstance(DWORD dwVID)
 {
-	return m_CantFightInstanceSet.end() != m_CantFightInstanceSet.find(dwVID);
+	return m_pkController.IsCantFightInstance(dwVID);
 }
 
 void CPythonPlayer::OpenPrivateShop()
@@ -2026,10 +2048,38 @@ void CPythonPlayer::Clear()
 	m_inGuildAreaID = 0xffffffff;
 
 	__ClearAutoAttackTargetActorID();
+
+	// Filar 2: Reset kontrolerow domenowych
+	m_movementController.Stop();
+	m_movementController.ClearDestPosition();
+	m_combatController.ClearAutoAttackTargetActorID();
+	m_targetController.ClearTarget();
+	m_targetController.ClearPicked();
+	m_skillExecutor.ClearReservedSkill();
+	m_pkController.Clear();
 }
 
 CPythonPlayer::CPythonPlayer(void)
 {
+	// Filar 2: Powiazanie adapterow z kontrolerami domenowymi
+	m_movementController.SetActorProvider(&m_actorAdapter);
+	m_movementController.SetNetworkService(&m_networkAdapter);
+
+	m_combatController.SetActorProvider(&m_actorAdapter);
+	m_combatController.SetNetworkService(&m_networkAdapter);
+
+	m_targetController.SetActorProvider(&m_actorAdapter);
+	m_targetController.SetNetworkService(&m_networkAdapter);
+
+	m_skillExecutor.SetActorProvider(&m_actorAdapter);
+	m_skillExecutor.SetNetworkService(&m_networkAdapter);
+
+	m_itemController.SetActorProvider(&m_actorAdapter);
+	m_itemController.SetNetworkService(&m_networkAdapter);
+
+	m_pkController.SetActorProvider(&m_actorAdapter);
+	m_pkController.SetNetworkService(&m_networkAdapter);
+
 	SetMovableGroundDistance(40.0f);
 
 	// AffectIndex To SkillIndex

@@ -5,6 +5,14 @@
 #include "PythonSkill.h"
 #include "Client/Gameplay/InventoryDomain.h"
 #include "QuickslotManager.h"
+#include "PlayerControllers/PlayerMovementController.h"
+#include "PlayerControllers/PlayerCombatController.h"
+#include "PlayerControllers/PlayerTargetController.h"
+#include "PlayerControllers/PlayerSkillExecutor.h"
+#include "PlayerControllers/PlayerItemController.h"
+#include "PlayerControllers/PlayerPKController.h"
+#include "Actors/Subsystems/ActorProviderAdapter.h"
+#include "Network/NetworkServiceAdapter.h"
 
 class CInstanceBase;
 
@@ -25,6 +33,8 @@ namespace UserInterface::Services
  *						탈바꿈 함.
  */
 
+#ifndef MAIN_RACE_DEFINED
+#define MAIN_RACE_DEFINED
 enum
 {
 	MAIN_RACE_WARRIOR_M,
@@ -37,6 +47,7 @@ enum
 	MAIN_RACE_SHAMAN_M,
 	MAIN_RACE_MAX_NUM,
 };
+#endif
 
 class CPythonPlayer : public CSingleton<CPythonPlayer>, public IAbstractPlayer
 {
@@ -207,6 +218,20 @@ class CPythonPlayer : public CSingleton<CPythonPlayer>, public IAbstractPlayer
 		const Client::Gameplay::InventoryDomain& GetInventoryDomain() const noexcept { return m_inventoryDomain; }
 		QuickslotManager& GetQuickslotManager() noexcept { return m_quickslotManager; }
 		const QuickslotManager& GetQuickslotManager() const noexcept { return m_quickslotManager; }
+
+		// Filar 2: Kontrolery Domenowe Gracza
+		UserInterface::PlayerControllers::PlayerMovementController& GetMovementController() noexcept { return m_movementController; }
+		const UserInterface::PlayerControllers::PlayerMovementController& GetMovementController() const noexcept { return m_movementController; }
+		UserInterface::PlayerControllers::PlayerCombatController& GetCombatController() noexcept { return m_combatController; }
+		const UserInterface::PlayerControllers::PlayerCombatController& GetCombatController() const noexcept { return m_combatController; }
+		UserInterface::PlayerControllers::PlayerTargetController& GetTargetController() noexcept { return m_targetController; }
+		const UserInterface::PlayerControllers::PlayerTargetController& GetTargetController() const noexcept { return m_targetController; }
+		UserInterface::PlayerControllers::PlayerSkillExecutor& GetSkillExecutor() noexcept { return m_skillExecutor; }
+		const UserInterface::PlayerControllers::PlayerSkillExecutor& GetSkillExecutor() const noexcept { return m_skillExecutor; }
+		UserInterface::PlayerControllers::PlayerItemController& GetItemController() noexcept { return m_itemController; }
+		const UserInterface::PlayerControllers::PlayerItemController& GetItemController() const noexcept { return m_itemController; }
+		UserInterface::PlayerControllers::PlayerPKController& GetPKController() noexcept { return m_pkController; }
+		const UserInterface::PlayerControllers::PlayerPKController& GetPKController() const noexcept { return m_pkController; }
 
 		void	PickCloseMoney();
 		void	PickCloseItem();
@@ -707,6 +732,18 @@ class CPythonPlayer : public CSingleton<CPythonPlayer>, public IAbstractPlayer
 
 	private:
 		std::map<DWORD, DWORD> m_kMap_dwAffectIndexToSkillIndex;
+
+	protected:
+		// Filar 2: Adaptery kontraktowe i kontrolery domenowe gracza
+		Network::Adapters::NetworkServiceAdapter m_networkAdapter;
+		UserInterface::Actors::Subsystems::ActorProviderAdapter m_actorAdapter;
+
+		UserInterface::PlayerControllers::PlayerMovementController m_movementController;
+		UserInterface::PlayerControllers::PlayerCombatController m_combatController;
+		UserInterface::PlayerControllers::PlayerTargetController m_targetController;
+		UserInterface::PlayerControllers::PlayerSkillExecutor m_skillExecutor;
+		UserInterface::PlayerControllers::PlayerItemController m_itemController;
+		UserInterface::PlayerControllers::PlayerPKController m_pkController;
 };
 
 extern const int c_iFastestSendingCount;

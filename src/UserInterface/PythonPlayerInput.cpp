@@ -91,6 +91,8 @@ void CPythonPlayer::__SetTargetVID(DWORD dwVID)
 
 void CPythonPlayer::__ClearTarget()
 {
+	m_targetController.ClearTarget();
+
 	if (!__IsTarget())
 		return;
 
@@ -111,6 +113,8 @@ void CPythonPlayer::__ClearTarget()
 
 void CPythonPlayer::SetTarget(DWORD dwVID, BOOL bForceChange)
 {
+	m_targetController.SetTarget(dwVID, bForceChange);
+
 	CInstanceBase * pkInstMain = NEW_GetMainActorPtr();
 	if (!pkInstMain)
 		return;

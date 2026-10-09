@@ -86,6 +86,9 @@ namespace UserInterface::PlayerControllers
         // Wysylanie pakietow przez INetworkService
         bool SendUseSkillPacket(DWORD dwSkillIndex, DWORD dwTargetVID);
 
+        // Aktualizacja stanu i cooldownow klatki
+        void Update();
+
     private:
         Contracts::IActorProvider* m_pActorProvider{nullptr};
         Contracts::INetworkService* m_pNetworkService{nullptr};

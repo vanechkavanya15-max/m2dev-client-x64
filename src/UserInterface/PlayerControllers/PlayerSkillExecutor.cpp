@@ -288,4 +288,16 @@ namespace UserInterface::PlayerControllers
 
         return false;
     }
+
+    void PlayerSkillExecutor::Update()
+    {
+        // Aktualizacja i weryfikacja zarezerwowanej umiejetnosci
+        if (m_isSkillReserved && m_dwSkillTargetVIDReserved != 0)
+        {
+            if (m_pActorProvider && !m_pActorProvider->IsActorAlive(m_dwSkillTargetVIDReserved))
+            {
+                ClearReservedSkill();
+            }
+        }
+    }
 }

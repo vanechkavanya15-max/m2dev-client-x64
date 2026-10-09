@@ -4,9 +4,16 @@
 #include "../StdAfx.h"
 #else
 #include <cstdint>
+#ifdef _WIN32
+#ifndef _WINDOWS_
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+#else
 using DWORD = uint32_t;
 using BYTE = uint8_t;
 using LONG = int32_t;
+#endif
 #endif
 
 namespace UserInterface::Contracts

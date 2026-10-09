@@ -90,6 +90,7 @@ void CPythonCharacterManager::ClearMainInstance()
 {
 	m_mainActor = NULL;
 	m_actorRegistry.SetMainActorVid(EntityVid(0));
+	m_actorProviderAdapter.SetMainActorVID(0);
 }
 
 bool CPythonCharacterManager::SetMainInstance(DWORD dwVID)
@@ -99,6 +100,7 @@ bool CPythonCharacterManager::SetMainInstance(DWORD dwVID)
 		return false;
 
 	m_actorRegistry.SetMainActorVid(EntityVid(dwVID));
+	m_actorProviderAdapter.SetMainActorVID(dwVID);
 	return true;
 }
 
@@ -396,6 +398,7 @@ CInstanceBase* CPythonCharacterManager::RegisterInstance(DWORD VirtualID)
 	m_actorRegistry.RegisterActor(record);
 	m_spatialGrid.Insert(EntityVid(VirtualID), 0.0f, 0.0f);
 	m_sceneMgr.AddAliveInstance(pCharacterInstance);
+	m_subsystemActorRegistry.RegisterActor(VirtualID, pCharacterInstance);
 
 	return pCharacterInstance;
 }
@@ -406,6 +409,7 @@ void CPythonCharacterManager::DeleteInstance(DWORD dwDelVID)
 	(void)UserInterface::ECS::ECSWorldRegistry::GetInstance().RemoveEntity(EterBase::EntityId(dwDelVID));
 	m_actorRegistry.UnregisterActor(EntityVid(dwDelVID));
 	m_spatialGrid.Remove(EntityVid(dwDelVID));
+	m_subsystemActorRegistry.UnregisterActor(dwDelVID);
 
 	TCharacterInstanceMap::iterator itor = m_aliveActorsMap.find(dwDelVID);
 	if (m_aliveActorsMap.end() == itor)
@@ -781,6 +785,7 @@ void CPythonCharacterManager::DestroyAliveInstanceMap()
 
 	m_aliveActorsMap.clear();
 	m_sceneMgr.ClearAlive();
+	m_subsystemActorRegistry.ClearAll();
 }
 
 void CPythonCharacterManager::DestroyDeadInstanceList()
@@ -811,6 +816,8 @@ void CPythonCharacterManager::__Initialize()
 }
 
 CPythonCharacterManager::CPythonCharacterManager()
+	: m_characterPicker(&m_subsystemActorRegistry)
+	, m_actorProviderAdapter(&m_subsystemActorRegistry, &m_characterPicker)
 {
 	__Initialize();
 }

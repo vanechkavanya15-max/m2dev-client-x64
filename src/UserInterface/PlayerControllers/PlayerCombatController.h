@@ -3,7 +3,6 @@
 #include "../Core/EngineForwardDecls.h"
 #include "../Contracts/IActorProvider.h"
 #include "../Contracts/INetworkService.h"
-#include "../PythonPlayer.h"
 #include <cstdint>
 
 namespace UserInterface::PlayerControllers

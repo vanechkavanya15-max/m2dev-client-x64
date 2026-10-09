@@ -21,6 +21,22 @@ class CActorInstance;
 class CItemData;
 class CRaceData;
 
+#ifndef MAIN_RACE_DEFINED
+#define MAIN_RACE_DEFINED
+enum
+{
+	MAIN_RACE_WARRIOR_M,
+	MAIN_RACE_ASSASSIN_W,
+	MAIN_RACE_SURA_M,
+	MAIN_RACE_SHAMAN_W,
+	MAIN_RACE_WARRIOR_W,
+	MAIN_RACE_ASSASSIN_M,
+	MAIN_RACE_SURA_W,
+	MAIN_RACE_SHAMAN_M,
+	MAIN_RACE_MAX_NUM,
+};
+#endif
+
 // Forward declarations dla menedzerow klienta
 class CInstanceBase;
 class CPythonPlayer;

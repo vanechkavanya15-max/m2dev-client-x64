@@ -14,6 +14,9 @@
 #include "World/SpatialHashGrid.h"
 #include "InstanceSceneManager.h"
 #include "Client/Core/DomainErrors.h"
+#include "Actors/Subsystems/ActorRegistry.h"
+#include "Actors/Subsystems/CharacterPicker.h"
+#include "Actors/Subsystems/ActorProviderAdapter.h"
 
 class CPythonCharacterManager : public CSingleton<CPythonCharacterManager>, public IAbstractCharacterManager, public IObjectManager
 {
@@ -111,6 +114,14 @@ class CPythonCharacterManager : public CSingleton<CPythonCharacterManager>, publ
 		[[nodiscard]] UserInterface::InstanceSceneManager& GetSceneManager() noexcept { return m_sceneMgr; }
 		[[nodiscard]] const UserInterface::InstanceSceneManager& GetSceneManager() const noexcept { return m_sceneMgr; }
 
+		// Filar 2: Podsystemy encji i selekcji (Actors/Subsystems)
+		[[nodiscard]] UserInterface::Actors::Subsystems::ActorRegistry& GetSubsystemActorRegistry() noexcept { return m_subsystemActorRegistry; }
+		[[nodiscard]] const UserInterface::Actors::Subsystems::ActorRegistry& GetSubsystemActorRegistry() const noexcept { return m_subsystemActorRegistry; }
+		[[nodiscard]] UserInterface::Actors::Subsystems::CharacterPicker& GetCharacterPicker() noexcept { return m_characterPicker; }
+		[[nodiscard]] const UserInterface::Actors::Subsystems::CharacterPicker& GetCharacterPicker() const noexcept { return m_characterPicker; }
+		[[nodiscard]] UserInterface::Actors::Subsystems::ActorProviderAdapter& GetActorProviderAdapter() noexcept { return m_actorProviderAdapter; }
+		[[nodiscard]] const UserInterface::Actors::Subsystems::ActorProviderAdapter& GetActorProviderAdapter() const noexcept { return m_actorProviderAdapter; }
+
 		// Refresh TextTail
 		void								RefreshAllPCTextTail();
 		void								RefreshAllGuildMark();
@@ -152,6 +163,11 @@ class CPythonCharacterManager : public CSingleton<CPythonCharacterManager>, publ
 		Client::World::ActorRegistry		m_actorRegistry;
 		Client::World::SpatialHashGrid		m_spatialGrid;
 		UserInterface::InstanceSceneManager	m_sceneMgr;
+
+		// Filar 2: Podsystemy encji, selekcji i dostawcy aktorow
+		UserInterface::Actors::Subsystems::ActorRegistry m_subsystemActorRegistry;
+		UserInterface::Actors::Subsystems::CharacterPicker m_characterPicker;
+		UserInterface::Actors::Subsystems::ActorProviderAdapter m_actorProviderAdapter;
 
 	public:
 		class CharacterIterator
