@@ -697,7 +697,13 @@ void CGrannyLODController::RefreshAttachedModelInstance()
 		CGrannyModelInstance * pSrcInstance = pkChildController->GetModelInstance();
 		if (pSrcInstance)
 		{
-			if (m_pCurrentModelInstance)
+			if (m_pGltfModelInstance)
+			{
+				const auto * pBoneMat = m_pGltfModelInstance->GetBoneMatrixPointer(rModelData.strBoneName.c_str());
+				if (pBoneMat)
+					pSrcInstance->SetCustomParentBoneMatrix(&pBoneMat->m[0][0]);
+			}
+			else if (m_pCurrentModelInstance)
 			{
 				pSrcInstance->SetParentModelInstance(m_pCurrentModelInstance, rModelData.strBoneName.c_str());
 			}

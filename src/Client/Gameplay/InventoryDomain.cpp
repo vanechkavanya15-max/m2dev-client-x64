@@ -117,7 +117,7 @@ int32_t InventoryDomain::FindEmptyCell(ItemSize size) const
     return FindEmptyCell(InventoryWindow::Inventory, size);
 }
 
-int32_t InventoryDomain::FindEmptyCell(InventoryWindow window, ItemSize size) const
+int32_t InventoryDomain::FindEmptyCellUnlocked(InventoryWindow window, ItemSize size) const
 {
     auto slotsRes = GetWindowSlots(window);
     if (!slotsRes) return -1;
@@ -134,8 +134,15 @@ int32_t InventoryDomain::FindEmptyCell(InventoryWindow window, ItemSize size) co
     return -1;
 }
 
+int32_t InventoryDomain::FindEmptyCell(InventoryWindow window, ItemSize size) const
+{
+    std::shared_lock lock(m_mutex);
+    return FindEmptyCellUnlocked(window, size);
+}
+
 void InventoryDomain::Clear()
 {
+    std::unique_lock lock(m_mutex);
     std::fill(m_mainInventory.begin(), m_mainInventory.end(), std::nullopt);
     std::fill(m_beltInventory.begin(), m_beltInventory.end(), std::nullopt);
     std::fill(m_equipment.begin(), m_equipment.end(), std::nullopt);
@@ -145,6 +152,7 @@ void InventoryDomain::Clear()
 
 void InventoryDomain::ClearWindow(InventoryWindow window)
 {
+    std::unique_lock lock(m_mutex);
     auto slotsRes = GetWindowSlots(window);
     if (slotsRes)
     {
@@ -162,7 +170,7 @@ void InventoryDomain::NotifySlotUpdated(InventoryWindow windowType, EterBase::It
 
     uint32_t vnum = 0;
     uint32_t count = 0;
-    auto itemRes = GetItem(windowType, slot);
+    auto itemRes = GetItemUnlocked(windowType, slot);
     if (itemRes.has_value())
     {
         vnum = itemRes.value().vnum.get();
@@ -173,7 +181,7 @@ void InventoryDomain::NotifySlotUpdated(InventoryWindow windowType, EterBase::It
     );
 }
 
-std::expected<void, EterBase::InventoryError> InventoryDomain::SetItem(InventoryWindow windowType, EterBase::ItemSlot slot, const ItemData& item)
+std::expected<void, EterBase::InventoryError> InventoryDomain::SetItemUnlocked(InventoryWindow windowType, EterBase::ItemSlot slot, const ItemData& item)
 {
     auto slotsRes = GetWindowSlots(windowType);
     if (!slotsRes)
@@ -220,7 +228,13 @@ std::expected<void, EterBase::InventoryError> InventoryDomain::SetItem(Inventory
     return {};
 }
 
-std::expected<void, EterBase::InventoryError> InventoryDomain::RemoveItem(InventoryWindow windowType, EterBase::ItemSlot slot)
+std::expected<void, EterBase::InventoryError> InventoryDomain::SetItem(InventoryWindow windowType, EterBase::ItemSlot slot, const ItemData& item)
+{
+    std::unique_lock lock(m_mutex);
+    return SetItemUnlocked(windowType, slot, item);
+}
+
+std::expected<void, EterBase::InventoryError> InventoryDomain::RemoveItemUnlocked(InventoryWindow windowType, EterBase::ItemSlot slot)
 {
     auto slotsRes = GetWindowSlots(windowType);
     if (!slotsRes)
@@ -260,7 +274,13 @@ std::expected<void, EterBase::InventoryError> InventoryDomain::RemoveItem(Invent
     return {};
 }
 
-std::expected<ItemData, EterBase::InventoryError> InventoryDomain::GetItem(InventoryWindow windowType, EterBase::ItemSlot slot) const
+std::expected<void, EterBase::InventoryError> InventoryDomain::RemoveItem(InventoryWindow windowType, EterBase::ItemSlot slot)
+{
+    std::unique_lock lock(m_mutex);
+    return RemoveItemUnlocked(windowType, slot);
+}
+
+std::expected<ItemData, EterBase::InventoryError> InventoryDomain::GetItemUnlocked(InventoryWindow windowType, EterBase::ItemSlot slot) const
 {
     auto slotsRes = GetWindowSlots(windowType);
     if (!slotsRes)
@@ -282,27 +302,31 @@ std::expected<ItemData, EterBase::InventoryError> InventoryDomain::GetItem(Inven
     return slots[slot.get()].value();
 }
 
+std::expected<ItemData, EterBase::InventoryError> InventoryDomain::GetItem(InventoryWindow windowType, EterBase::ItemSlot slot) const
+{
+    std::shared_lock lock(m_mutex);
+    return GetItemUnlocked(windowType, slot);
+}
+
 std::expected<void, EterBase::InventoryError> InventoryDomain::SwapItem(InventoryWindow windowType, EterBase::ItemSlot srcSlot, InventoryWindow dstWindowType, EterBase::ItemSlot dstSlot)
 {
-    auto srcItemRes = GetItem(windowType, srcSlot);
+    std::unique_lock lock(m_mutex);
+    auto srcItemRes = GetItemUnlocked(windowType, srcSlot);
     if (!srcItemRes)
     {
         return std::unexpected(srcItemRes.error());
     }
     
     ItemData srcItem = srcItemRes.value();
-    
-    auto dstItemRes = GetItem(dstWindowType, dstSlot);
+    auto dstItemRes = GetItemUnlocked(dstWindowType, dstSlot);
     
     if (dstItemRes)
     {
-        // Destination has item, check if we can swap
         ItemData dstItem = dstItemRes.value();
         
         auto& srcSlots = GetWindowSlots(windowType).value().get();
         auto& dstSlots = GetWindowSlots(dstWindowType).value().get();
         
-        // Remove src from grid temporarily
         ItemSize srcActualSize = srcItem.size;
         if (windowType == InventoryWindow::Equipment || windowType == InventoryWindow::Belt || windowType == InventoryWindow::DragonSoul) srcActualSize = {1, 1};
         for (uint8_t y = 0; y < srcActualSize.height; ++y) {
@@ -311,7 +335,6 @@ std::expected<void, EterBase::InventoryError> InventoryDomain::SwapItem(Inventor
             }
         }
         
-        // Remove dst from grid temporarily
         ItemSize dstActualSize = dstItem.size;
         if (dstWindowType == InventoryWindow::Equipment || dstWindowType == InventoryWindow::Belt || dstWindowType == InventoryWindow::DragonSoul) dstActualSize = {1, 1};
         for (uint8_t y = 0; y < dstActualSize.height; ++y) {
@@ -320,11 +343,9 @@ std::expected<void, EterBase::InventoryError> InventoryDomain::SwapItem(Inventor
             }
         }
         
-        // Check if both places are now clear for their NEW sizes
         bool srcFits = IsValidCell(dstWindowType, dstSlot, srcItem.size) && IsEmpty(dstWindowType, dstSlot, srcItem.size);
         bool dstFits = IsValidCell(windowType, srcSlot, dstItem.size) && IsEmpty(windowType, srcSlot, dstItem.size);
 
-        // Put them back initially
         for (uint8_t y = 0; y < srcActualSize.height; ++y) {
             for (uint8_t x = 0; x < srcActualSize.width; ++x) {
                 ItemData ext = srcItem;
@@ -341,10 +362,10 @@ std::expected<void, EterBase::InventoryError> InventoryDomain::SwapItem(Inventor
         }
 
         if (srcFits && dstFits) {
-             auto res1 = RemoveItem(windowType, srcSlot);
-             auto res2 = RemoveItem(dstWindowType, dstSlot);
-             auto res3 = SetItem(dstWindowType, dstSlot, srcItem);
-             auto res4 = SetItem(windowType, srcSlot, dstItem);
+             auto res1 = RemoveItemUnlocked(windowType, srcSlot);
+             auto res2 = RemoveItemUnlocked(dstWindowType, dstSlot);
+             auto res3 = SetItemUnlocked(dstWindowType, dstSlot, srcItem);
+             auto res4 = SetItemUnlocked(windowType, srcSlot, dstItem);
              
              if (!res1 || !res2 || !res3 || !res4) {
                  EterBase::ModernLogger::Error("Critical swap failure despite pre-checks. Possible state corruption.");
@@ -358,12 +379,11 @@ std::expected<void, EterBase::InventoryError> InventoryDomain::SwapItem(Inventor
     }
     else
     {
-        // Destination is empty
         if (IsValidCell(dstWindowType, dstSlot, srcItem.size) && IsEmpty(dstWindowType, dstSlot, srcItem.size))
         {
-             auto resRem = RemoveItem(windowType, srcSlot);
+             auto resRem = RemoveItemUnlocked(windowType, srcSlot);
              if (!resRem) return std::unexpected(resRem.error());
-             auto resSet = SetItem(dstWindowType, dstSlot, srcItem);
+             auto resSet = SetItemUnlocked(dstWindowType, dstSlot, srcItem);
              if (!resSet) return std::unexpected(resSet.error());
              return {};
         }
@@ -381,7 +401,9 @@ std::expected<void, EterBase::InventoryError> InventoryDomain::SplitItem(Invento
         return std::unexpected(EterBase::InventoryError::InsufficientCount);
     }
 
-    auto srcItemRes = GetItem(windowType, srcSlot);
+    std::unique_lock lock(m_mutex);
+
+    auto srcItemRes = GetItemUnlocked(windowType, srcSlot);
     if (!srcItemRes)
     {
         return std::unexpected(srcItemRes.error());
@@ -399,20 +421,47 @@ std::expected<void, EterBase::InventoryError> InventoryDomain::SplitItem(Invento
     }
 
     // Update src item count
-    auto resRemove = RemoveItem(windowType, srcSlot);
+    auto resRemove = RemoveItemUnlocked(windowType, srcSlot);
     if (!resRemove) return std::unexpected(resRemove.error());
 
     srcItem.count -= splitCount;
-    auto resSetSrc = SetItem(windowType, srcSlot, srcItem);
+    auto resSetSrc = SetItemUnlocked(windowType, srcSlot, srcItem);
     if (!resSetSrc) return std::unexpected(resSetSrc.error());
 
     // Create split item
     ItemData splitItem = srcItem;
     splitItem.count = splitCount;
-    auto resSetDst = SetItem(windowType, dstSlot, splitItem);
+    auto resSetDst = SetItemUnlocked(windowType, dstSlot, splitItem);
     if (!resSetDst) return std::unexpected(resSetDst.error());
 
     return {};
+}
+
+uint32_t InventoryDomain::GetItemCount(EterBase::ItemVnum vnum) const
+{
+    std::shared_lock lock(m_mutex);
+    uint32_t count = 0;
+    for (const auto& itemOpt : m_mainInventory)
+    {
+        if (itemOpt.has_value() && itemOpt->vnum == vnum)
+        {
+            count += itemOpt->count;
+        }
+    }
+    return count;
+}
+
+std::optional<SlotIndex> InventoryDomain::FindItem(EterBase::ItemVnum vnum) const
+{
+    std::shared_lock lock(m_mutex);
+    for (size_t i = 0; i < m_mainInventory.size(); ++i)
+    {
+        if (m_mainInventory[i].has_value() && m_mainInventory[i]->vnum == vnum)
+        {
+            return SlotIndex(static_cast<uint16_t>(i));
+        }
+    }
+    return std::nullopt;
 }
 
 namespace {

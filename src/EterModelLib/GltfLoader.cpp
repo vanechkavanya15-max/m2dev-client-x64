@@ -308,7 +308,7 @@ bool GltfLoader::ProcessData(cgltf_data* data, GltfModelData& outModelData)
             
             for (int r = 0; r < 4; ++r) {
                 for (int c = 0; c < 4; ++c) {
-                    joint.inverseBindMatrix.m[r][c] = invBindMatrices[i * 16 + c * 4 + r];
+                    joint.inverseBindMatrix.m[r][c] = invBindMatrices[i * 16 + r * 4 + c];
                 }
             }
             outModelData.skin.joints.push_back(joint);

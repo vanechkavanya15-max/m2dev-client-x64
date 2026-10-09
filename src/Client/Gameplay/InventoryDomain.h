@@ -7,6 +7,8 @@
 #include <span>
 #include <array>
 #include <functional>
+#include <shared_mutex>
+#include <mutex>
 
 #include "EterBase/StrongTypes.h"
 #include "EterBase/Result.h"
@@ -123,6 +125,7 @@ public:
      * @brief Rejestruje delegat powiadamiajacy o aktualizacji slotu w domenie ekwipunku.
      */
     void SetSlotUpdateCallback(SlotUpdateCallback callback) {
+        std::unique_lock lock(m_mutex);
         m_slotUpdateCallback = std::move(callback);
     }
 
@@ -164,6 +167,22 @@ public:
     [[nodiscard]] std::optional<SlotIndex> FindEmptySlot(InventoryWindow window, ItemSize size = {1, 1}) const {
         int32_t cell = FindEmptyCell(window, size);
         return cell >= 0 ? std::optional<SlotIndex>(SlotIndex(static_cast<uint16_t>(cell))) : std::nullopt;
+    }
+
+    /**
+     * @brief Zlicza przedmioty danego VNUM w inwentarzu glownym (Thread-safe, StrongTypes).
+     */
+    [[nodiscard]] uint32_t GetItemCount(EterBase::ItemVnum vnum) const;
+    [[nodiscard]] uint32_t GetItemCount(Client::Core::ItemVnum vnum) const {
+        return GetItemCount(EterBase::ItemVnum(vnum.get()));
+    }
+
+    /**
+     * @brief Znajduje pierwszy slot zawierajacy zadany VNUM (Thread-safe, StrongTypes).
+     */
+    [[nodiscard]] std::optional<SlotIndex> FindItem(EterBase::ItemVnum vnum) const;
+    [[nodiscard]] std::optional<SlotIndex> FindItem(Client::Core::ItemVnum vnum) const {
+        return FindItem(EterBase::ItemVnum(vnum.get()));
     }
 
     /**
@@ -308,6 +327,13 @@ private:
     bool IsEmpty(InventoryWindow windowType, EterBase::ItemSlot slot, ItemSize size, std::optional<EterBase::ItemSlot> ignoreSlot = std::nullopt) const;
 
     void NotifySlotUpdated(InventoryWindow windowType, EterBase::ItemSlot slot);
+
+    int32_t FindEmptyCellUnlocked(InventoryWindow window, ItemSize size) const;
+    std::expected<void, EterBase::InventoryError> SetItemUnlocked(InventoryWindow windowType, EterBase::ItemSlot slot, const ItemData& item);
+    std::expected<void, EterBase::InventoryError> RemoveItemUnlocked(InventoryWindow windowType, EterBase::ItemSlot slot);
+    std::expected<ItemData, EterBase::InventoryError> GetItemUnlocked(InventoryWindow windowType, EterBase::ItemSlot slot) const;
+
+    mutable std::shared_mutex m_mutex;
 
     std::vector<std::optional<ItemData>> m_mainInventory;
     std::vector<std::optional<ItemData>> m_beltInventory;

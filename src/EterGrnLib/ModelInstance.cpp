@@ -99,6 +99,7 @@ void CGrannyModelInstance::__Initialize()
 	m_pModel = NULL;
 	mc_pParentInstance = NULL;
 	m_iParentBoneIndex = 0;
+	m_pCustomParentBoneMatrix = NULL;
 
 	m_pgrnModelInstance = NULL;	
 

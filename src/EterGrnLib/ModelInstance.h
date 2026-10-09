@@ -142,6 +142,7 @@ class CGrannyModelInstance : public CGraphicCollisionObject
 		bool			GetBoneIndexByName(const char * c_szBoneName, int * pBoneIndex) const;
 		void			SetParentModelInstance(const CGrannyModelInstance* c_pParentModelInstance, const char * c_szBoneName);
 		void			SetParentModelInstance(const CGrannyModelInstance* c_pParentModelInstance, int iBone);
+		void			SetCustomParentBoneMatrix(const float * pMatrix) { m_pCustomParentBoneMatrix = pMatrix; }
 
 		void			DeformPNTVerticesDirect3D();
 
@@ -218,6 +219,7 @@ class CGrannyModelInstance : public CGraphicCollisionObject
 		// Attaching Data
 		const CGrannyModelInstance *	mc_pParentInstance;
 		int								m_iParentBoneIndex;
+		const float *					m_pCustomParentBoneMatrix;
 
 		// Game Data
 		float							m_fLocalTime;

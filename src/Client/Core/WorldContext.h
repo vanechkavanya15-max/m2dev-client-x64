@@ -129,11 +129,16 @@ struct WorldContext {
     bool UseSkill(uint32_t skillId, std::chrono::milliseconds cooldownDuration);
     bool UseSkillMs(uint32_t skillId, uint32_t cooldownMs);
 
+    [[nodiscard]] Money64 GetGoldAmount() const noexcept;
+    void SetGoldAmount(Money64 gold) noexcept;
+
     // ========================================================================
     // Koordynacja paska szybkiego dostepu i ekwipunku
     // ========================================================================
     bool BindQuickslotSkill(uint32_t quickslotIndex, uint32_t skillId);
+    bool BindQuickslotSkill(SlotIndex quickslotIndex, SkillId skillId);
     bool BindQuickslotItem(uint32_t quickslotIndex, uint16_t inventorySlot);
+    bool BindQuickslotItem(SlotIndex quickslotIndex, SlotIndex inventorySlot);
 
     [[nodiscard]] std::shared_mutex& GetMutex() const noexcept { return m_contextMutex; }
 };

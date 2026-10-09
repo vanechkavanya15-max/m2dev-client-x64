@@ -166,7 +166,7 @@ Matrix4x4 Matrix4x4::Transpose() const {
 Matrix4x4 Matrix4x4::TRS(const Vector3& translation, const Quaternion& rotation, const Vector3& scale) {
     Matrix4x4 s = Matrix4x4::Identity();
     s.m[0][0] = scale.x; s.m[1][1] = scale.y; s.m[2][2] = scale.z;
-    Matrix4x4 r = rotation.ToMatrix4x4();
+    Matrix4x4 r = rotation.ToMatrix4x4().Transpose();
     Matrix4x4 t = Matrix4x4::Identity();
     t.m[3][0] = translation.x; t.m[3][1] = translation.y; t.m[3][2] = translation.z;
     return s * r * t; 

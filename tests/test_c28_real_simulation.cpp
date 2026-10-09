@@ -97,6 +97,18 @@ int main()
     bossModel.GetModelData().motions.push_back(attackData.motions[0]);
 
     CGltfModelInstance bossInstance(&bossModel);
+    bossInstance.DeformVertices();
+    const auto& restVertices = bossInstance.GetDeformedVertices();
+    const auto& srcVertices = bossData.vertices;
+    float maxDiff = 0.0f;
+    for (size_t i = 0; i < srcVertices.size(); ++i) {
+        float dx = std::abs(restVertices[i].position.x - srcVertices[i].position.x);
+        float dy = std::abs(restVertices[i].position.y - srcVertices[i].position.y);
+        float dz = std::abs(restVertices[i].position.z - srcVertices[i].position.z);
+        maxDiff = std::max({maxDiff, dx, dy, dz});
+    }
+    std::cout << "  - Maksymalna roznica wierzcholkow w Rest Pose: " << maxDiff << std::endl;
+    assert(maxDiff < 0.01f && "Maksymalna roznica wierzcholkow w Rest Pose musi byc mniejsza niz 0.01");
     bossInstance.PlayMotion(attackData.motions[0].name, true);
 
     // Krok symulacji w czasie: dt = 0.033s (~30 FPS / g_fGameFPS)

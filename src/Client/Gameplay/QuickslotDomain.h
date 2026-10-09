@@ -5,6 +5,8 @@
 #include <span>
 #include <optional>
 #include <expected>
+#include <shared_mutex>
+#include <mutex>
 #include "../../EterBase/Result.h"
 #include "../Core/StrongTypes.h"
 
@@ -48,7 +50,7 @@ public:
     /**
      * @brief Pobiera aktualny indeks strony paska szybkiego dostepu.
      */
-    [[nodiscard]] int32_t GetPage() const noexcept { return m_pageIndex; }
+    [[nodiscard]] int32_t GetPage() const noexcept;
 
     /**
      * @brief Ustawia indeks strony z bezpiecznym zawijaniem (modulo / offset).
@@ -114,10 +116,21 @@ public:
     /**
      * @brief Zwraca widok wszystkich slotow.
      */
-    [[nodiscard]] std::span<const QuickslotItem> GetAllSlots() const noexcept { return m_slots; }
-    [[nodiscard]] std::span<QuickslotItem> GetAllSlots() noexcept { return m_slots; }
+    [[nodiscard]] std::span<const QuickslotItem> GetAllSlots() const noexcept {
+        std::shared_lock lock(m_mutex);
+        return m_slots;
+    }
+    [[nodiscard]] std::span<QuickslotItem> GetAllSlots() noexcept {
+        std::unique_lock lock(m_mutex);
+        return m_slots;
+    }
 
 private:
+    SlotIndex LocalToGlobalIndexUnlocked(SlotIndex localSlotIndex) const noexcept;
+    std::expected<QuickslotItem, EterBase::InventoryError> GetSlotUnlocked(SlotIndex globalSlotIndex) const;
+    std::expected<void, EterBase::InventoryError> SetSlotUnlocked(SlotIndex globalSlotIndex, const QuickslotItem& item);
+
+    mutable std::shared_mutex m_mutex;
     std::array<QuickslotItem, QUICKSLOT_MAX_NUM> m_slots{};
     int32_t m_pageIndex{0};
 };

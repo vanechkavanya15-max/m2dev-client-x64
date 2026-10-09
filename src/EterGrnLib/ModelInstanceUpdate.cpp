@@ -112,7 +112,7 @@ void CGrannyModelInstance::UpdateWorldPose()
 	// Izolowany bufor local_pose per-instancja (brak wspoldzielonego s_SharedLocalPose)
 	granny_local_pose * pgrnLocalPose = m_localPose.Get(pgrnSkeleton->BoneCount);	
 
-	const float * pAttachBoneMatrix = (mc_pParentInstance) ? mc_pParentInstance->GetBoneMatrixPointer(m_iParentBoneIndex) : NULL;
+	const float * pAttachBoneMatrix = m_pCustomParentBoneMatrix ? m_pCustomParentBoneMatrix : ((mc_pParentInstance) ? mc_pParentInstance->GetBoneMatrixPointer(m_iParentBoneIndex) : NULL);
 
 	GrannySampleModelAnimationsAccelerated(m_pgrnModelInstance, pgrnSkeleton->BoneCount, pAttachBoneMatrix, pgrnLocalPose, __GetWorldPosePtr());
 	/*

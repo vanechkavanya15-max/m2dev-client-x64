@@ -318,32 +318,48 @@ bool WorldContext::UseSkillMs(uint32_t skillId, uint32_t cooldownMs) {
     return UseSkill(skillId, std::chrono::milliseconds{cooldownMs});
 }
 
-bool WorldContext::BindQuickslotSkill(uint32_t quickslotIndex, uint32_t skillId) {
+Money64 WorldContext::GetGoldAmount() const noexcept {
+    std::shared_lock lock(m_contextMutex);
+    return stats.GetGoldAmount();
+}
+
+void WorldContext::SetGoldAmount(Money64 gold) noexcept {
+    SetPoint(11, gold.get());
+}
+
+bool WorldContext::BindQuickslotSkill(SlotIndex quickslotIndex, SkillId skillId) {
     std::unique_lock lock(m_contextMutex);
-    const auto sid = Client::Gameplay::SkillId{skillId};
-    if (!skills.HasSkill(sid)) {
+    if (!skills.HasSkill(skillId.get())) {
         return false;
     }
     Client::Gameplay::QuickslotItem item{
         .type = 2, // Typ 2: Umiejetnosc (Skill)
-        .position = static_cast<uint8_t>(skillId & 0xFF)
+        .position = static_cast<uint8_t>(skillId.get() & 0xFF)
+    };
+    auto res = quickslot.SetSlot(quickslotIndex, item);
+    return res.has_value();
+}
+
+bool WorldContext::BindQuickslotSkill(uint32_t quickslotIndex, uint32_t skillId) {
+    return BindQuickslotSkill(SlotIndex(static_cast<uint16_t>(quickslotIndex)), SkillId(skillId));
+}
+
+bool WorldContext::BindQuickslotItem(SlotIndex quickslotIndex, SlotIndex inventorySlot) {
+    std::unique_lock lock(m_contextMutex);
+    auto itemRes = inventory.GetItem(Client::Gameplay::InventoryWindow::Inventory, EterBase::ItemSlot{inventorySlot.get()});
+    if (!itemRes.has_value() || itemRes->vnum.get() == 0) {
+        return false;
+    }
+    Client::Gameplay::QuickslotItem item{
+        .type = 1, // Typ 1: Przedmiot (Item)
+        .position = static_cast<uint8_t>(inventorySlot.get() & 0xFF)
     };
     auto res = quickslot.SetSlot(quickslotIndex, item);
     return res.has_value();
 }
 
 bool WorldContext::BindQuickslotItem(uint32_t quickslotIndex, uint16_t inventorySlot) {
-    std::unique_lock lock(m_contextMutex);
-    auto itemRes = inventory.GetItem(Client::Gameplay::InventoryWindow::Inventory, EterBase::ItemSlot{inventorySlot});
-    if (!itemRes.has_value() || itemRes->vnum.get() == 0) {
-        return false;
-    }
-    Client::Gameplay::QuickslotItem item{
-        .type = 1, // Typ 1: Przedmiot (Item)
-        .position = static_cast<uint8_t>(inventorySlot & 0xFF)
-    };
-    auto res = quickslot.SetSlot(quickslotIndex, item);
-    return res.has_value();
+    return BindQuickslotItem(SlotIndex(static_cast<uint16_t>(quickslotIndex)), SlotIndex(inventorySlot));
 }
 
 } // namespace Client::Core
