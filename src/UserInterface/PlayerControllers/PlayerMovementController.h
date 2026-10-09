@@ -47,6 +47,8 @@ namespace UserInterface::PlayerControllers
         void SetNetworkService(Contracts::INetworkService* pNetworkService) { m_pNetworkService = pNetworkService; }
 
         // Klawiatura i sterowanie kierunkiem
+        void SetAttackKeyState(bool isPress) { m_isAtkKey = isPress; }
+        bool IsAttackKeyState() const noexcept { return m_isAtkKey; }
         void SetSingleDirKeyState(int eDirKey, bool isPress);
         void SetSingleDIKKeyState(int eDIKKey, bool isPress);
         void SetMultiDirKeyState(bool isLeft, bool isRight, bool isUp, bool isDown);
@@ -107,6 +109,7 @@ namespace UserInterface::PlayerControllers
         bool m_isLeft{false};
         bool m_isRight{false};
         bool m_isDirKey{false};
+        bool m_isAtkKey{false};
 
         // Rotacja kamery i ruchu
         float m_fMovDirRot{0.0f};
@@ -130,3 +133,4 @@ namespace UserInterface::PlayerControllers
         float m_fMovableGroundDistance{50.0f};
     };
 }
+

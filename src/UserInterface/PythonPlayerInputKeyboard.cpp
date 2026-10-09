@@ -1,4 +1,4 @@
-#include "StdAfx.h"
+﻿#include "StdAfx.h"
 #include "PythonPlayer.h"
 
 #include "InstanceBase.h"
@@ -16,13 +16,16 @@ void CPythonPlayer::SetAttackKeyState(bool isPress)
 		}
 	}
 
-	m_isAtkKey=isPress;
+	m_isAtkKey = isPress;
+	m_movementController.SetAttackKeyState(isPress);
 }
 
 void CPythonPlayer::NEW_SetSingleDIKKeyState(int eDIKKey, bool isPress)
 {
 	if (NEW_CancelFishing())
 		return;
+
+	m_movementController.SetSingleDIKKeyState(eDIKKey, isPress);
 
 	switch (eDIKKey)
 	{
@@ -132,3 +135,4 @@ float CPythonPlayer::GetDegreeFromDirection(int iUD, int iLR)
 
 	return 0.0f;
 }
+

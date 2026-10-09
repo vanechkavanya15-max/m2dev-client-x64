@@ -3,6 +3,9 @@
 #include "PythonCharacterManager.h"
 #include "PythonTextTail.h"
 #include "Packet.h"
+#include <fstream>
+#include <vector>
+#include <cstdint>
 
 // MARK_BUG_FIX
 struct SMarkIndex
@@ -443,33 +446,33 @@ bool CGuildMarkDownloader::__LoginState_RecvSymbolData()
 	if (!Recv(sizeof(kPacketSymbolData), &kPacketSymbolData))
 		return false;
 
+	if (kPacketSymbolData.length < sizeof(kPacketSymbolData))
+		return false;
+
 	WORD wDataSize = kPacketSymbolData.length - sizeof(kPacketSymbolData);
 	DWORD dwGuildID = kPacketSymbolData.guild_id;
-	BYTE * pbyBuf = new BYTE [wDataSize];
+	std::vector<uint8_t> pbyBuf(wDataSize);
 
-	if (!Recv(wDataSize, pbyBuf))
-	{
-		delete[] pbyBuf;
+	if (!Recv(wDataSize, pbyBuf.data()))
 		return false;
-	}
 
 	MyCreateDirectory(g_strGuildSymbolPathName.c_str());
 
 	std::string strFileName = GetGuildSymbolFileName(dwGuildID);
 
-	FILE * File = fopen(strFileName.c_str(), "wb");
-	if (!File)
 	{
-		delete[] pbyBuf;
-		return false;
+		std::ofstream file(strFileName, std::ios::binary);
+		if (!file.is_open())
+			return false;
+
+		file.write(reinterpret_cast<const char*>(pbyBuf.data()), pbyBuf.size());
+		if (!file.good())
+			return false;
 	}
-	fwrite(pbyBuf, wDataSize, 1, File);
-	fclose(File);
 
 #ifdef _DEBUG
 	printf("__LoginState_RecvSymbolData(filename:%s, datasize:%d, guildid:%d)\n", strFileName.c_str(), wDataSize, dwGuildID);
 #endif
 
-	delete[] pbyBuf;
 	return true;
 }

@@ -1,5 +1,6 @@
 #include "StdAfx.h"
 #include "PythonPlayerEventHandler.h"
+#include "PythonCharacterManager.h"
 #include "PythonApplication.h"
 #include "PythonItem.h"
 #include "EterBase/Timer.h"
@@ -1858,6 +1859,7 @@ void CPythonPlayer::StartStaminaConsume(DWORD dwConsumePerSec, DWORD dwCurrentSt
 	m_fCurrentStamina = float(dwCurrentStamina);
 
 	SetStatus(POINT_STAMINA, dwCurrentStamina);
+	m_movementController.StartStaminaConsume(dwConsumePerSec, dwCurrentStamina);
 }
 
 void CPythonPlayer::StopStaminaConsume(DWORD dwCurrentStamina)
@@ -1867,6 +1869,21 @@ void CPythonPlayer::StopStaminaConsume(DWORD dwCurrentStamina)
 	m_fCurrentStamina = float(dwCurrentStamina);
 
 	SetStatus(POINT_STAMINA, dwCurrentStamina);
+	m_movementController.StopStaminaConsume(dwCurrentStamina);
+}
+
+void CPythonPlayer::SetAutoPotionInfo(int type, const SAutoPotionInfo& info)
+{
+	if (type < 0 || type >= AUTO_POTION_TYPE_NUM)
+		return;
+
+	m_kAutoPotionInfo[type] = info;
+
+	UserInterface::PlayerControllers::PlayerItemController::SAutoPotionInfo itemInfo;
+	itemInfo.bActivated = info.bActivated;
+	itemInfo.totalAmount = info.totalAmount;
+	itemInfo.currentAmount = info.currentAmount;
+	m_itemController.SetAutoPotionInfo(type, itemInfo);
 }
 
 DWORD CPythonPlayer::GetPKMode()
@@ -2062,22 +2079,28 @@ void CPythonPlayer::Clear()
 CPythonPlayer::CPythonPlayer(void)
 {
 	// Filar 2: Powiazanie adapterow z kontrolerami domenowymi
-	m_movementController.SetActorProvider(&m_actorAdapter);
+	UserInterface::Contracts::IActorProvider* pActorProvider = &m_actorAdapter;
+	if (CPythonCharacterManager::InstancePtr())
+	{
+		pActorProvider = &CPythonCharacterManager::Instance().GetActorProviderAdapter();
+	}
+
+	m_movementController.SetActorProvider(pActorProvider);
 	m_movementController.SetNetworkService(&m_networkAdapter);
 
-	m_combatController.SetActorProvider(&m_actorAdapter);
+	m_combatController.SetActorProvider(pActorProvider);
 	m_combatController.SetNetworkService(&m_networkAdapter);
 
-	m_targetController.SetActorProvider(&m_actorAdapter);
+	m_targetController.SetActorProvider(pActorProvider);
 	m_targetController.SetNetworkService(&m_networkAdapter);
 
-	m_skillExecutor.SetActorProvider(&m_actorAdapter);
+	m_skillExecutor.SetActorProvider(pActorProvider);
 	m_skillExecutor.SetNetworkService(&m_networkAdapter);
 
-	m_itemController.SetActorProvider(&m_actorAdapter);
+	m_itemController.SetActorProvider(pActorProvider);
 	m_itemController.SetNetworkService(&m_networkAdapter);
 
-	m_pkController.SetActorProvider(&m_actorAdapter);
+	m_pkController.SetActorProvider(pActorProvider);
 	m_pkController.SetNetworkService(&m_networkAdapter);
 
 	SetMovableGroundDistance(40.0f);

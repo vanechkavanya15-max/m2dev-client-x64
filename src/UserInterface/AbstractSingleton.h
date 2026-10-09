@@ -3,25 +3,24 @@
 template <typename T> 
 class TAbstractSingleton
 { 
-	static T * ms_singleton;
+	inline static T * ms_singleton = nullptr;
 	
 public: 
 	TAbstractSingleton()
 	{ 
 		assert(!ms_singleton);
-		intptr_t offset = (intptr_t) (T*) 1 - (intptr_t) (CSingleton <T>*) (T*) 1;
-		ms_singleton = (T*) ((intptr_t) this + offset);
+		ms_singleton = static_cast<T*>(this);
 	} 
 
 	virtual ~TAbstractSingleton()
 	{ 
 		assert(ms_singleton);
-		ms_singleton = 0; 
+		ms_singleton = nullptr; 
 	}
 
 	__forceinline static T & GetSingleton()
 	{
-		assert(ms_singleton!=NULL);
+		assert(ms_singleton != nullptr);
 		return (*ms_singleton);
 	}
 
@@ -35,5 +34,3 @@ public:
 		return ms_singleton != nullptr;
 	}
 };
-
-template <typename T> T * TAbstractSingleton <T>::ms_singleton = 0;

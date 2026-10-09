@@ -107,8 +107,6 @@ void CPythonPlayer::__ClearTarget()
 		pTargetedInstance->OnUntargeted();
 
 	__SetTargetVID(0);
-
-	CPythonNetworkStream::Instance().SendTargetPacket(0);
 }
 
 void CPythonPlayer::SetTarget(DWORD dwVID, BOOL bForceChange)
@@ -135,7 +133,6 @@ void CPythonPlayer::SetTarget(DWORD dwVID, BOOL bForceChange)
 			
 			pkInstMain->OnUntargeted();
 			pkInstMain->ClearFlyTargetInstance();
-			CPythonNetworkStream::Instance().SendTargetPacket(0);
 			return;
 		}
 		m_dwTargetEndTime = dwCurrentTime + 1000;
@@ -174,7 +171,6 @@ void CPythonPlayer::SetTarget(DWORD dwVID, BOOL bForceChange)
 			pkInstTarget->OnTargeted();
 			pkInstMain->SetFlyTargetInstance(*pkInstTarget);
 			pkInstMain->GetGraphicThingInstanceRef().SetFlyEventHandler(CPythonPlayerEventHandler::GetSingleton().GetNormalBowAttackFlyEventHandler(pkInstMain, pkInstTarget));
-			CPythonNetworkStream::Instance().SendTargetPacket(dwVID);
 
 			return;
 		}
@@ -183,8 +179,6 @@ void CPythonPlayer::SetTarget(DWORD dwVID, BOOL bForceChange)
 	__SetTargetVID(0);
 	
 	pkInstMain->ClearFlyTargetInstance();
-	CPythonNetworkStream::Instance().SendTargetPacket(0);
-	
 }
 
 bool CPythonPlayer::__ChangeTargetToPickedInstance()
@@ -842,11 +836,13 @@ void CPythonPlayer::__ReserveUseSkill(DWORD dwActorID, DWORD dwSkillSlotIndex, D
 
 void CPythonPlayer::__ClearAutoAttackTargetActorID()
 {
+	m_combatController.ClearAutoAttackTargetActorID();
 	__SetAutoAttackTargetActorID(0);
 }
 
 void CPythonPlayer::__SetAutoAttackTargetActorID(DWORD dwVID)
 {
+	m_combatController.SetAutoAttackTargetActorID(dwVID);
  	m_dwAutoAttackTargetVID = dwVID;
 }
 

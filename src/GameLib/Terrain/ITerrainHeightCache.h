@@ -2,6 +2,10 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <memory>
+#include <expected>
+#include "../../EterBase/StrongTypes.h"
+#include "../../EterBase/Result.h"
 
 namespace GameLib::Terrain
 {
@@ -16,4 +20,8 @@ namespace GameLib::Terrain
         virtual void BatchSampleHeight(const float* x, const float* y, float* outZ, size_t count) const = 0;
         virtual void Clear() = 0;
     };
+
+    std::unique_ptr<ITerrainHeightCache> CreateTerrainHeightCache();
+    std::unique_ptr<ITerrainHeightCache> CreateTerrainHeightGridCache();
+    std::expected<std::unique_ptr<ITerrainHeightCache>, EterBase::EntityError> CreateTerrainHeightMemoryPool();
 }

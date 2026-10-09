@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "../Core/EngineForwardDecls.h"
 #include "../Contracts/IActorProvider.h"
@@ -29,6 +29,7 @@ namespace UserInterface::PlayerControllers
         DWORD GetTargetVID() const { return m_dwTargetVID; }
         bool IsTarget() const { return 0 != m_dwTargetVID; }
         bool IsSameTargetVID(DWORD dwVID) const { return dwVID == m_dwTargetVID; }
+        DWORD GetTargetEndTime() const noexcept { return m_dwTargetEndTime; }
         bool CanChangeTarget() const;
         bool ChangeTargetToPickedInstance();
 
@@ -58,3 +59,4 @@ namespace UserInterface::PlayerControllers
         DWORD m_dwIIDPicked{0};
     };
 }
+

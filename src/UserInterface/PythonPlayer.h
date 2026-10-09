@@ -476,7 +476,7 @@ class CPythonPlayer : public CSingleton<CPythonPlayer>, public IAbstractPlayer
 
 		__inline const	SAutoPotionInfo& GetAutoPotionInfo(int type) const	{ return m_kAutoPotionInfo[type]; }
 		__inline		SAutoPotionInfo& GetAutoPotionInfo(int type)		{ return m_kAutoPotionInfo[type]; }
-		__inline void					 SetAutoPotionInfo(int type, const SAutoPotionInfo& info)	{ m_kAutoPotionInfo[type] = info; }		
+		void					 SetAutoPotionInfo(int type, const SAutoPotionInfo& info);		
 
 	protected:
 		TQuickSlot &	__RefLocalQuickSlot(int SlotIndex);

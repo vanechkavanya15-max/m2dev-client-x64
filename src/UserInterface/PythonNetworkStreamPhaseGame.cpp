@@ -1,6 +1,8 @@
 #include "StdAfx.h"
+#include <span>
 #include "PythonNetworkStream.h"
 #include "Packet.h"
+#include "Network/Dispatchers/NetworkStreamPhaseGameBridge.h"
 #include "GuildMarkDownloader.h"
 #include "MarkManager.h"
 
@@ -1543,6 +1545,9 @@ bool CPythonNetworkStream::RecvDamageInfoPacket()
 		Tracen("Recv Target Packet Error");
 		return false;
 	}
+
+	std::span<const uint8_t> payload(reinterpret_cast<const uint8_t*>(&DamageInfoPacket), sizeof(DamageInfoPacket));
+	(void)Network::Dispatchers::NetworkStreamPhaseGameBridge::RouteGamePacket(GC::DAMAGE_INFO, payload);
 
 	return PhaseGameCombatBridge::HandleDamageInfo(this, DamageInfoPacket);
 }

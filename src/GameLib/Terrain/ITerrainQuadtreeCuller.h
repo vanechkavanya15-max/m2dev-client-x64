@@ -2,6 +2,8 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <memory>
+#include <span>
 
 namespace GameLib::Terrain
 {
@@ -15,4 +17,6 @@ namespace GameLib::Terrain
         virtual uint8_t SelectLOD(float distance) const = 0;
         virtual void Clear() = 0;
     };
+
+    std::unique_ptr<ITerrainQuadtreeCuller> CreateTerrainQuadtreeCuller();
 }

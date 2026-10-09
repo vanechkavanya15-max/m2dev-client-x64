@@ -2,6 +2,8 @@
 
 #include <cstdint>
 #include <string_view>
+#include <functional>
+#include "TerrainCoordinates.h"
 
 namespace GameLib::Terrain
 {
@@ -10,7 +12,14 @@ namespace GameLib::Terrain
         int32_t sectorX{0};
         int32_t sectorY{0};
 
+        constexpr ChunkCoordinate() = default;
+        constexpr ChunkCoordinate(int32_t sx, int32_t sy) noexcept : sectorX(sx), sectorY(sy) {}
+        constexpr ChunkCoordinate(const SectorCoord& sc) noexcept : sectorX(sc.x), sectorY(sc.y) {}
+
+        constexpr operator SectorCoord() const noexcept { return SectorCoord{sectorX, sectorY}; }
+
         bool operator==(const ChunkCoordinate&) const = default;
+        auto operator<=>(const ChunkCoordinate&) const = default;
     };
 
     class IMapChunkStreamingService
@@ -26,8 +35,6 @@ namespace GameLib::Terrain
     };
 }
 
-#include <functional>
-
 namespace std
 {
     template<>
@@ -35,9 +42,14 @@ namespace std
     {
         std::size_t operator()(const GameLib::Terrain::ChunkCoordinate& coord) const noexcept
         {
-            std::size_t h1 = std::hash<int32_t>{}(coord.sectorX);
-            std::size_t h2 = std::hash<int32_t>{}(coord.sectorY);
-            return h1 ^ (h2 << 1);
+            uint64_t packed = (static_cast<uint64_t>(static_cast<uint32_t>(coord.sectorX)) << 32) |
+                               static_cast<uint32_t>(coord.sectorY);
+            packed ^= packed >> 30;
+            packed *= 0xbf58476d1ce4e5b9ULL;
+            packed ^= packed >> 27;
+            packed *= 0x94d049bb133111ebULL;
+            packed ^= packed >> 31;
+            return static_cast<size_t>(packed);
         }
     };
 }

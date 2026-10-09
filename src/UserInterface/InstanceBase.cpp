@@ -2211,116 +2211,100 @@ DWORD CInstanceBase::GetDuelMode()
 }
 
 bool CInstanceBase::IsAttackableInstance(CInstanceBase& rkInstVictim)
-{	
-	if (__IsMainInstance())
-	{		
-		CPythonPlayer& rkPlayer=CPythonPlayer::Instance();
-		if(rkPlayer.IsObserverMode())
-			return false;
-	}
+{
+	// 1. Warunki bezwzgledne uniemozliwiajace walke
+	if (__IsMainInstance() && CPythonPlayer::Instance().IsObserverMode())
+		return false;
 
 	if (GetVirtualID() == rkInstVictim.GetVirtualID())
 		return false;
 
+	if (IsDead() || rkInstVictim.IsDead())
+		return false;
+
+	if (IsInSafe() || rkInstVictim.IsInSafe())
+		return false;
+
+	// 2. Rola zrodla: Kamien Metin
 	if (IsStone())
+		return rkInstVictim.IsPC();
+
+	// 3. Rola zrodla: Przeciwnik / Potwor
+	if (IsEnemy())
 	{
-		if (rkInstVictim.IsPC())
-			return true;
+		if (rkInstVictim.IsEnemy())
+			return false;
+
+		return rkInstVictim.IsPC() || rkInstVictim.IsStone() || rkInstVictim.IsBuilding();
 	}
-	else if (IsPC())
+
+	// 4. Rola zrodla: Polimorfia
+	if (IsPoly())
+		return rkInstVictim.IsPC() || rkInstVictim.IsEnemy();
+
+	// 5. Rola zrodla: Gracz (PC)
+	if (IsPC())
 	{
-		if (rkInstVictim.IsStone())
+		// 5a. Cele niebedace graczami (Kamienie Metin, wrogowie/potwory, drewniane bramy)
+		if (!rkInstVictim.IsPC())
+			return rkInstVictim.IsStone() || rkInstVictim.IsEnemy() || rkInstVictim.IsWoodenDoor();
+
+		// 5b. Cele bedace graczami (PvP)
+		if (GetDuelMode())
+		{
+			switch (GetDuelMode())
+			{
+			case DUEL_CANNOTATTACK:
+				return false;
+			case DUEL_START:
+				return __FindDUELKey(GetVirtualID(), rkInstVictim.GetVirtualID());
+			}
+		}
+
+		// Czlonkowie tej samej grupy sa zawsze nietykalni (poza aktywnym pojedynkiem)
+		if (IAbstractPlayer::GetSingleton().IsSamePartyMember(GetVirtualID(), rkInstVictim.GetVirtualID()))
+			return false;
+
+		// Gracz ze statusem Killera moze byc zawsze atakowany
+		if (rkInstVictim.IsKiller())
 			return true;
 
-		if (rkInstVictim.IsPC())
+		// Tryb gildyjny: zakaz ataku na czlonkow wlasnej gildii
+		if (GetPKMode() == PK_MODE_GUILD && GetGuildID() == rkInstVictim.GetGuildID())
+			return false;
+
+		// Tryby wolne i gildyjne (wymagaja braku ochrony PK_MODE_PROTECT u celu)
+		if (rkInstVictim.GetPKMode() != PK_MODE_PROTECT)
 		{
-			if (GetDuelMode())
-			{
-				switch(GetDuelMode())
-				{
-				case DUEL_CANNOTATTACK:
-					return false;
-				case DUEL_START:
-					if(__FindDUELKey(GetVirtualID(),rkInstVictim.GetVirtualID()))
-						return true;
-					else
-						return false;
-				}
-			}
-			if (PK_MODE_GUILD == GetPKMode())
-				if (GetGuildID() == rkInstVictim.GetGuildID())
-					return false;
+			if (GetPKMode() == PK_MODE_FREE)
+				return true;
 
-			if (rkInstVictim.IsKiller())
-				if (!IAbstractPlayer::GetSingleton().IsSamePartyMember(GetVirtualID(), rkInstVictim.GetVirtualID()))
-					return true;
+			if (GetPKMode() == PK_MODE_GUILD && GetGuildID() != rkInstVictim.GetGuildID())
+				return true;
+		}
 
-			if (PK_MODE_PROTECT != GetPKMode())
-			{
-				if (PK_MODE_FREE == GetPKMode())
-				{
-					if (PK_MODE_PROTECT != rkInstVictim.GetPKMode())
-						if (!IAbstractPlayer::GetSingleton().IsSamePartyMember(GetVirtualID(), rkInstVictim.GetVirtualID()))
-							return true;
-				}
-				if (PK_MODE_GUILD == GetPKMode())
-				{
-					if (PK_MODE_PROTECT != rkInstVictim.GetPKMode())
-						if (!IAbstractPlayer::GetSingleton().IsSamePartyMember(GetVirtualID(), rkInstVictim.GetVirtualID()))
-							if (GetGuildID() != rkInstVictim.GetGuildID())
-								return true;
-				}
-			}
+		// Rozne krolestwa: wolny atak
+		if (!IsSameEmpire(rkInstVictim))
+			return true;
 
-			if (IsSameEmpire(rkInstVictim))
-			{
-				if (IsPVPInstance(rkInstVictim))
-					return true;
+		// To samo krolestwo: flaga instancji PvP (np. arena lub wojna)
+		if (IsPVPInstance(rkInstVictim))
+			return true;
 
-				// MR-4: Fix PK Mode Bug
-				if (PK_MODE_REVENGE == GetPKMode())
-				{
-					if (!IAbstractPlayer::GetSingleton().IsSamePartyMember(GetVirtualID(), rkInstVictim.GetVirtualID()))
-					{
-						if (
-							(GetGuildID() == 0 || GetGuildID() != rkInstVictim.GetGuildID()) &&
-							IsConflictAlignmentInstance(rkInstVictim) &&
-							rkInstVictim.GetAlignment() < 0
-						)
-							return true;
-					}
-				}
-				// MR-4: -- END OF -- Fix PK Mode Bug
-			}
-			else
+		// To samo krolestwo: Tryb zemsty (PK_MODE_REVENGE)
+		if (GetPKMode() == PK_MODE_REVENGE)
+		{
+			if ((GetGuildID() == 0 || GetGuildID() != rkInstVictim.GetGuildID()) &&
+				IsConflictAlignmentInstance(rkInstVictim) &&
+				rkInstVictim.GetAlignment() < 0)
 			{
 				return true;
 			}
 		}
 
-		if (rkInstVictim.IsEnemy())
-			return true;
-
-		if (rkInstVictim.IsWoodenDoor())
-			return true;
+		return false;
 	}
-	else if (IsEnemy())
-	{
-		if (rkInstVictim.IsPC())
-			return true;
 
-		if (rkInstVictim.IsBuilding())
-			return true;
-		
-	}
-	else if (IsPoly())
-	{
-		if (rkInstVictim.IsPC())
-			return true;
-
-		if (rkInstVictim.IsEnemy())
-			return true;
-	}
 	return false;
 }
 
