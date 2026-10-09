@@ -14,6 +14,7 @@ target_link_libraries(UserInterface
 	EffectLib 
 	EterBase 
 	EterGrnLib 
+	EterModelLib
 	EterImageLib 
 	EterLib
 	EterLocale

@@ -5,6 +5,8 @@
 #include "ThingInstance.h"
 #include "Thing.h"
 #include "ModelInstance.h"
+#include "EterModelLib/GltfModel.h"
+#include "EterModelLib/GltfModelInstance.h"
 
 CDynamicPool<CGraphicThingInstance>		CGraphicThingInstance::ms_kPool;
 
@@ -264,7 +266,26 @@ bool CGraphicThingInstance::FindBoneIndex(int iModelInstance, const char* c_szBo
 {
 	assert(CheckModelInstanceIndex(iModelInstance));
 
-	CGrannyModelInstance * pModelInstance = m_LODControllerVector[iModelInstance]->GetModelInstance();
+	CGrannyLODController * pController = m_LODControllerVector[iModelInstance];
+	if (!pController)
+		return false;
+
+	if (pController->isGltfModelInstance())
+	{
+		EterModelLib::CGltfModelInstance * pGltfInst = pController->GetGltfModelInstance();
+		if (pGltfInst && pGltfInst->GetModel())
+		{
+			int idx = pGltfInst->GetModel()->FindBoneIndex(c_szBoneName);
+			if (idx >= 0)
+			{
+				*iRetBone = idx;
+				return true;
+			}
+		}
+		return false;
+	}
+
+	CGrannyModelInstance * pModelInstance = pController->GetModelInstance();
 
 	if (!pModelInstance)
 		return false;
@@ -330,7 +351,28 @@ bool CGraphicThingInstance::GetBonePosition(int iModelIndex, int iBoneIndex, flo
 {
 	assert(CheckModelInstanceIndex(iModelIndex));
 
-	CGrannyModelInstance * pModelInstance = m_LODControllerVector[iModelIndex]->GetModelInstance();
+	CGrannyLODController * pController = m_LODControllerVector[iModelIndex];
+	if (!pController)
+		return false;
+
+	if (pController->isGltfModelInstance())
+	{
+		EterModelLib::CGltfModelInstance * pGltfInst = pController->GetGltfModelInstance();
+		if (pGltfInst)
+		{
+			EterModelLib::Matrix4x4 mat;
+			if (pGltfInst->GetBoneWorldTransform(iBoneIndex, mat))
+			{
+				*pfx = mat.m[3][0];
+				*pfy = mat.m[3][1];
+				*pfz = mat.m[3][2];
+				return true;
+			}
+		}
+		return false;
+	}
+
+	CGrannyModelInstance * pModelInstance = pController->GetModelInstance();
 
 	if (!pModelInstance)
 		return false;
@@ -610,6 +652,15 @@ BOOL CGraphicThingInstance::GetBoundBox(DWORD dwModelInstanceIndex, D3DXVECTOR3 
 	vtMax->x = vtMax->y = vtMax->z = -100000.0f;
 
 	CGrannyLODController * pController = m_LODControllerVector[dwModelInstanceIndex];
+	if (!pController)
+		return FALSE;
+
+	if (pController->isGltfModelInstance())
+	{
+		pController->GetBoundBox(vtMin, vtMax);
+		return TRUE;
+	}
+
 	if (!pController->isModelInstance())
 		return FALSE;
 
@@ -623,7 +674,21 @@ BOOL CGraphicThingInstance::GetBoneMatrix(DWORD dwModelInstanceIndex, DWORD dwBo
 	if (!CheckModelInstanceIndex(dwModelInstanceIndex))
 		return FALSE;
 
-	CGrannyModelInstance * pModelInstance = m_LODControllerVector[dwModelInstanceIndex]->GetModelInstance();
+	CGrannyLODController * pController = m_LODControllerVector[dwModelInstanceIndex];
+	if (!pController)
+		return FALSE;
+
+	if (pController->m_pGltfModelInstance)
+	{
+		const EterModelLib::Matrix4x4 * pBoneMat = pController->m_pGltfModelInstance->GetBoneMatrixPointer((int)dwBoneIndex);
+		if (!pBoneMat)
+			return FALSE;
+
+		*ppMatrix = (D3DXMATRIX *)pBoneMat;
+		return TRUE;
+	}
+
+	CGrannyModelInstance * pModelInstance = pController->GetModelInstance();
 	if (!pModelInstance)
 		return FALSE;
 
@@ -639,7 +704,21 @@ BOOL CGraphicThingInstance::GetCompositeBoneMatrix(DWORD dwModelInstanceIndex, D
 	if (!CheckModelInstanceIndex(dwModelInstanceIndex))
 		return FALSE;
 
-	CGrannyModelInstance * pModelInstance = m_LODControllerVector[dwModelInstanceIndex]->GetModelInstance();
+	CGrannyLODController * pController = m_LODControllerVector[dwModelInstanceIndex];
+	if (!pController)
+		return FALSE;
+
+	if (pController->m_pGltfModelInstance)
+	{
+		const EterModelLib::Matrix4x4 * pBoneMat = pController->m_pGltfModelInstance->GetBoneMatrixPointer((int)dwBoneIndex);
+		if (!pBoneMat)
+			return FALSE;
+
+		*ppMatrix = (D3DXMATRIX *)pBoneMat;
+		return TRUE;
+	}
+
+	CGrannyModelInstance * pModelInstance = pController->GetModelInstance();
 	if (!pModelInstance)
 	{
 		//TraceError("CGraphicThingInstance::GetCompositeBoneMatrix(dwModelInstanceIndex=%d, dwBoneIndex=%d, D3DXMATRIX ** ppMatrix)", dwModelInstanceIndex, dwBoneIndex);
@@ -667,6 +746,13 @@ void CGraphicThingInstance::UpdateTransform(D3DXMATRIX * pMatrix, float fSeconds
 	{
 		//TraceError("void CGraphicThingInstance::UpdateTransform(pMatrix, fSecondsElapsed=%f, iModelInstanceIndex=%d/nLODCount=%d) - m_LODControllerVector[iModelInstanceIndex] == NULL",
 		//	fSecondsElapsed, iModelInstanceIndex, nLODCount);
+		return;
+	}
+
+	if (pkLODCtrl->isGltfModelInstance())
+	{
+		if (pMatrix)
+			m_worldMatrix = *pMatrix;
 		return;
 	}
 
@@ -698,7 +784,7 @@ void CGraphicThingInstance::DeformNoSkin()
 	for (i=m_LODControllerVector.begin(); i!=m_LODControllerVector.end(); ++i)
 	{
 		CGrannyLODController* pkLOD=*i;
-		if (pkLOD->isModelInstance())
+		if (pkLOD->isModelInstance() || pkLOD->isGltfModelInstance())
 			pkLOD->DeformNoSkin(&m_worldMatrix);
 	}
 }

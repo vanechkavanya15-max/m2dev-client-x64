@@ -88,3 +88,4 @@ add_subdirectory(extern)
 
 enable_testing()
 add_subdirectory(tests)
+add_subdirectory(tools/gr2_to_glb)

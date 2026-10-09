@@ -2,6 +2,7 @@
 #include "Eterbase/Debug.h"
 #include "Thing.h"
 #include "ThingInstance.h"
+#include "EterModelLib/GltfModel.h"
 
 CGraphicThing::CGraphicThing(const char* c_szFileName) : CResource(c_szFileName)
 {
@@ -14,6 +15,115 @@ CGraphicThing::~CGraphicThing()
 	Clear();
 }
 
+bool CGraphicThing::IsGltf() const
+{
+	return (m_pGltfModel != NULL);
+}
+
+EterModelLib::CGltfModel * CGraphicThing::GetGltfModelPointer()
+{
+	return m_pGltfModel;
+}
+
+bool CGraphicThing::CreateFromGltfModel(EterModelLib::CGltfModel * pGltfModel)
+{
+	Clear();
+	if (!pGltfModel)
+		return false;
+
+	m_pGltfModel = pGltfModel;
+	int motionCount = (int)m_pGltfModel->GetAnimationCount();
+	if (motionCount > 0)
+	{
+		m_motions = new CGrannyMotion[motionCount];
+		for (int m = 0; m < motionCount; ++m)
+		{
+			m_motions[m].BindGltfAnimation(m_pGltfModel->GetAnimation(m));
+		}
+	}
+	me_state = STATE_EXIST;
+	return true;
+}
+
+bool CGraphicThing::CreateFromGltfModelData(const GltfModelData & data)
+{
+	Clear();
+	m_pGltfModel = new EterModelLib::CGltfModel();
+	m_pGltfModel->GetModelData() = data;
+	int motionCount = (int)m_pGltfModel->GetAnimationCount();
+	if (motionCount > 0)
+	{
+		m_motions = new CGrannyMotion[motionCount];
+		for (int m = 0; m < motionCount; ++m)
+		{
+			m_motions[m].BindGltfAnimation(m_pGltfModel->GetAnimation(m));
+		}
+	}
+	me_state = STATE_EXIST;
+	return true;
+}
+
+bool CGraphicThing::LoadFromMemory(int iSize, const void* c_pvBuf)
+{
+	Clear();
+	if (OnLoad(iSize, c_pvBuf))
+	{
+		me_state = STATE_EXIST;
+		return true;
+	}
+	me_state = STATE_ERROR;
+	return false;
+}
+
+bool CGraphicThing::LoadFromFile(const char* c_szFileName)
+{
+	FILE* fp = fopen(c_szFileName, "rb");
+	if (!fp)
+		return false;
+
+	fseek(fp, 0, SEEK_END);
+	long size = ftell(fp);
+	fseek(fp, 0, SEEK_SET);
+
+	if (size <= 0)
+	{
+		fclose(fp);
+		return false;
+	}
+
+	std::vector<unsigned char> buf(size);
+	size_t readBytes = fread(buf.data(), 1, size, fp);
+	fclose(fp);
+
+	if (readBytes != (size_t)size)
+		return false;
+
+	SetFileName(c_szFileName);
+	return LoadFromMemory((int)size, buf.data());
+}
+
+bool CGraphicThing::RegisterMotion(const GltfMotionData& motion)
+{
+	if (!m_pGltfModel)
+		return false;
+
+	m_pGltfModel->GetModelData().motions.push_back(motion);
+	int motionCount = (int)m_pGltfModel->GetAnimationCount();
+
+	if (m_motions)
+	{
+		delete [] m_motions;
+		m_motions = NULL;
+	}
+
+	m_motions = new CGrannyMotion[motionCount];
+	for (int m = 0; m < motionCount; ++m)
+	{
+		m_motions[m].BindGltfAnimation(m_pGltfModel->GetAnimation(m));
+	}
+	return true;
+}
+
 void CGraphicThing::Initialize()
 {
 	m_pgrnFile = NULL;
@@ -22,10 +132,17 @@ void CGraphicThing::Initialize()
 
 	m_models = NULL;
 	m_motions = NULL;
+	m_pGltfModel = NULL;
 }
 
 void CGraphicThing::OnClear()
 {
+	if (m_pGltfModel)
+	{
+		delete m_pGltfModel;
+		m_pGltfModel = NULL;
+	}
+
 	if (m_motions)
 		delete [] m_motions;
 
@@ -46,7 +163,7 @@ CGraphicThing::TType CGraphicThing::Type()
 
 bool CGraphicThing::OnIsEmpty() const
 {
-	return m_pgrnFile ? false : true;
+	return (m_pgrnFile == NULL && m_pGltfModel == NULL);
 }
 
 bool CGraphicThing::OnIsType(TType type)
@@ -85,6 +202,11 @@ void CGraphicThing::DestroyDeviceObjects()
 
 bool CGraphicThing::CheckModelIndex(int iModel) const
 {
+	if (m_pGltfModel)
+	{
+		return (iModel == 0 && (m_pGltfModel->GetSubmeshCount() > 0 || m_pGltfModel->GetBoneCount() > 0));
+	}
+
 	if (!m_pgrnFileInfo)
 	{
 		Tracef("m_pgrnFileInfo == NULL: %s\n", GetFileName());
@@ -104,10 +226,15 @@ bool CGraphicThing::CheckModelIndex(int iModel) const
 
 bool CGraphicThing::CheckMotionIndex(int iMotion) const
 {
-	// Temporary
+	if (m_pGltfModel)
+	{
+		if (iMotion < 0 || iMotion >= (int)m_pGltfModel->GetAnimationCount())
+			return false;
+		return true;
+	}
+
 	if (!m_pgrnFileInfo)
 		return false;
-	// Temporary
 
 	assert(m_pgrnFileInfo != NULL);
 
@@ -122,6 +249,9 @@ bool CGraphicThing::CheckMotionIndex(int iMotion) const
 
 CGrannyModel * CGraphicThing::GetModelPointer(int iModel)
 {	
+	if (m_pGltfModel)
+		return NULL;
+
 	assert(CheckModelIndex(iModel));
 	assert(m_models != NULL);
 	return m_models + iModel;
@@ -130,6 +260,15 @@ CGrannyModel * CGraphicThing::GetModelPointer(int iModel)
 CGrannyMotion * CGraphicThing::GetMotionPointer(int iMotion)
 {
 	assert(CheckMotionIndex(iMotion));
+
+	if (m_pGltfModel)
+	{
+		if (iMotion >= (int)m_pGltfModel->GetAnimationCount())
+			return NULL;
+
+		assert(m_motions != NULL);
+		return (m_motions + iMotion);
+	}
 
 	if (iMotion >= m_pgrnFileInfo->AnimationCount)
 		return NULL;
@@ -140,6 +279,9 @@ CGrannyMotion * CGraphicThing::GetMotionPointer(int iMotion)
 
 int CGraphicThing::GetModelCount() const
 {
+	if (m_pGltfModel)
+		return (m_pGltfModel->GetSubmeshCount() > 0 || m_pGltfModel->GetBoneCount() > 0) ? 1 : 0;
+
 	if (!m_pgrnFileInfo)
 		return 0;
 
@@ -148,6 +290,9 @@ int CGraphicThing::GetModelCount() const
 
 int CGraphicThing::GetMotionCount() const
 {
+	if (m_pGltfModel)
+		return (int)m_pGltfModel->GetAnimationCount();
+
 	if (!m_pgrnFileInfo)
 		return 0;
 
@@ -156,8 +301,38 @@ int CGraphicThing::GetMotionCount() const
 
 bool CGraphicThing::OnLoad(int iSize, const void * c_pvBuf)
 {
-	if (!c_pvBuf)
+	if (!c_pvBuf || iSize <= 0)
 		return false;
+
+	// Detekcja plikow glTF 2.0 (binarny .glb z magic 'glTF' / 0x46546C67 lub JSON '{"asset"')
+	const unsigned char* pBytes = (const unsigned char*)c_pvBuf;
+	bool isGltf = false;
+	if (iSize >= 4 && pBytes[0] == 'g' && pBytes[1] == 'l' && pBytes[2] == 'T' && pBytes[3] == 'F')
+		isGltf = true;
+	else if (iSize > 12 && (pBytes[0] == '{' || strstr((const char*)c_pvBuf, "\"asset\"") != NULL))
+		isGltf = true;
+
+	if (isGltf)
+	{
+		m_pGltfModel = new EterModelLib::CGltfModel();
+		if (!m_pGltfModel->LoadFromMemory(c_pvBuf, (size_t)iSize))
+		{
+			delete m_pGltfModel;
+			m_pGltfModel = NULL;
+			return false;
+		}
+
+		int motionCount = (int)m_pGltfModel->GetAnimationCount();
+		if (motionCount > 0)
+		{
+			m_motions = new CGrannyMotion[motionCount];
+			for (int m = 0; m < motionCount; ++m)
+			{
+				m_motions[m].BindGltfAnimation(m_pGltfModel->GetAnimation(m));
+			}
+		}
+		return true;
+	}
 
 	m_pgrnFile = GrannyReadEntireFileFromMemory(iSize, (void *) c_pvBuf);
 

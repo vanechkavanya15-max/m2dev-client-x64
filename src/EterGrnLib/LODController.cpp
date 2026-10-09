@@ -1,5 +1,10 @@
 #include "StdAfx.h"
 #include "LODController.h"
+#include "EterModelLib/GltfModel.h"
+#include "EterModelLib/GltfModelInstance.h"
+#include "Eterlib/ResourceManager.h"
+#include "Eterlib/GrpImage.h"
+#include "Eterlib/StateManager.h"
 
 static float LODHEIGHT_ACTOR		=	500.0f;
 static float LODDISTANCE_ACTOR		=	5000.0f;
@@ -184,9 +189,11 @@ CGrannyLODController::CGrannyLODController() :
 	m_pAttachedParentModel(NULL),
 	m_fLODDistance(0.0f),
 	m_dwLODAniFPS(CGrannyModelInstance::ANIFPS_MAX),
-	m_pkSharedDeformableVertexBuffer(NULL)
+	m_pkSharedDeformableVertexBuffer(NULL),
+	m_pGltfModelInstance(NULL)
 	/////////////////////////////////////////////////////
 {
+	D3DXMatrixIdentity(&m_matWorld);
 }
 
 CGrannyLODController::~CGrannyLODController()
@@ -194,10 +201,22 @@ CGrannyLODController::~CGrannyLODController()
 	__FreeDeformVertexBuffer(m_pkSharedDeformableVertexBuffer);
 
 	Clear();
+
+	if (m_pGltfModelInstance)
+	{
+		delete m_pGltfModelInstance;
+		m_pGltfModelInstance = NULL;
+	}
 }
 
 void CGrannyLODController::Clear()
 {
+	if (m_pGltfModelInstance)
+	{
+		delete m_pGltfModelInstance;
+		m_pGltfModelInstance = NULL;
+	}
+
 	if (m_pAttachedParentModel)
 	{
 		m_pAttachedParentModel->DetachModelInstance(this);
@@ -223,6 +242,25 @@ void CGrannyLODController::AddModel(CGraphicThing * pThing, int iSrcModel, CGran
 {
 	if (!pThing)
 		return;
+
+	if (pThing->IsGltf())
+	{
+		if (m_pGltfModelInstance)
+		{
+			delete m_pGltfModelInstance;
+			m_pGltfModelInstance = NULL;
+		}
+
+		m_pGltfModelInstance = new EterModelLib::CGltfModelInstance(pThing->GetGltfModelPointer());
+
+		if (pSkelLODController != NULL && pSkelLODController->isGltfModelInstance())
+		{
+			m_pGltfModelInstance->SetLinkedModelInstance(pSkelLODController->GetGltfModelInstance());
+		}
+
+		SetLODLimits(0.0f, LODDISTANCE_ACTOR);
+		return;
+	}
 
 	if (pSkelLODController && pSkelLODController->m_que_pkModelInst.empty())
 	{
@@ -307,18 +345,35 @@ void CGrannyLODController::__ReserveSharedDeformableVertexBuffer(DWORD deformabl
 
 void CGrannyLODController::AttachModelInstance(CGrannyLODController * pSrcLODController, const char * c_szBoneName)
 {
-	CGrannyModelInstance * pSrcInstance = pSrcLODController->GetModelInstance();
-	if (!pSrcInstance)
+	if (!pSrcLODController)
 		return;
 
+	// 1. Doczepianie instancji Granny
+	CGrannyModelInstance * pSrcInstance = pSrcLODController->GetModelInstance();
 	CGrannyModelInstance * pDestInstance = GetModelInstance();
-	if (pDestInstance)
+	if (pSrcInstance && pDestInstance)
 	{
 		pSrcInstance->SetParentModelInstance(pDestInstance, c_szBoneName);
 	}
 
-	if (!pSrcLODController->GetModelInstance())
-		return;
+	// 2. Obsluga glTF (np. bron przymocowana do dloni Bip001 R Hand)
+	if (pSrcLODController->m_pGltfModelInstance)
+	{
+		if (m_pGltfModelInstance)
+		{
+			pSrcLODController->m_pGltfModelInstance->SetParentModelInstance(m_pGltfModelInstance, c_szBoneName);
+		}
+		else if (pDestInstance)
+		{
+			int iBoneIndex = -1;
+			if (pDestInstance->GetBoneIndexByName(c_szBoneName, &iBoneIndex))
+			{
+				const float * pBoneMat = pDestInstance->GetBoneMatrixPointer(iBoneIndex);
+				if (pBoneMat)
+					pSrcLODController->m_pGltfModelInstance->SetParentBoneMatrix((const EterModelLib::Matrix4x4*)pBoneMat);
+			}
+		}
+	}
 
 	// Link Parent Data
 	pSrcLODController->m_pAttachedParentModel = this;
@@ -346,18 +401,21 @@ void CGrannyLODController::AttachModelInstance(CGrannyLODController * pSrcLODCon
 
 void CGrannyLODController::DetachModelInstance(CGrannyLODController * pSrcLODController)
 {
-	CGrannyModelInstance * pSrcInstance = pSrcLODController->GetModelInstance();
-	if (!pSrcInstance)
+	if (!pSrcLODController)
 		return;
 
+	if (pSrcLODController->m_pGltfModelInstance)
+	{
+		pSrcLODController->m_pGltfModelInstance->SetParentModelInstance(NULL, -1);
+		pSrcLODController->m_pGltfModelInstance->SetParentBoneMatrix(NULL);
+	}
+
+	CGrannyModelInstance * pSrcInstance = pSrcLODController->GetModelInstance();
 	CGrannyModelInstance * pDestInstance = GetModelInstance();
-	if (pDestInstance)
+	if (pSrcInstance && pDestInstance)
 	{
 		pSrcInstance->SetParentModelInstance(NULL, 0);
 	}
-
-//	if (!pSrcLODController->GetModelInstance())
-//		return;
 
 	// Unlink Child Data
 	std::vector<TAttachingModelData>::iterator itor = m_AttachedModelDataVector.begin();
@@ -407,6 +465,12 @@ void CGrannyLODController::DestroyDeviceObjects()
 
 void CGrannyLODController::RenderWithOneTexture()
 {
+	if (m_pGltfModelInstance)
+	{
+		RenderGltfModel();
+		return;
+	}
+
 	assert(m_pCurrentModelInstance != NULL);
 
 //#define CHECK_LOD
@@ -430,18 +494,36 @@ void CGrannyLODController::RenderWithOneTexture()
 
 void CGrannyLODController::BlendRenderWithOneTexture()
 {
+	if (m_pGltfModelInstance)
+	{
+		RenderGltfModel();
+		return;
+	}
+
 	assert(m_pCurrentModelInstance != NULL);
 	m_pCurrentModelInstance->BlendRenderWithOneTexture();
 }
 
 void CGrannyLODController::RenderWithTwoTexture()
 {
+	if (m_pGltfModelInstance)
+	{
+		RenderGltfModel();
+		return;
+	}
+
 	assert(m_pCurrentModelInstance != NULL);
 	m_pCurrentModelInstance->RenderWithTwoTexture();
 }
 
 void CGrannyLODController::BlendRenderWithTwoTexture()
 {
+	if (m_pGltfModelInstance)
+	{
+		RenderGltfModel();
+		return;
+	}
+
 	assert(m_pCurrentModelInstance != NULL);
 	m_pCurrentModelInstance->BlendRenderWithTwoTexture();
 }
@@ -454,6 +536,9 @@ void CGrannyLODController::Update(float fElapsedTime, float fDistanceFromCenter,
 
 void CGrannyLODController::UpdateLODLevel(float fDistanceFromCenter, float fDistanceFromCamera)
 {
+	if (m_pGltfModelInstance)
+		return;
+
 	if (m_que_pkModelInst.size()<=1)
 		return;
 	
@@ -529,7 +614,15 @@ void CGrannyLODController::UpdateLODLevel(float fDistanceFromCenter, float fDist
 
 void CGrannyLODController::UpdateTime(float fElapsedTime)
 {
-	assert(m_pCurrentModelInstance != NULL);
+	if (m_pGltfModelInstance)
+	{
+		m_pGltfModelInstance->Update(fElapsedTime);
+		m_pGltfModelInstance->DeformVertices();
+		RefreshAttachedModelInstance();
+	}
+
+	if (!m_pCurrentModelInstance)
+		return;
 
 	m_pCurrentModelInstance->Update(m_dwLODAniFPS);
 
@@ -574,32 +667,66 @@ void CGrannyLODController::SetCurrentModelInstance(CGrannyModelInstance * pgrnMo
 
 void CGrannyLODController::RefreshAttachedModelInstance()
 {
-	if (!m_pCurrentModelInstance)
-		return;
-
 	for (DWORD i = 0; i < m_AttachedModelDataVector.size(); ++i)
 	{
 		TAttachingModelData & rModelData = m_AttachedModelDataVector[i];
-
-		CGrannyModelInstance * pSrcInstance = rModelData.pkLODController->GetModelInstance();
-		if (!pSrcInstance)
-		{
-			Tracenf("CGrannyLODController::RefreshAttachedModelInstance : m_AttachedModelDataVector[%d]->pkLODController->GetModelIntance()==NULL", i);
+		CGrannyLODController * pkChildController = rModelData.pkLODController;
+		if (!pkChildController)
 			continue;
+
+		// 1. Dziecko to model glTF (np. bron glTF)
+		if (pkChildController->m_pGltfModelInstance)
+		{
+			if (m_pGltfModelInstance)
+			{
+				pkChildController->m_pGltfModelInstance->SetParentModelInstance(m_pGltfModelInstance, rModelData.strBoneName.c_str());
+			}
+			else if (m_pCurrentModelInstance)
+			{
+				int iBoneIndex = -1;
+				if (m_pCurrentModelInstance->GetBoneIndexByName(rModelData.strBoneName.c_str(), &iBoneIndex))
+				{
+					const float * pBoneMat = m_pCurrentModelInstance->GetBoneMatrixPointer(iBoneIndex);
+					if (pBoneMat)
+						pkChildController->m_pGltfModelInstance->SetParentBoneMatrix((const EterModelLib::Matrix4x4*)pBoneMat);
+				}
+			}
 		}
 
-		pSrcInstance->SetParentModelInstance(m_pCurrentModelInstance, rModelData.strBoneName.c_str());
+		// 2. Dziecko to model Granny
+		CGrannyModelInstance * pSrcInstance = pkChildController->GetModelInstance();
+		if (pSrcInstance)
+		{
+			if (m_pCurrentModelInstance)
+			{
+				pSrcInstance->SetParentModelInstance(m_pCurrentModelInstance, rModelData.strBoneName.c_str());
+			}
+		}
 	}
 }
 
 void CGrannyLODController::UpdateSkeleton(const D3DXMATRIX * c_pWorldMatrix, float fElapsedTime)
 {
+	if (c_pWorldMatrix)
+		m_matWorld = *c_pWorldMatrix;
+
+	if (m_pGltfModelInstance)
+		m_pGltfModelInstance->Update(fElapsedTime);
+
 	if (m_pCurrentModelInstance)
 		m_pCurrentModelInstance->UpdateSkeleton(c_pWorldMatrix, fElapsedTime);
+
+	RefreshAttachedModelInstance();
 }
 
 void CGrannyLODController::DeformAll(const D3DXMATRIX * c_pWorldMatrix)
 {
+	if (c_pWorldMatrix)
+		m_matWorld = *c_pWorldMatrix;
+
+	if (m_pGltfModelInstance)
+		m_pGltfModelInstance->DeformVertices();
+
 	std::deque<CGrannyModelInstance *>::iterator i;
 	for (i=m_que_pkModelInst.begin(); i!=m_que_pkModelInst.end(); ++i)
 	{
@@ -610,24 +737,48 @@ void CGrannyLODController::DeformAll(const D3DXMATRIX * c_pWorldMatrix)
 
 void CGrannyLODController::DeformNoSkin(const D3DXMATRIX * c_pWorldMatrix)
 {
+	if (c_pWorldMatrix)
+		m_matWorld = *c_pWorldMatrix;
+
+	if (m_pGltfModelInstance)
+		m_pGltfModelInstance->DeformVertices();
+
 	if (m_pCurrentModelInstance)
 		m_pCurrentModelInstance->DeformNoSkin(c_pWorldMatrix);
 }
 
 void CGrannyLODController::Deform(const D3DXMATRIX * c_pWorldMatrix)
 {
+	if (c_pWorldMatrix)
+		m_matWorld = *c_pWorldMatrix;
+
+	if (m_pGltfModelInstance)
+		m_pGltfModelInstance->DeformVertices();
+
 	if (m_pCurrentModelInstance)
 		m_pCurrentModelInstance->Deform(c_pWorldMatrix);
 }
 
 void CGrannyLODController::RenderToShadowMap()
 {
+	if (m_pGltfModelInstance)
+	{
+		RenderGltfModel();
+		return;
+	}
+
 	if (m_pCurrentModelInstance)
 		m_pCurrentModelInstance->RenderWithoutTexture();
 }
 
 void CGrannyLODController::RenderShadow()
 {
+	if (m_pGltfModelInstance)
+	{
+		RenderGltfModel();
+		return;
+	}
+
 	if (m_pCurrentModelInstance)
 		m_pCurrentModelInstance->RenderWithOneTexture();
 }
@@ -640,6 +791,28 @@ void CGrannyLODController::ReloadTexture()
 
 void CGrannyLODController::GetBoundBox(D3DXVECTOR3 * vtMin, D3DXVECTOR3 * vtMax)
 {
+	if (m_pGltfModelInstance)
+	{
+		const std::vector<GltfVertex>& vertices = m_pGltfModelInstance->GetDeformedVertices();
+		if (!vertices.empty())
+		{
+			vtMin->x = vtMax->x = vertices[0].position.x;
+			vtMin->y = vtMax->y = vertices[0].position.y;
+			vtMin->z = vtMax->z = vertices[0].position.z;
+			for (size_t i = 1; i < vertices.size(); ++i)
+			{
+				const auto& pos = vertices[i].position;
+				if (pos.x < vtMin->x) vtMin->x = pos.x;
+				if (pos.x > vtMax->x) vtMax->x = pos.x;
+				if (pos.y < vtMin->y) vtMin->y = pos.y;
+				if (pos.y > vtMax->y) vtMax->y = pos.y;
+				if (pos.z < vtMin->z) vtMin->z = pos.z;
+				if (pos.z > vtMax->z) vtMax->z = pos.z;
+			}
+			return;
+		}
+	}
+
 	if (m_pCurrentModelInstance)
 		m_pCurrentModelInstance->GetBoundBox(vtMin, vtMax);
 }
@@ -653,36 +826,72 @@ bool CGrannyLODController::Intersect(const D3DXMATRIX * c_pMatrix, float * u, fl
 
 void CGrannyLODController::SetLocalTime(float fLocalTime)
 {
+	if (m_pGltfModelInstance)
+		m_pGltfModelInstance->SetCurrentTime(fLocalTime);
+
 	if (m_pCurrentModelInstance)
 		m_pCurrentModelInstance->SetLocalTime(fLocalTime);
 }
 
 void CGrannyLODController::ResetLocalTime()
 {
-	assert(m_pCurrentModelInstance != NULL);
+	if (m_pGltfModelInstance)
+		m_pGltfModelInstance->SetCurrentTime(0.0f);
+
+	if (!m_pCurrentModelInstance)
+		return;
+
 	m_pCurrentModelInstance->ResetLocalTime();
 }
 
 void CGrannyLODController::SetMotionPointer(const CGrannyMotion * c_pMotion, float fBlendTime, int iLoopCount, float speedRatio)
 {
-	assert(m_pCurrentModelInstance != NULL);
+	if (m_pGltfModelInstance && c_pMotion)
+	{
+		if (c_pMotion->GetGltfAnimationPointer() != NULL)
+		{
+			m_pGltfModelInstance->SetPlaySpeed(speedRatio);
+			m_pGltfModelInstance->PlayMotion(c_pMotion->GetName(), iLoopCount == 0);
+		}
+	}
+
+	if (!m_pCurrentModelInstance)
+		return;
+
 	m_pCurrentModelInstance->SetMotionPointer(c_pMotion, fBlendTime, iLoopCount, speedRatio);
 }
 
 void CGrannyLODController::ChangeMotionPointer(const CGrannyMotion * c_pMotion, int iLoopCount, float speedRatio)
 {
-	assert(m_pCurrentModelInstance != NULL);
+	if (m_pGltfModelInstance && c_pMotion)
+	{
+		if (c_pMotion->GetGltfAnimationPointer() != NULL)
+		{
+			m_pGltfModelInstance->SetPlaySpeed(speedRatio);
+			m_pGltfModelInstance->PlayMotion(c_pMotion->GetName(), iLoopCount == 0);
+		}
+	}
+
+	if (!m_pCurrentModelInstance)
+		return;
+
 	m_pCurrentModelInstance->ChangeMotionPointer(c_pMotion, iLoopCount, speedRatio);
 }
 
 void CGrannyLODController::SetMotionAtEnd()
 {
+	if (m_pGltfModelInstance)
+		m_pGltfModelInstance->SetCurrentTime(m_pGltfModelInstance->GetDuration());
+
 	if (m_pCurrentModelInstance)
 		m_pCurrentModelInstance->SetMotionAtEnd();
 }
 
 BOOL CGrannyLODController::isModelInstance()
 {
+	if (m_pGltfModelInstance != NULL)
+		return TRUE;
+
 	if (!m_pCurrentModelInstance)
 		return FALSE;
 
@@ -692,4 +901,184 @@ BOOL CGrannyLODController::isModelInstance()
 CGrannyModelInstance * CGrannyLODController::GetModelInstance()
 {
 	return m_pCurrentModelInstance;
+}
+
+bool CGrannyLODController::isGltfModelInstance() const
+{
+	return (m_pGltfModelInstance != NULL);
+}
+
+EterModelLib::CGltfModelInstance * CGrannyLODController::GetGltfModelInstance()
+{
+	return m_pGltfModelInstance;
+}
+
+const float * CGrannyLODController::GetBoneMatrixPointer(int iBone) const
+{
+	if (m_pGltfModelInstance)
+	{
+		const auto* pMat = m_pGltfModelInstance->GetBoneMatrixPointer(iBone);
+		if (pMat)
+		{
+			return &pMat->m[0][0];
+		}
+		return NULL;
+	}
+
+	if (m_pCurrentModelInstance)
+		return m_pCurrentModelInstance->GetBoneMatrixPointer(iBone);
+
+	return NULL;
+}
+
+const float * CGrannyLODController::GetBoneMatrixPointer(const char* c_szBoneName) const
+{
+	if (m_pGltfModelInstance)
+	{
+		const auto* pMat = m_pGltfModelInstance->GetBoneMatrixPointer(c_szBoneName);
+		if (pMat)
+		{
+			return &pMat->m[0][0];
+		}
+		return NULL;
+	}
+
+	if (m_pCurrentModelInstance)
+	{
+		int boneIdx = -1;
+		if (m_pCurrentModelInstance->GetBoneIndexByName(c_szBoneName, &boneIdx))
+			return m_pCurrentModelInstance->GetBoneMatrixPointer(boneIdx);
+	}
+
+	return NULL;
+}
+
+bool CGrannyLODController::GetBoneIndexByName(const char* c_szBoneName, int* pBoneIndex) const
+{
+	if (m_pGltfModelInstance && m_pGltfModelInstance->GetModel())
+	{
+		int boneIdx = m_pGltfModelInstance->GetModel()->FindBoneIndex(c_szBoneName);
+		if (boneIdx >= 0)
+		{
+			if (pBoneIndex)
+				*pBoneIndex = boneIdx;
+			return true;
+		}
+		return false;
+	}
+
+	if (m_pCurrentModelInstance)
+		return m_pCurrentModelInstance->GetBoneIndexByName(c_szBoneName, pBoneIndex);
+
+	return false;
+}
+
+const std::vector<EterModelLib::GltfVertex>& CGrannyLODController::GetDeformedVertices() const
+{
+	static const std::vector<EterModelLib::GltfVertex> s_empty;
+	if (m_pGltfModelInstance)
+		return m_pGltfModelInstance->GetDeformedVertices();
+	return s_empty;
+}
+
+DWORD CGrannyLODController::GetDeformableVertexCount() const
+{
+	if (m_pGltfModelInstance && m_pGltfModelInstance->GetModel())
+		return (DWORD)m_pGltfModelInstance->GetModel()->GetVertexCount();
+	if (m_pCurrentModelInstance)
+		return m_pCurrentModelInstance->GetDeformableVertexCount();
+	return 0;
+}
+
+DWORD CGrannyLODController::GetVertexCount() const
+{
+	if (m_pGltfModelInstance && m_pGltfModelInstance->GetModel())
+		return (DWORD)m_pGltfModelInstance->GetModel()->GetVertexCount();
+	if (m_pCurrentModelInstance)
+		return m_pCurrentModelInstance->GetVertexCount();
+	return 0;
+}
+
+void CGrannyLODController::RenderGltfModel()
+{
+	if (!m_pGltfModelInstance)
+		return;
+
+	const EterModelLib::CGltfModel* pModel = m_pGltfModelInstance->GetModel();
+	if (!pModel || !pModel->IsLoaded())
+		return;
+
+	const std::vector<GltfVertex>& deformedVertices = m_pGltfModelInstance->GetDeformedVertices();
+	if (deformedVertices.empty())
+		return;
+
+	const GltfModelData& modelData = pModel->GetModelData();
+	if (modelData.indices.empty())
+		return;
+
+	static LPDIRECT3DVERTEXDECLARATION9 s_pGltfVertexDecl = NULL;
+	if (!s_pGltfVertexDecl && ms_lpd3dDevice)
+	{
+		D3DVERTEXELEMENT9 elements[] =
+		{
+			{ 0, 0,  D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
+			{ 0, 12, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_NORMAL,   0 },
+			{ 0, 24, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
+			{ 0, 32, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 1 },
+			D3DDECL_END()
+		};
+		ms_lpd3dDevice->CreateVertexDeclaration(elements, &s_pGltfVertexDecl);
+	}
+
+	if (s_pGltfVertexDecl)
+	{
+		STATEMANAGER.SetVertexDeclaration(s_pGltfVertexDecl);
+	}
+
+	STATEMANAGER.SetTransform(D3DTS_WORLD, &m_matWorld);
+
+	for (size_t s = 0; s < modelData.submeshes.size(); ++s)
+	{
+		const GltfSubmesh& submesh = modelData.submeshes[s];
+		if (submesh.indexCount == 0)
+			continue;
+
+		UINT primitiveCount = submesh.indexCount / 3;
+		if (primitiveCount == 0 || (submesh.indexOffset + submesh.indexCount) > modelData.indices.size())
+			continue;
+
+		LPDIRECT3DTEXTURE9 pD3DTexture = NULL;
+		if (submesh.materialIndex >= 0 && submesh.materialIndex < (int)modelData.materials.size())
+		{
+			const GltfMaterial& mat = modelData.materials[submesh.materialIndex];
+			if (!mat.diffuseTexture.empty())
+			{
+				CResource* pResource = CResourceManager::Instance().GetResourcePointer(mat.diffuseTexture.c_str());
+				if (pResource)
+				{
+					CGraphicImage* pImage = static_cast<CGraphicImage*>(pResource);
+					if (pImage)
+					{
+						pD3DTexture = pImage->GetD3DTexture();
+					}
+				}
+			}
+		}
+
+		STATEMANAGER.SetTexture(0, pD3DTexture);
+		STATEMANAGER.SetTexture(1, NULL);
+
+		UINT numVertices = submesh.vertexCount > 0 ? submesh.vertexCount : (UINT)deformedVertices.size();
+
+		STATEMANAGER.DrawIndexedPrimitiveUP(
+			D3DPT_TRIANGLELIST,
+			0,
+			numVertices,
+			primitiveCount,
+			&modelData.indices[submesh.indexOffset],
+			D3DFMT_INDEX32,
+			deformedVertices.data(),
+			sizeof(GltfVertex)
+		);
+	}
 }

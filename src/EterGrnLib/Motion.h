@@ -1,5 +1,7 @@
 #pragma once
 
+#include "EterModelLib/GltfTypes.h"
+
 class CGrannyMotion
 {
 	public:
@@ -10,8 +12,10 @@ class CGrannyMotion
 
 		void				Destroy();
 		bool				BindGrannyAnimation(granny_animation* pgrnAni);
+		bool				BindGltfAnimation(const GltfMotionData* pGltfMotion);
 
 		granny_animation *	GetGrannyAnimationPointer() const;
+		const GltfMotionData * GetGltfAnimationPointer() const;
 
 		const char *		GetName() const;
 		float				GetDuration() const;
@@ -22,4 +26,6 @@ class CGrannyMotion
 
 	protected:
 		granny_animation *	m_pgrnAni;
+		const GltfMotionData * m_pGltfMotion;
 };
+

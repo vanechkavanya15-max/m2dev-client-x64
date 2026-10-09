@@ -2,6 +2,12 @@
 
 #include "Model.h"
 #include "Motion.h"
+#include "EterModelLib/GltfTypes.h"
+
+namespace EterModelLib
+{
+	class CGltfModel;
+}
 
 class CGraphicThing : public CResource
 {
@@ -17,6 +23,14 @@ class CGraphicThing : public CResource
 
 		virtual bool			CreateDeviceObjects();
 		virtual void			DestroyDeviceObjects();
+
+		bool					IsGltf() const;
+		EterModelLib::CGltfModel * GetGltfModelPointer();
+		bool					CreateFromGltfModel(EterModelLib::CGltfModel * pGltfModel);
+		bool					CreateFromGltfModelData(const GltfModelData & data);
+		bool					LoadFromMemory(int iSize, const void* c_pvBuf);
+		bool					LoadFromFile(const char* c_szFileName);
+		bool					RegisterMotion(const GltfMotionData& motion);
 
 		bool					CheckModelIndex(int iModel) const;
 		CGrannyModel *			GetModelPointer(int iModel);
@@ -46,4 +60,7 @@ class CGraphicThing : public CResource
 
 		CGrannyModel *			m_models;
 		CGrannyMotion *			m_motions;
+
+		EterModelLib::CGltfModel * m_pGltfModel;
 };
+

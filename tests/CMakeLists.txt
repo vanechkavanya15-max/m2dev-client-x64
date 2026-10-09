@@ -550,3 +550,64 @@ target_link_libraries(test_c26_test_harness_engine PRIVATE
 add_test(NAME TestHarnessEngineTest COMMAND test_c26_test_harness_engine)
 
 
+add_executable(test_c26_gltf_math test_c26_gltf_math.cpp ../src/EterModelLib/SkeletalMath.cpp)
+add_test(NAME test_c26_gltf_math COMMAND test_c26_gltf_math)
+
+add_executable(test_c26_gltf_model test_c26_gltf_model.cpp)
+target_include_directories(test_c26_gltf_model PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/extern/include
+)
+target_link_libraries(test_c26_gltf_model PRIVATE
+    EterModelLib
+)
+add_test(NAME test_c26_gltf_model COMMAND test_c26_gltf_model)
+
+add_executable(test_c27_gltf_pipeline test_c27_gltf_pipeline.cpp)
+target_include_directories(test_c27_gltf_pipeline PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/extern/include
+)
+target_link_libraries(test_c27_gltf_pipeline PRIVATE
+    EterModelLib
+)
+add_test(NAME test_c27_gltf_pipeline COMMAND test_c27_gltf_pipeline)
+
+add_executable(test_c28_real_simulation test_c28_real_simulation.cpp)
+target_include_directories(test_c28_real_simulation PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/extern/include
+)
+target_link_libraries(test_c28_real_simulation PRIVATE
+    EterModelLib
+)
+add_test(NAME test_c28_real_simulation COMMAND test_c28_real_simulation)
+
+add_executable(test_c29_gltf_d3d_bridge test_c29_gltf_d3d_bridge.cpp)
+target_include_directories(test_c29_gltf_d3d_bridge PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/extern/include
+    ${CMAKE_SOURCE_DIR}/vendor/libsodium/src/libsodium/include
+    ${CMAKE_SOURCE_DIR}/vendor/zstd-1.5.7/lib
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+target_link_libraries(test_c29_gltf_d3d_bridge PRIVATE
+    EterGrnLib
+    EterModelLib
+    EterLib
+    EterImageLib
+    PackLib
+    EterBase
+    DirectX
+    Granny
+    sodium
+    freetype
+    libzstd_static
+    lzo2
+    mio
+    ws2_32
+)
+add_test(NAME test_c29_gltf_d3d_bridge COMMAND test_c29_gltf_d3d_bridge)
+
+
+

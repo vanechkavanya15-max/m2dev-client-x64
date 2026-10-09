@@ -5,9 +5,17 @@
 #include <deque>
 #include "Thing.h"
 #include "ModelInstance.h"
+#include "EterModelLib/GltfTypes.h"
+
+namespace EterModelLib
+{
+	class CGltfModelInstance;
+}
 
 class CGrannyLODController : public CGraphicBase
 {
+	friend class CGraphicThingInstance;
+
 	public:
 		static void SetMinLODMode(bool isEnable);		
 
@@ -27,7 +35,7 @@ class CGrannyLODController : public CGraphicBase
 			
 			void operator() (CGrannyLODController * pController)
 			{
-				if (pController->isModelInstance())
+				if (pController->isModelInstance() || pController->isGltfModelInstance())
 					pController->UpdateTime(fElapsedTime);
 			}
 		};
@@ -39,7 +47,7 @@ class CGrannyLODController : public CGraphicBase
 
 			void operator() (CGrannyLODController * pController)
 			{
-				if (pController->isModelInstance())
+				if (pController->isModelInstance() || pController->isGltfModelInstance())
 					pController->UpdateLODLevel(fDistanceFromCenter, fDistanceFromCamera);
 			}
 		};
@@ -48,7 +56,7 @@ class CGrannyLODController : public CGraphicBase
 		{
 			void operator() (CGrannyLODController * pController)
 			{
-				if (pController->isModelInstance())
+				if (pController->isModelInstance() || pController->isGltfModelInstance())
 					pController->RenderWithOneTexture();
 			}
 		};
@@ -57,7 +65,7 @@ class CGrannyLODController : public CGraphicBase
 		{
 			void operator() (CGrannyLODController * pController)
 			{
-				if (pController->isModelInstance())
+				if (pController->isModelInstance() || pController->isGltfModelInstance())
 					pController->BlendRenderWithOneTexture();
 			}
 		};
@@ -66,7 +74,7 @@ class CGrannyLODController : public CGraphicBase
 		{
 			void operator() (CGrannyLODController * pController)
 			{
-				if (pController->isModelInstance())
+				if (pController->isModelInstance() || pController->isGltfModelInstance())
 					pController->RenderWithTwoTexture();
 			}
 		};
@@ -75,7 +83,7 @@ class CGrannyLODController : public CGraphicBase
 		{
 			void operator() (CGrannyLODController * pController)
 			{
-				if (pController->isModelInstance())
+				if (pController->isModelInstance() || pController->isGltfModelInstance())
 					pController->BlendRenderWithTwoTexture();
 			}
 		};
@@ -84,7 +92,7 @@ class CGrannyLODController : public CGraphicBase
 		{
 			void operator() (CGrannyLODController * pController)
 			{
-				if (pController->isModelInstance())
+				if (pController->isModelInstance() || pController->isGltfModelInstance())
 					pController->RenderToShadowMap();
 			}
 		};
@@ -93,7 +101,7 @@ class CGrannyLODController : public CGraphicBase
 		{
 			void operator() (CGrannyLODController * pController)
 			{
-				if (pController->isModelInstance())
+				if (pController->isModelInstance() || pController->isGltfModelInstance())
 					pController->RenderShadow();
 			}
 		};
@@ -104,7 +112,7 @@ class CGrannyLODController : public CGraphicBase
 			
 			void operator() (CGrannyLODController * pController)
 			{
-				if (pController->isModelInstance())
+				if (pController->isModelInstance() || pController->isGltfModelInstance())
 					pController->Deform(mc_pWorldMatrix);
 			}
 		};
@@ -114,7 +122,7 @@ class CGrannyLODController : public CGraphicBase
 			
 			void operator() (CGrannyLODController * pController)
 			{
-				if (pController->isModelInstance())
+				if (pController->isModelInstance() || pController->isGltfModelInstance())
 					pController->DeformNoSkin(mc_pWorldMatrix);
 			}
 		};
@@ -124,7 +132,7 @@ class CGrannyLODController : public CGraphicBase
 			
 			void operator() (CGrannyLODController * pController)
 			{
-				if (pController->isModelInstance())
+				if (pController->isModelInstance() || pController->isGltfModelInstance())
 					pController->DeformAll(mc_pWorldMatrix);
 			}
 		};
@@ -133,7 +141,7 @@ class CGrannyLODController : public CGraphicBase
 		{
 			void operator() (CGrannyLODController * pController)
 			{
-				if (pController->isModelInstance())
+				if (pController->isModelInstance() || pController->isGltfModelInstance())
 					pController->CreateDeviceObjects();
 			}
 		};
@@ -142,7 +150,7 @@ class CGrannyLODController : public CGraphicBase
 		{
 			void operator() (CGrannyLODController * pController)
 			{
-				if (pController->isModelInstance())
+				if (pController->isModelInstance() || pController->isGltfModelInstance())
 					pController->DestroyDeviceObjects();
 			}
 		};
@@ -160,7 +168,7 @@ class CGrannyLODController : public CGraphicBase
 
 			void operator() (CGrannyLODController * pController)
 			{
-				if (pController->isModelInstance())
+				if (pController->isModelInstance() || pController->isGltfModelInstance())
 					pController->GetBoundBox(m_vtMin, m_vtMax);
 			}
 		};
@@ -169,7 +177,7 @@ class CGrannyLODController : public CGraphicBase
 		{
 			void operator() (CGrannyLODController * pController)
 			{
-				if (pController->isModelInstance())
+				if (pController->isModelInstance() || pController->isGltfModelInstance())
 					pController->ResetLocalTime();
 			}
 		};
@@ -178,7 +186,7 @@ class CGrannyLODController : public CGraphicBase
 		{
 			void operator () (CGrannyLODController * pController)
 			{
-				if (pController->isModelInstance())
+				if (pController->isModelInstance() || pController->isGltfModelInstance())
 					pController->ReloadTexture();
 			}
 		};
@@ -192,7 +200,7 @@ class CGrannyLODController : public CGraphicBase
 
 			void operator() (CGrannyLODController * pController)
 			{
-				if (pController->isModelInstance())
+				if (pController->isModelInstance() || pController->isGltfModelInstance())
 					pController->SetMotionPointer(m_pMotion, m_blendTime, m_loopCount, m_speedRatio);
 			}
 		};
@@ -205,7 +213,7 @@ class CGrannyLODController : public CGraphicBase
 
 			void operator() (CGrannyLODController * pController)
 			{
-				if (pController->isModelInstance())
+				if (pController->isModelInstance() || pController->isGltfModelInstance())
 					pController->ChangeMotionPointer(m_pMotion, m_loopCount, m_speedRatio);
 			}
 		};
@@ -216,7 +224,7 @@ class CGrannyLODController : public CGraphicBase
 
 			void operator () (CGrannyLODController * pController)
 			{
-				if (pController->isModelInstance())
+				if (pController->isModelInstance() || pController->isGltfModelInstance())
 					pController->SetMotionAtEnd();
 			}
 		};
@@ -271,7 +279,22 @@ class CGrannyLODController : public CGraphicBase
 		CGrannyModelInstance*	GetModelInstance();
 		bool	HaveBlendThing() { return 0 != GetModelInstance() ? GetModelInstance()->HaveBlendThing() : false; }		// NOTE: GetModelInstance() == 0일 때 클라 크래쉬나는 문제 수정(2012. 05. 07)
 
+		bool	isGltfModelInstance() const;
+		bool	IsGltf() const { return isGltfModelInstance(); }
+		EterModelLib::CGltfModelInstance * GetGltfModelInstance();
+
+		const float *			GetBoneMatrixPointer(int iBone) const;
+		const float *			GetBoneMatrixPointer(const char* c_szBoneName) const;
+		bool					GetBoneIndexByName(const char* c_szBoneName, int* pBoneIndex) const;
+
+		const std::vector<EterModelLib::GltfVertex>& GetDeformedVertices() const;
+		DWORD					GetDeformableVertexCount() const;
+		DWORD					GetVertexCount() const;
+
+		CGrannyLODController *	GetAttachedParentModel() const { return m_pAttachedParentModel; }
+
 	protected:
+		void	RenderGltfModel();
 		void	SetCurrentModelInstance(CGrannyModelInstance * pgrnModelInstance);
 		void	RefreshAttachedModelInstance();
 
@@ -301,4 +324,7 @@ class CGrannyLODController : public CGraphicBase
 
 		CGraphicVertexBuffer*	m_pkSharedDeformableVertexBuffer;
 		// END_OF_WORK
+
+		EterModelLib::CGltfModelInstance *	m_pGltfModelInstance;
+		D3DXMATRIX							m_matWorld;
 };

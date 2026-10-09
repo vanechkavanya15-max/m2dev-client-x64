@@ -29,6 +29,7 @@ class CGraphicImage : public CResource
 
 		const CGraphicTexture & GetTextureReference() const;
 		CGraphicTexture * GetTexturePointer();
+		LPDIRECT3DTEXTURE9 GetD3DTexture() const { return m_imageTexture.GetD3DTexture(); }
 
 		bool OnLoadFromDecodedData(const TDecodedImageData& decodedImage);
 
