@@ -803,7 +803,7 @@ bool CInstanceBase::CanUseSkill()
 	if (IsHoldingPickAxe())
 		return false;
 
-	if (!m_kHorse.CanUseSkill())
+	if (!m_mountComponent.CanUseSkill())
 		return false;
 
 	if (!m_GraphicThingInstance.CanUseSkill())
@@ -814,7 +814,7 @@ bool CInstanceBase::CanUseSkill()
 
 bool CInstanceBase::CanAttack()
 {
-	if (!m_kHorse.CanAttack())
+	if (!m_mountComponent.CanAttack())
 		return false;
 
 	if (IsWearingDress())
@@ -1672,7 +1672,7 @@ void CInstanceBase::Deform()
 
 	m_GraphicThingInstance.INSTANCEBASE_Deform();
 
-	m_kHorse.Deform();
+	m_mountComponent.Deform();
 }
 
 void CInstanceBase::RenderTrace()
@@ -1694,7 +1694,7 @@ void CInstanceBase::Render()
 
 	++ms_dwRenderCounter;
 
-	m_kHorse.Render();
+	m_mountComponent.Render();
 	m_GraphicThingInstance.Render();
 
 	CPythonCharacterManager& rkChrMgr = CPythonCharacterManager::Instance();
@@ -1908,11 +1908,12 @@ bool CInstanceBase::IsConflictAlignmentInstance(CInstanceBase& rkInstVictim)
 void CInstanceBase::SetDuelMode(DWORD type)
 {
 	m_dwDuelMode = type;
+	m_combatComponent.SetDuelMode(type);
 }
 
 DWORD CInstanceBase::GetDuelMode()
 {
-	return m_dwDuelMode;
+	return m_combatComponent.GetDuelMode();
 }
 
 bool CInstanceBase::IsAttackableInstance(CInstanceBase& rkInstVictim)
@@ -2309,7 +2310,7 @@ void CInstanceBase::RefreshState(DWORD dwMotIndex, bool isLoop)
 	}
 	else if (IsHoldingPickAxe())
 	{
-		if (m_kHorse.IsMounting())
+		if (m_mountComponent.IsMounting())
 		{
 			SetMotionMode(CRaceMotionData::MODE_HORSE);
 		}
@@ -2320,7 +2321,7 @@ void CInstanceBase::RefreshState(DWORD dwMotIndex, bool isLoop)
 	}
 	else if (CItemData::ITEM_TYPE_ROD == byItemType)
 	{
-		if (m_kHorse.IsMounting())
+		if (m_mountComponent.IsMounting())
 		{
 			SetMotionMode(CRaceMotionData::MODE_HORSE);
 		}
@@ -2329,7 +2330,7 @@ void CInstanceBase::RefreshState(DWORD dwMotIndex, bool isLoop)
 			SetMotionMode(CRaceMotionData::MODE_FISHING);
 		}
 	}
-	else if (m_kHorse.IsMounting())
+	else if (m_mountComponent.IsMounting())
 	{
 		SetMotionMode(GetHorseMotionMode(bySubType));
 	}
@@ -2434,6 +2435,7 @@ void CInstanceBase::Destroy()
 	m_visualComponent.Clear();
 	m_physicsComponent.Clear();
 	m_combatComponent.Clear();
+	m_mountComponent.Clear();
 	
 	__Initialize();
 }
@@ -2527,6 +2529,7 @@ CInstanceBase::CInstanceBase()
 	: m_visualComponent(m_GraphicThingInstance)
 	, m_physicsComponent(m_GraphicThingInstance)
 	, m_combatComponent()
+	, m_mountComponent()
 {
 	__Initialize();
 }

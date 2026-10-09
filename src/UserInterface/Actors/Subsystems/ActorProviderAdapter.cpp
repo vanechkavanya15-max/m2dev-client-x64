@@ -17,27 +17,27 @@ namespace UserInterface::Actors::Subsystems
     {
     }
 
-    CInstanceBase* ActorProviderAdapter::GetInstance(uint32_t dwVID) const
+    CInstanceBase* ActorProviderAdapter::GetInstance(uint32_t vid) const
     {
-        if (dwVID == 0)
+        if (vid == 0)
             return nullptr;
 
         if (m_pRegistry != nullptr)
         {
-            return m_pRegistry->FindActor(dwVID);
+            return m_pRegistry->FindActor(vid);
         }
 
         // Delegacja awaryjna do istniejacej fasady CPythonCharacterManager
-        return CPythonCharacterManager::Instance().GetInstancePtr(dwVID);
+        return CPythonCharacterManager::Instance().GetInstancePtr(vid);
     }
 
     CInstanceBase* ActorProviderAdapter::GetMainActor() const
     {
         if (m_mainActorVID != 0)
         {
-            CInstanceBase* pMain = GetInstance(m_mainActorVID);
-            if (pMain != nullptr)
-                return pMain;
+            CInstanceBase* mainActor = GetInstance(m_mainActorVID);
+            if (mainActor != nullptr)
+                return mainActor;
         }
 
         // Delegacja awaryjna
@@ -48,60 +48,60 @@ namespace UserInterface::Actors::Subsystems
     {
         if (m_pPicker != nullptr)
         {
-            CInstanceBase* pPicked = m_pPicker->GetPickedActor();
-            if (pPicked != nullptr)
-                return pPicked;
+            CInstanceBase* pickedActor = m_pPicker->GetPickedActor();
+            if (pickedActor != nullptr)
+                return pickedActor;
         }
 
         // Delegacja awaryjna
         return CPythonCharacterManager::Instance().GetPickedActorPtr();
     }
 
-    bool ActorProviderAdapter::IsActorAlive(uint32_t dwVID) const
+    bool ActorProviderAdapter::IsActorAlive(uint32_t vid) const
     {
-        if (dwVID == 0)
+        if (vid == 0)
             return false;
 
-        CInstanceBase* pActor = GetInstance(dwVID);
-        if (pActor == nullptr)
+        CInstanceBase* actor = GetInstance(vid);
+        if (actor == nullptr)
             return false;
 
-        return (pActor->IsDead() == FALSE);
+        return (actor->IsDead() == FALSE);
     }
 
-    bool ActorProviderAdapter::GetActorPosition(uint32_t dwVID, TPixelPosition* pOutPos) const
+    bool ActorProviderAdapter::GetActorPosition(uint32_t vid, TPixelPosition* outPos) const
     {
-        if (dwVID == 0 || pOutPos == nullptr)
+        if (vid == 0 || outPos == nullptr)
             return false;
 
-        CInstanceBase* pActor = GetInstance(dwVID);
-        if (pActor == nullptr)
+        CInstanceBase* actor = GetInstance(vid);
+        if (actor == nullptr)
             return false;
 
-        pActor->NEW_GetPixelPosition(pOutPos);
+        actor->NEW_GetPixelPosition(outPos);
         return true;
     }
 
-    float ActorProviderAdapter::GetDistance(uint32_t dwVID1, uint32_t dwVID2) const
+    float ActorProviderAdapter::GetDistance(uint32_t vid1, uint32_t vid2) const
     {
-        if (dwVID1 == 0 || dwVID2 == 0)
+        if (vid1 == 0 || vid2 == 0)
             return -1.0f;
 
-        if (dwVID1 == dwVID2)
+        if (vid1 == vid2)
         {
-            return (GetInstance(dwVID1) != nullptr) ? 0.0f : -1.0f;
+            return (GetInstance(vid1) != nullptr) ? 0.0f : -1.0f;
         }
 
-        CInstanceBase* pActor1 = GetInstance(dwVID1);
-        CInstanceBase* pActor2 = GetInstance(dwVID2);
-        if (pActor1 == nullptr || pActor2 == nullptr)
+        CInstanceBase* actor1 = GetInstance(vid1);
+        CInstanceBase* actor2 = GetInstance(vid2);
+        if (actor1 == nullptr || actor2 == nullptr)
             return -1.0f;
 
         TPixelPosition pos1(0.0f, 0.0f, 0.0f);
         TPixelPosition pos2(0.0f, 0.0f, 0.0f);
 
-        pActor1->NEW_GetPixelPosition(&pos1);
-        pActor2->NEW_GetPixelPosition(&pos2);
+        actor1->NEW_GetPixelPosition(&pos1);
+        actor2->NEW_GetPixelPosition(&pos2);
 
         float dx = pos1.x - pos2.x;
         float dy = pos1.y - pos2.y;
@@ -110,22 +110,22 @@ namespace UserInterface::Actors::Subsystems
         return std::sqrt(dx * dx + dy * dy + dz * dz);
     }
 
-    bool ActorProviderAdapter::IsSamePartyMember(uint32_t dwVID1, uint32_t dwVID2) const
+    bool ActorProviderAdapter::IsSamePartyMember(uint32_t vid1, uint32_t vid2) const
     {
-        if (dwVID1 == 0 || dwVID2 == 0)
+        if (vid1 == 0 || vid2 == 0)
             return false;
 
         if (IAbstractPlayer::GetSingletonPtr() != nullptr)
         {
-            return IAbstractPlayer::GetSingleton().IsSamePartyMember(dwVID1, dwVID2);
+            return IAbstractPlayer::GetSingleton().IsSamePartyMember(vid1, vid2);
         }
 
         // Alternatywna weryfikacja na podstawie flag instancji
-        CInstanceBase* pActor1 = GetInstance(dwVID1);
-        CInstanceBase* pActor2 = GetInstance(dwVID2);
-        if (pActor1 != nullptr && pActor2 != nullptr)
+        CInstanceBase* actor1 = GetInstance(vid1);
+        CInstanceBase* actor2 = GetInstance(vid2);
+        if (actor1 != nullptr && actor2 != nullptr)
         {
-            return (pActor1->IsPartyMember() && pActor2->IsPartyMember());
+            return (actor1->IsPartyMember() && actor2->IsPartyMember());
         }
 
         return false;
@@ -151,9 +151,9 @@ namespace UserInterface::Actors::Subsystems
         return m_pPicker;
     }
 
-    void ActorProviderAdapter::SetMainActorVID(uint32_t dwVID) noexcept
+    void ActorProviderAdapter::SetMainActorVID(uint32_t vid) noexcept
     {
-        m_mainActorVID = dwVID;
+        m_mainActorVID = vid;
     }
 
     uint32_t ActorProviderAdapter::GetMainActorVID() const noexcept

@@ -16,28 +16,28 @@ using Client::World::EntityVid;
 
 int CHAR_STAGE_VIEW_BOUND = 200 * 100;
 
-void CPythonCharacterManager::AdjustCollisionWithOtherObjects(CActorInstance* pInst)
+void CPythonCharacterManager::AdjustCollisionWithOtherObjects(CActorInstance* targetActor)
 {
-	if (!pInst->IsPC())
+	if (!targetActor || !targetActor->IsPC())
 		return;
 
-	CPythonCharacterManager& rkChrMgr = CPythonCharacterManager::Instance();
-	for (CPythonCharacterManager::CharacterIterator i = rkChrMgr.CharacterInstanceBegin(); i != rkChrMgr.CharacterInstanceEnd(); ++i)
+	for (const auto& [vid, actor] : m_aliveActorsMap)
 	{
-		CInstanceBase* pkInstEach = *i;
-		CActorInstance* rkActorEach = pkInstEach->GetGraphicThingInstancePtr();
-
-		if (rkActorEach == pInst)
+		if (!actor)
 			continue;
 
-		if (rkActorEach->IsPC() || rkActorEach->IsNPC() || rkActorEach->IsEnemy())
+		CActorInstance* graphicActor = actor->GetGraphicThingInstancePtr();
+		if (!graphicActor || graphicActor == targetActor)
 			continue;
 
-		if (pInst->TestPhysicsBlendingCollision(*rkActorEach))
+		if (graphicActor->IsPC() || graphicActor->IsNPC() || graphicActor->IsEnemy())
+			continue;
+
+		if (targetActor->TestPhysicsBlendingCollision(*graphicActor))
 		{
 			TPixelPosition curPos;
-			pInst->GetPixelPosition(&curPos);
-			pInst->SetBlendingPosition(curPos);
+			targetActor->GetPixelPosition(&curPos);
+			targetActor->SetBlendingPosition(curPos);
 			break;
 		}
 	}
@@ -51,26 +51,26 @@ void CPythonCharacterManager::InsertPVPKey(DWORD dwVIDSrc, DWORD dwVIDDst)
 {
 	CInstanceBase::InsertPVPKey(dwVIDSrc, dwVIDDst);
 
-	CInstanceBase* pkInstSrc = GetInstancePtr(dwVIDSrc);
-	if (pkInstSrc)
-		pkInstSrc->RefreshTextTail();
+	CInstanceBase* srcActor = GetInstancePtr(dwVIDSrc);
+	if (srcActor)
+		srcActor->RefreshTextTail();
 
-	CInstanceBase* pkInstDst = GetInstancePtr(dwVIDDst);
-	if (pkInstDst)
-		pkInstDst->RefreshTextTail();
+	CInstanceBase* dstActor = GetInstancePtr(dwVIDDst);
+	if (dstActor)
+		dstActor->RefreshTextTail();
 }
 
 void CPythonCharacterManager::RemovePVPKey(DWORD dwVIDSrc, DWORD dwVIDDst)
 {
 	CInstanceBase::RemovePVPKey(dwVIDSrc, dwVIDDst);
 
-	CInstanceBase* pkInstSrc = GetInstancePtr(dwVIDSrc);
-	if (pkInstSrc)
-		pkInstSrc->RefreshTextTail();
+	CInstanceBase* srcActor = GetInstancePtr(dwVIDSrc);
+	if (srcActor)
+		srcActor->RefreshTextTail();
 
-	CInstanceBase* pkInstDst = GetInstancePtr(dwVIDDst);
-	if (pkInstDst)
-		pkInstDst->RefreshTextTail();
+	CInstanceBase* dstActor = GetInstancePtr(dwVIDDst);
+	if (dstActor)
+		dstActor->RefreshTextTail();
 }
 
 void CPythonCharacterManager::ChangeGVG(DWORD dwSrcGuildID, DWORD dwDstGuildID)
@@ -107,6 +107,103 @@ bool CPythonCharacterManager::SetMainInstance(DWORD dwVID)
 CInstanceBase* CPythonCharacterManager::GetMainActorPtr()
 {
 	return m_mainActor;
+}
+
+EntityVid CPythonCharacterManager::GetMainActorVid() const noexcept
+{
+	return m_actorRegistry.GetMainActorVid();
+}
+
+std::optional<Client::Actor::EntityHandle> CPythonCharacterManager::GetMainActorHandle() const noexcept
+{
+	if (m_mainActor)
+	{
+		return m_mainActor->GetGenerationalHandle();
+	}
+	return std::nullopt;
+}
+
+std::optional<Client::Actor::EntityHandle> CPythonCharacterManager::GetActorHandle(DWORD vid) const noexcept
+{
+	auto it = m_aliveActorsMap.find(vid);
+	if (it != m_aliveActorsMap.end() && it->second)
+	{
+		return it->second->GetGenerationalHandle();
+	}
+	return std::nullopt;
+}
+
+std::optional<Client::Actor::EntityHandle> CPythonCharacterManager::GetActorHandle(EntityVid vid) const noexcept
+{
+	return GetActorHandle(vid.get());
+}
+
+bool CPythonCharacterManager::IsActorAlive(EntityVid vid) const noexcept
+{
+	return const_cast<CPythonCharacterManager*>(this)->IsAliveVID(vid.get());
+}
+
+bool CPythonCharacterManager::IsActorAlive(DWORD vid) const noexcept
+{
+	return const_cast<CPythonCharacterManager*>(this)->IsAliveVID(vid);
+}
+
+bool CPythonCharacterManager::IsActorDead(EntityVid vid) const noexcept
+{
+	return const_cast<CPythonCharacterManager*>(this)->IsDeadVID(vid.get());
+}
+
+bool CPythonCharacterManager::IsActorDead(DWORD vid) const noexcept
+{
+	return const_cast<CPythonCharacterManager*>(this)->IsDeadVID(vid);
+}
+
+bool CPythonCharacterManager::HasActor(EntityVid vid) const noexcept
+{
+	return const_cast<CPythonCharacterManager*>(this)->IsRegisteredVID(vid.get());
+}
+
+bool CPythonCharacterManager::HasActor(DWORD vid) const noexcept
+{
+	return const_cast<CPythonCharacterManager*>(this)->IsRegisteredVID(vid);
+}
+
+CInstanceBase* CPythonCharacterManager::GetActor(EntityVid vid) const noexcept
+{
+	return const_cast<CPythonCharacterManager*>(this)->GetInstancePtr(vid.get());
+}
+
+CInstanceBase* CPythonCharacterManager::GetActor(DWORD vid) const noexcept
+{
+	return const_cast<CPythonCharacterManager*>(this)->GetInstancePtr(vid);
+}
+
+std::optional<EntityVid> CPythonCharacterManager::GetPickedActorVid() const noexcept
+{
+	if (m_pickedActor)
+	{
+		return EntityVid(m_pickedActor->GetVirtualID());
+	}
+	return std::nullopt;
+}
+
+std::optional<EntityVid> CPythonCharacterManager::GetSelectedActorVid() const noexcept
+{
+	if (m_boundActor)
+	{
+		return EntityVid(m_boundActor->GetVirtualID());
+	}
+	return std::nullopt;
+}
+
+bool CPythonCharacterManager::SetMainActor(EntityVid vid) noexcept
+{
+	return SetMainInstance(vid.get());
+}
+
+size_t CPythonCharacterManager::GetActorCount() const noexcept
+{
+	return m_aliveActorsMap.size();
 }
 
 void CPythonCharacterManager::GetInfo(std::string* pstInfo)
@@ -152,19 +249,30 @@ void CPythonCharacterManager::Update()
 		TCharacterInstanceMap::iterator c = i++;
 
 		CInstanceBase* pkInstEach = c->second;
+		if (!pkInstEach)
+			continue;
+
 		pkInstEach->Update();
 
-		// Synchronize spatial grid coordinates only if entity is moving or changed position
+		// Synchronize spatial grid, world actor registry, and ECS transform table
 		if (pkInstEach->GetGraphicThingInstanceRef().IsMovement())
 		{
 			TPixelPosition curPos;
 			pkInstEach->NEW_GetPixelPosition(&curPos);
-			m_spatialGrid.UpdateIfMoved(EntityVid(pkInstEach->GetVirtualID()), curPos.x, curPos.y);
+			CentralUpdateActorPosition(
+				pkInstEach->GetVirtualID(),
+				curPos.x,
+				curPos.y,
+				curPos.z,
+				pkInstEach->GetRotation()
+			);
 		}
 	}
 
 	UpdateTransform();
-	m_sceneMgr.UpdateDeleting();
+	m_sceneMgr.UpdateDeleting([this](DWORD vid) {
+		m_actorRegistry.UnregisterActor(EntityVid(vid));
+	});
 	__NEW_Pick();
 }
 
@@ -222,7 +330,9 @@ void CPythonCharacterManager::UpdateTransform()
 
 void CPythonCharacterManager::UpdateDeleting()
 {
-	m_sceneMgr.UpdateDeleting();
+	m_sceneMgr.UpdateDeleting([this](DWORD vid) {
+		m_actorRegistry.UnregisterActor(EntityVid(vid));
+	});
 }
 
 void CPythonCharacterManager::Deform()
@@ -241,6 +351,10 @@ bool CPythonCharacterManager::GetPickedActorID(DWORD* pdwPickedActorID)
 
 CInstanceBase* CPythonCharacterManager::GetPickedActorPtr()
 {
+	if (m_pickedActor && !m_subsystemActorRegistry.ContainsActor(m_pickedActor->GetVirtualID()))
+	{
+		m_pickedActor = nullptr;
+	}
 	return m_pickedActor;
 }
 
@@ -251,17 +365,17 @@ D3DXVECTOR2& CPythonCharacterManager::GetPickedActorScreenPos()
 
 bool CPythonCharacterManager::IsRegisteredVID(DWORD dwVID)
 {
-	return m_aliveActorsMap.find(dwVID) != m_aliveActorsMap.end();
+	return m_subsystemActorRegistry.ContainsActor(dwVID) || m_sceneMgr.IsDead(dwVID) || m_actorRegistry.HasActor(EntityVid(dwVID));
 }
 
 bool CPythonCharacterManager::IsAliveVID(DWORD dwVID)
 {
-	return m_actorRegistry.IsAlive(EntityVid(dwVID)) || (m_aliveActorsMap.find(dwVID) != m_aliveActorsMap.end());
+	return m_subsystemActorRegistry.ContainsActor(dwVID);
 }
 
 bool CPythonCharacterManager::IsDeadVID(DWORD dwVID)
 {
-	return m_actorRegistry.IsDead(EntityVid(dwVID)) || m_sceneMgr.IsDead(dwVID);
+	return m_sceneMgr.IsDead(dwVID) || m_actorRegistry.IsDead(EntityVid(dwVID));
 }
 
 void CPythonCharacterManager::__RenderSortedAliveActorList()
@@ -306,121 +420,278 @@ void CPythonCharacterManager::RenderCollision()
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+// Centralized Single-Source-of-Truth Lifecycle Operations
+
+bool CPythonCharacterManager::CentralRegisterActor(DWORD dwVID, CInstanceBase* pInst, const CInstanceBase::SCreateData* pCreateData)
+{
+	if (dwVID == 0 || !pInst)
+		return false;
+
+	if (m_subsystemActorRegistry.ContainsActor(dwVID))
+		return false;
+
+	// 1. Rejestracja w glownym rejestrze domenowym instancji postaci (Single Source of Truth)
+	if (!m_subsystemActorRegistry.RegisterActor(dwVID, pInst))
+		return false;
+
+	// 2. Synchronizacja z mapa zywych aktorow (zgodnosc wsteczna i iteratory)
+	m_aliveActorsMap[dwVID] = pInst;
+
+	// 3. Rejestracja w menedzerze sceny graficznej
+	m_sceneMgr.AddAliveInstance(pInst);
+
+	// 4. Rejestracja w rejestrze swiata Client::World::ActorRegistry
+	float fPosX = pCreateData ? static_cast<float>(pCreateData->m_lPosX) : 0.0f;
+	float fPosY = pCreateData ? static_cast<float>(pCreateData->m_lPosY) : 0.0f;
+	float fPosZ = 0.0f;
+	float fRot  = pCreateData ? pCreateData->m_fRot : 0.0f;
+	DWORD dwRace = pCreateData ? pCreateData->m_dwRace : 0;
+	std::string stName = (pCreateData && !pCreateData->m_stName.empty()) ? pCreateData->m_stName : "";
+
+	Client::World::ActorRecord record{
+		.vid = EntityVid(dwVID),
+		.race = dwRace,
+		.type = 0,
+		.x = fPosX,
+		.y = fPosY,
+		.z = fPosZ,
+		.rotation = fRot,
+		.name = std::move(stName),
+		.guildId = 0,
+		.empire = 0,
+		.isDead = false
+	};
+	m_actorRegistry.RegisterActor(record);
+
+	// 5. Rejestracja w siatce przestrzennej SpatialHashGrid
+	m_spatialGrid.Insert(EntityVid(dwVID), fPosX, fPosY);
+
+	// 6. Rejestracja w tabelach SoA C++23 ECSWorldRegistry
+	(void)UserInterface::ECS::ECSWorldRegistry::GetInstance().RegisterEntity(
+		EterBase::EntityId(dwVID),
+		fPosX,
+		fPosY,
+		fPosZ,
+		fRot,
+		0.0f
+	);
+
+	// Obsluga glownego gracza
+	if (pCreateData && pCreateData->m_isMain)
+	{
+		SelectInstance(dwVID);
+		m_actorRegistry.SetMainActorVid(EntityVid(dwVID));
+		m_actorProviderAdapter.SetMainActorVID(dwVID);
+		m_mainActor = pInst;
+	}
+
+	return true;
+}
+
+bool CPythonCharacterManager::CentralUnregisterActor(DWORD dwVID, bool bFadeOut)
+{
+	if (dwVID == 0)
+		return false;
+
+	CInstanceBase* pkInst = m_subsystemActorRegistry.FindActor(dwVID);
+
+	// Jezeli aktor nie znajduje sie wsrod zywych instancji, sprawdz czy nie dogasa w m_deadInstances
+	if (!pkInst)
+	{
+		if (!bFadeOut)
+		{
+			for (CInstanceBase* pkDeadInst : m_sceneMgr.GetDeadInstances())
+			{
+				if (pkDeadInst && pkDeadInst->GetVirtualID() == dwVID)
+				{
+					if (pkDeadInst == m_boundActor)
+						m_boundActor = nullptr;
+					if (pkDeadInst == m_mainActor)
+					{
+						m_mainActor = nullptr;
+						m_actorRegistry.SetMainActorVid(EntityVid(0));
+						m_actorProviderAdapter.SetMainActorVID(0);
+					}
+					if (pkDeadInst == m_pickedActor)
+					{
+						pkDeadInst->OnUnselected();
+						m_pickedActor = nullptr;
+					}
+					std::erase(m_pickedInstances, pkDeadInst);
+
+					m_sceneMgr.RemoveDeadInstance(pkDeadInst);
+					m_actorRegistry.UnregisterActor(EntityVid(dwVID));
+					CInstanceBase::Delete(pkDeadInst);
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	// 1. Oczyszczenie referencji wyboru (zapobieganie wiszacym wskaznikom - dangling pointers)
+	if (pkInst == m_boundActor)
+		m_boundActor = nullptr;
+
+	if (pkInst == m_mainActor)
+	{
+		m_mainActor = nullptr;
+		m_actorRegistry.SetMainActorVid(EntityVid(0));
+		m_actorProviderAdapter.SetMainActorVID(0);
+	}
+
+	if (pkInst == m_pickedActor)
+	{
+		pkInst->OnUnselected();
+		m_pickedActor = nullptr;
+	}
+
+	std::erase(m_pickedInstances, pkInst);
+
+	// 2. Wyrejestrowanie z ECS, SpatialHashGrid oraz zywego rejestru domenowego
+	(void)UserInterface::ECS::ECSWorldRegistry::GetInstance().RemoveEntity(EterBase::EntityId(dwVID));
+	m_spatialGrid.Remove(EntityVid(dwVID));
+	m_aliveActorsMap.erase(dwVID);
+	m_subsystemActorRegistry.UnregisterActor(dwVID);
+
+	// 3. Obsluga cyklu zycia w menedzerze sceny i rejestrze swiata
+	if (bFadeOut)
+	{
+		pkInst->DeleteBlendOut();
+		m_sceneMgr.MoveToDead(pkInst);
+		m_actorRegistry.SetDead(EntityVid(dwVID), true);
+
+		if (IAbstractPlayer::GetSingletonPtr())
+		{
+			IAbstractPlayer::GetSingleton().NotifyCharacterDead(dwVID);
+		}
+
+		if (m_pfnCharacterDeadCallback)
+		{
+			m_pfnCharacterDeadCallback(dwVID);
+		}
+	}
+	else
+	{
+		m_sceneMgr.RemoveAliveInstance(pkInst);
+		m_sceneMgr.RemoveDeadInstance(pkInst);
+		m_actorRegistry.UnregisterActor(EntityVid(dwVID));
+		CInstanceBase::Delete(pkInst);
+	}
+
+	return true;
+}
+
+void CPythonCharacterManager::CentralUpdateActorPosition(DWORD dwVID, float x, float y, float z, float rot, float speed)
+{
+	m_spatialGrid.UpdateIfMoved(EntityVid(dwVID), x, y);
+	m_actorRegistry.UpdatePosition(EntityVid(dwVID), x, y, z, rot);
+	UserInterface::ECS::ECSWorldRegistry::GetInstance().GetTransformTable().AddOrUpdate(dwVID, x, y, z, rot, speed);
+}
+
+void CPythonCharacterManager::CentralClearActors(bool bClearDead)
+{
+	m_mainActor = nullptr;
+	m_boundActor = nullptr;
+	if (m_pickedActor)
+	{
+		m_pickedActor->OnUnselected();
+		m_pickedActor = nullptr;
+	}
+	m_pickedInstances.clear();
+	m_pickedActorScreenPos = D3DXVECTOR2(0.0f, 0.0f);
+	m_actorProviderAdapter.SetMainActorVID(0);
+	m_actorRegistry.SetMainActorVid(EntityVid(0));
+
+	for (auto& pair : m_aliveActorsMap)
+	{
+		if (pair.second)
+		{
+			CInstanceBase::Delete(pair.second);
+		}
+	}
+	m_aliveActorsMap.clear();
+
+	m_subsystemActorRegistry.ClearAll();
+	m_sceneMgr.ClearAlive();
+	m_spatialGrid.Clear();
+	UserInterface::ECS::ECSWorldRegistry::GetInstance().Clear();
+
+	if (bClearDead)
+	{
+		m_sceneMgr.ClearDead([this](DWORD vid) {
+			m_actorRegistry.UnregisterActor(EntityVid(vid));
+		});
+		m_actorRegistry.Clear();
+	}
+	else
+	{
+		for (auto it = m_sceneMgr.GetAliveInstances().begin(); it != m_sceneMgr.GetAliveInstances().end(); ++it)
+		{
+			if (*it)
+				m_actorRegistry.UnregisterActor(EntityVid((*it)->GetVirtualID()));
+		}
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
 // Managing Process
 
 CInstanceBase* CPythonCharacterManager::CreateInstance(const CInstanceBase::SCreateData& c_rkCreateData)
 {
-	CInstanceBase* pCharacterInstance = RegisterInstance(c_rkCreateData.m_dwVID);
-	if (!pCharacterInstance) [[unlikely]]
+	if (c_rkCreateData.m_dwVID == 0)
+		return NULL;
+
+	if (m_subsystemActorRegistry.ContainsActor(c_rkCreateData.m_dwVID)) [[unlikely]]
 	{
 		TraceError("CPythonCharacterManager::CreateInstance: VID[%d] - ALREADY EXIST\n", c_rkCreateData.m_dwVID);
+		return NULL;
+	}
+
+	CInstanceBase* pCharacterInstance = CInstanceBase::New();
+	if (!CentralRegisterActor(c_rkCreateData.m_dwVID, pCharacterInstance, &c_rkCreateData)) [[unlikely]]
+	{
+		TraceError("CPythonCharacterManager::CreateInstance: VID[%d] - Central registration failed\n", c_rkCreateData.m_dwVID);
+		CInstanceBase::Delete(pCharacterInstance);
 		return NULL;
 	}
 
 	if (!pCharacterInstance->Create(c_rkCreateData)) [[unlikely]]
 	{
 		TraceError("CPythonCharacterManager::CreateInstance VID[%d] Race[%d]", c_rkCreateData.m_dwVID, c_rkCreateData.m_dwRace);
-		DeleteInstance(c_rkCreateData.m_dwVID);
+		CentralUnregisterActor(c_rkCreateData.m_dwVID, false);
 		return NULL;
 	}
-
-	if (c_rkCreateData.m_isMain)
-	{
-		SelectInstance(c_rkCreateData.m_dwVID);
-		m_actorRegistry.SetMainActorVid(EntityVid(c_rkCreateData.m_dwVID));
-	}
-
-	// Update spatial tracking and domain registry
-	m_actorRegistry.UpdatePosition(
-		EntityVid(c_rkCreateData.m_dwVID),
-		static_cast<float>(c_rkCreateData.m_lPosX),
-		static_cast<float>(c_rkCreateData.m_lPosY),
-		0.0f,
-		c_rkCreateData.m_fRot
-	);
-	m_spatialGrid.Update(
-		EntityVid(c_rkCreateData.m_dwVID),
-		static_cast<float>(c_rkCreateData.m_lPosX),
-		static_cast<float>(c_rkCreateData.m_lPosY)
-	);
-
-	// Register entity into modern C++23 ECS SoA tables
-	(void)UserInterface::ECS::ECSWorldRegistry::GetInstance().RegisterEntity(
-		EterBase::EntityId(c_rkCreateData.m_dwVID),
-		static_cast<float>(c_rkCreateData.m_lPosX),
-		static_cast<float>(c_rkCreateData.m_lPosY),
-		0.0f,
-		c_rkCreateData.m_fRot,
-		0.0f
-	);
 
 	return pCharacterInstance;
 }
 
 CInstanceBase* CPythonCharacterManager::RegisterInstance(DWORD VirtualID)
 {
-	TCharacterInstanceMap::iterator itor = m_aliveActorsMap.find(VirtualID);
-	if (m_aliveActorsMap.end() != itor)
+	if (VirtualID == 0)
+		return NULL;
+
+	if (m_subsystemActorRegistry.ContainsActor(VirtualID))
 	{
 		return NULL;
 	}
 
 	CInstanceBase* pCharacterInstance = CInstanceBase::New();
-	m_aliveActorsMap.insert(TCharacterInstanceMap::value_type(VirtualID, pCharacterInstance));
-
-	// Synchronize with modern domain registries and graphic scene manager
-	Client::World::ActorRecord record{
-		.vid = EntityVid(VirtualID),
-		.race = 0,
-		.type = 0,
-		.x = 0.0f,
-		.y = 0.0f,
-		.z = 0.0f,
-		.rotation = 0.0f,
-		.name = "",
-		.guildId = 0,
-		.empire = 0,
-		.isDead = false
-	};
-	m_actorRegistry.RegisterActor(record);
-	m_spatialGrid.Insert(EntityVid(VirtualID), 0.0f, 0.0f);
-	m_sceneMgr.AddAliveInstance(pCharacterInstance);
-	m_subsystemActorRegistry.RegisterActor(VirtualID, pCharacterInstance);
+	if (!CentralRegisterActor(VirtualID, pCharacterInstance, nullptr))
+	{
+		CInstanceBase::Delete(pCharacterInstance);
+		return NULL;
+	}
 
 	return pCharacterInstance;
 }
 
 void CPythonCharacterManager::DeleteInstance(DWORD dwDelVID)
 {
-	// Remove from modern C++23 ECS SoA tables and domain subsystems
-	(void)UserInterface::ECS::ECSWorldRegistry::GetInstance().RemoveEntity(EterBase::EntityId(dwDelVID));
-	m_actorRegistry.UnregisterActor(EntityVid(dwDelVID));
-	m_spatialGrid.Remove(EntityVid(dwDelVID));
-	m_subsystemActorRegistry.UnregisterActor(dwDelVID);
-
-	TCharacterInstanceMap::iterator itor = m_aliveActorsMap.find(dwDelVID);
-	if (m_aliveActorsMap.end() == itor)
+	if (!CentralUnregisterActor(dwDelVID, false))
 	{
 		Tracef("DeleteCharacterInstance: no vid by %d\n", dwDelVID);
-		return;
 	}
-
-	CInstanceBase* pkInstDel = itor->second;
-
-	if (pkInstDel == m_boundActor)
-		m_boundActor = NULL;
-
-	if (pkInstDel == m_mainActor)
-		m_mainActor = NULL;
-
-	if (pkInstDel == m_pickedActor)
-		m_pickedActor = NULL;
-
-	m_sceneMgr.RemoveAliveInstance(pkInstDel);
-	m_sceneMgr.RemoveDeadInstance(pkInstDel);
-
-	CInstanceBase::Delete(pkInstDel);
-	m_aliveActorsMap.erase(itor);
 }
 
 void CPythonCharacterManager::__DeleteBlendOutInstance(CInstanceBase* pkInstDel)
@@ -428,69 +699,41 @@ void CPythonCharacterManager::__DeleteBlendOutInstance(CInstanceBase* pkInstDel)
 	if (!pkInstDel)
 		return;
 
-	const DWORD deadVid = pkInstDel->GetVirtualID();
-
-	pkInstDel->DeleteBlendOut();
-	m_sceneMgr.MoveToDead(pkInstDel);
-
-	// Synchronize domain registry and spatial partitioning
-	m_actorRegistry.SetDead(EntityVid(deadVid), true);
-	m_actorRegistry.UnregisterActor(EntityVid(deadVid));
-	m_spatialGrid.Remove(EntityVid(deadVid));
-	m_subsystemActorRegistry.UnregisterActor(deadVid);
-	(void)UserInterface::ECS::ECSWorldRegistry::GetInstance().RemoveEntity(EterBase::EntityId(deadVid));
-
-	// Bezpieczne rozgloszenie zdarzenia smierci aktora przez EventBus (decoupling C++23)
-	UserInterface::Core::EventBus::GetInstance().Publish(UserInterface::Core::ActorDeadEvent(deadVid));
-
-	// Bezpieczna delegacja (callback dla testow / zewnetrznych listenerow)
-	if (m_pfnCharacterDeadCallback)
-	{
-		m_pfnCharacterDeadCallback(deadVid);
-	}
-
-	// Bezpieczne powiadomienie IAbstractPlayer z asercja/sprawdzeniem istnienia singletonu
-	if (IAbstractPlayer::GetSingletonPtr())
-	{
-		IAbstractPlayer::GetSingleton().NotifyCharacterDead(deadVid);
-	}
+	CentralUnregisterActor(pkInstDel->GetVirtualID(), true);
 }
 
 void CPythonCharacterManager::DeleteInstanceByFade(DWORD dwVID)
 {
-	TCharacterInstanceMap::iterator f = m_aliveActorsMap.find(dwVID);
-	if (m_aliveActorsMap.end() == f)
-	{
-		return;
-	}
-	__DeleteBlendOutInstance(f->second);
-	m_aliveActorsMap.erase(f);	
+	CentralUnregisterActor(dwVID, true);
+}
+
+void CPythonCharacterManager::DeleteVehicleInstance(DWORD VirtualID)
+{
+	DeleteInstance(VirtualID);
 }
 
 void CPythonCharacterManager::SelectInstance(DWORD VirtualID)
 {
-	TCharacterInstanceMap::iterator itor = m_aliveActorsMap.find(VirtualID);
-	if (m_aliveActorsMap.end() == itor)
+	m_boundActor = FindInstancePtr(VirtualID);
+	if (!m_boundActor)
 	{
 		Tracef("SelectCharacterInstance: no vid by %d\n", VirtualID);
-		return;
 	}
+}
 
-	m_boundActor = itor->second;
+CInstanceBase* CPythonCharacterManager::FindInstancePtr(DWORD VirtualID)
+{
+	return m_subsystemActorRegistry.FindActor(VirtualID);
 }
 
 CInstanceBase* CPythonCharacterManager::GetInstancePtr(DWORD VirtualID)
 {
-	TCharacterInstanceMap::iterator itor = m_aliveActorsMap.find(VirtualID);
-	if (m_aliveActorsMap.end() == itor)
-		return NULL;
-
-	return itor->second;
+	return FindInstancePtr(VirtualID);
 }
 
 Core::Result<CInstanceBase*, Core::ActorError> CPythonCharacterManager::GetInstanceResult(DWORD VirtualID)
 {
-	CInstanceBase* pActor = GetInstancePtr(VirtualID);
+	CInstanceBase* pActor = FindInstancePtr(VirtualID);
 	if (!pActor)
 		return std::unexpected(Core::ActorError::ActorNotFound);
 	return pActor;
@@ -498,10 +741,13 @@ Core::Result<CInstanceBase*, Core::ActorError> CPythonCharacterManager::GetInsta
 
 CInstanceBase* CPythonCharacterManager::GetInstancePtrByName(const char* name)
 {
+	if (!name)
+		return NULL;
+
 	for (auto& pair : m_aliveActorsMap)
 	{
 		CInstanceBase* pInstance = pair.second;
-		if (!strcmp(pInstance->GetNameString(), name))
+		if (pInstance && !strcmp(pInstance->GetNameString(), name))
 			return pInstance;
 	}
 
@@ -510,6 +756,10 @@ CInstanceBase* CPythonCharacterManager::GetInstancePtrByName(const char* name)
 
 CInstanceBase* CPythonCharacterManager::GetSelectedInstancePtr()
 {
+	if (m_boundActor && !m_subsystemActorRegistry.ContainsActor(m_boundActor->GetVirtualID()))
+	{
+		m_boundActor = NULL;
+	}
 	return m_boundActor;
 }
 
@@ -764,33 +1014,24 @@ void CPythonCharacterManager::RefreshAllGuildMark()
 
 void CPythonCharacterManager::DeleteAllInstances()
 {
-	DestroyAliveInstanceMap();
-	DestroyDeadInstanceList();
+	CentralClearActors(true);
 }
 
 void CPythonCharacterManager::DestroyAliveInstanceMap()
 {
-	for (auto& pair : m_aliveActorsMap)
-		CInstanceBase::Delete(pair.second);
-
-	m_aliveActorsMap.clear();
-	m_sceneMgr.ClearAlive();
-	m_subsystemActorRegistry.ClearAll();
+	CentralClearActors(false);
 }
 
 void CPythonCharacterManager::DestroyDeadInstanceList()
 {
-	m_sceneMgr.ClearDead();
+	m_sceneMgr.ClearDead([this](DWORD vid) {
+		m_actorRegistry.UnregisterActor(EntityVid(vid));
+	});
 }
 
 void CPythonCharacterManager::Destroy()
 {
-	UserInterface::ECS::ECSWorldRegistry::GetInstance().Clear();
-	m_actorRegistry.Clear();
-	m_spatialGrid.Clear();
-	m_sceneMgr.Clear();
-
-	DeleteAllInstances();
+	CentralClearActors(true);
 	CInstanceBase::DestroySystem();
 	__Initialize();
 }

@@ -130,6 +130,18 @@ TEST_CASE("ActorRegistry tests") {
         CHECK(updated->race == 99);
     }
 
+    SUBCASE("for_each_actor functional iteration (C++23)") {
+        registry.RegisterActor(record1);
+        registry.RegisterActor(record2);
+
+        size_t count = 0;
+        registry.for_each_actor([&](const ActorRecord& actor) {
+            count++;
+            CHECK((actor.vid == vid1 || actor.vid == vid2));
+        });
+        CHECK(count == 2);
+    }
+
     SUBCASE("MainActor lifecycle management") {
         CHECK(registry.GetMainActorVid().value() == 0);
         CHECK_FALSE(static_cast<bool>(registry.GetMainActorVid()));

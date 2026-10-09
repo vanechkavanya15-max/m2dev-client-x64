@@ -96,12 +96,16 @@ void InstanceSceneManager::ClearAlive()
     m_aliveInstances.clear();
 }
 
-void InstanceSceneManager::ClearDead()
+void InstanceSceneManager::ClearDead(std::function<void(DWORD)> onInstanceDeleted)
 {
     for (auto* pkInst : m_deadInstances)
     {
         if (pkInst)
         {
+            if (onInstanceDeleted)
+            {
+                onInstanceDeleted(pkInst->GetVirtualID());
+            }
             CInstanceBase::Delete(pkInst);
         }
     }
@@ -221,7 +225,7 @@ void InstanceSceneManager::Deform()
     }
 }
 
-void InstanceSceneManager::UpdateDeleting()
+void InstanceSceneManager::UpdateDeleting(std::function<void(DWORD)> onInstanceDeleted)
 {
     for (auto itor = m_deadInstances.begin(); itor != m_deadInstances.end(); )
     {
@@ -235,6 +239,11 @@ void InstanceSceneManager::UpdateDeleting()
         {
             if (pInstance)
             {
+                DWORD vid = pInstance->GetVirtualID();
+                if (onInstanceDeleted)
+                {
+                    onInstanceDeleted(vid);
+                }
                 CInstanceBase::Delete(pInstance);
             }
             itor = m_deadInstances.erase(itor);

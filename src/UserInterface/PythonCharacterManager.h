@@ -5,13 +5,14 @@
 #include <list>
 #include <vector>
 #include <string>
+#include <optional>
 
 #include "AbstractCharacterManager.h"
 #include "InstanceBase.h"
 #include "GameLib/PhysicsObject.h"
 
-#include "World/ActorRegistry.h"
-#include "World/SpatialHashGrid.h"
+#include "Client/World/ActorRegistry.h"
+#include "Client/World/SpatialHashGrid.h"
 #include "InstanceSceneManager.h"
 #include "Client/Core/DomainErrors.h"
 #include "Actors/Subsystems/ActorRegistry.h"
@@ -26,13 +27,23 @@ class CPythonCharacterManager : public CSingleton<CPythonCharacterManager>, publ
 		typedef std::map<DWORD, CInstanceBase *>	TCharacterInstanceMap;
 
 		using TCharacterDeadCallback = std::function<void(DWORD)>;
-		void SetCharacterDeadCallback(TCharacterDeadCallback callback) { m_pfnCharacterDeadCallback = callback; }
+		void SetCharacterDeadCallback(TCharacterDeadCallback callback)
+		{
+			m_pfnCharacterDeadCallback = callback;
+			m_subsystemActorRegistry.SetDeadCallback(callback);
+		}
 
 		class CharacterIterator;
 
 	public:
 		CPythonCharacterManager();
 		virtual ~CPythonCharacterManager();
+
+		// Centralized Single-Source-of-Truth Lifecycle Operations
+		bool								CentralRegisterActor(DWORD dwVID, CInstanceBase* pInst, const CInstanceBase::SCreateData* pCreateData = nullptr);
+		bool								CentralUnregisterActor(DWORD dwVID, bool bFadeOut = false);
+		void								CentralUpdateActorPosition(DWORD dwVID, float x, float y, float z, float rot = 0.0f, float speed = 0.0f);
+		void								CentralClearActors(bool bClearDead = true);
 
 		virtual void AdjustCollisionWithOtherObjects(CActorInstance* pInst ); 
 
@@ -58,6 +69,59 @@ class CPythonCharacterManager : public CSingleton<CPythonCharacterManager>, publ
 		void ClearMainInstance();
 		bool SetMainInstance(DWORD dwVID);
 		CInstanceBase* GetMainActorPtr();
+
+		// ========================================================================
+		// Nowoczesne interfejsy C++23 / AI-Friendly Boundary
+		// ========================================================================
+		using EntityVid = Client::World::EntityVid;
+		using EntityHandle = Client::Actor::EntityHandle;
+		using ActorInstance = CInstanceBase;
+
+		[[nodiscard]] EntityVid GetMainActorVid() const noexcept;
+		[[nodiscard]] std::optional<EntityHandle> GetMainActorHandle() const noexcept;
+		[[nodiscard]] std::optional<EntityHandle> GetActorHandle(EntityVid vid) const noexcept;
+		[[nodiscard]] std::optional<EntityHandle> GetActorHandle(DWORD vid) const noexcept;
+
+		[[nodiscard]] bool IsActorAlive(EntityVid vid) const noexcept;
+		[[nodiscard]] bool IsActorAlive(DWORD vid) const noexcept;
+		[[nodiscard]] bool IsActorDead(EntityVid vid) const noexcept;
+		[[nodiscard]] bool IsActorDead(DWORD vid) const noexcept;
+		[[nodiscard]] bool HasActor(EntityVid vid) const noexcept;
+		[[nodiscard]] bool HasActor(DWORD vid) const noexcept;
+
+		[[nodiscard]] CInstanceBase* GetActor(EntityVid vid) const noexcept;
+		[[nodiscard]] CInstanceBase* GetActor(DWORD vid) const noexcept;
+		[[nodiscard]] CInstanceBase* GetMainActor() const noexcept { return const_cast<CPythonCharacterManager*>(this)->GetMainActorPtr(); }
+
+		[[nodiscard]] std::optional<EntityVid> GetPickedActorVid() const noexcept;
+		[[nodiscard]] std::optional<EntityVid> GetSelectedActorVid() const noexcept;
+
+		bool SetMainActor(EntityVid vid) noexcept;
+		[[nodiscard]] size_t GetActorCount() const noexcept;
+
+		template <typename Func>
+		void for_each_actor(Func&& func) const
+		{
+			for (const auto& [vid, actor] : m_aliveActorsMap)
+			{
+				if (actor != nullptr)
+				{
+					func(actor);
+				}
+			}
+		}
+
+		template <typename Func>
+		void for_each_actor_vid(Func&& func) const
+		{
+			for (const auto& [vid, actor] : m_aliveActorsMap)
+			{
+				if (actor != nullptr)
+				{
+					func(EntityVid(vid), actor);
+				}
+			}
+		}
 
 		void								SCRIPT_SetAffect(DWORD dwVID, DWORD eAffect, BOOL isVisible);
 		void								SetEmoticon(DWORD dwVID, DWORD eEmoticon);
@@ -98,6 +162,7 @@ class CPythonCharacterManager : public CSingleton<CPythonCharacterManager>, publ
 		void								SelectInstance(DWORD VirtualID);
 		CInstanceBase *						GetSelectedInstancePtr();
 
+		CInstanceBase *						FindInstancePtr(DWORD VirtualID);
 		CInstanceBase *						GetInstancePtr(DWORD VirtualID);
 		Core::Result<CInstanceBase*, Core::ActorError> GetInstanceResult(DWORD VirtualID);
 		CInstanceBase *						GetInstancePtrByName(const char *name);

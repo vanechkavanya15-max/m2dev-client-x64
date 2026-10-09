@@ -115,25 +115,54 @@ void Test_StranglerInstanceFacade() {
     auto deadRes = instanceFacade.SetDead(5001, true);
     assert(deadRes.has_value());
     assert(ctx.actors.IsDead(Client::World::EntityVid{5001}));
+    assert(instanceFacade.IsActorDead(Client::World::EntityVid{5001}));
+    assert(instanceFacade.IsActorDead(5001));
+    assert(!instanceFacade.IsActorAlive(5001));
 
     // 5. Main Instance
     auto mainRes = instanceFacade.SetMainInstance(9999, 10.0f, 20.0f, 30.0f, 180.0f, "HeroPlayer");
     assert(mainRes.has_value());
     assert(ctx.localPlayerVid.get() == 9999);
     assert(ctx.localPlayerCoords.x == 10.0f);
+    assert(instanceFacade.GetMainActorVid() == Client::World::EntityVid{9999});
+
+    // 5b. Nowoczesne metody dostepowe C++23 (AI Interface Boundary)
+    assert(instanceFacade.HasActor(Client::World::EntityVid{5001}));
+    assert(instanceFacade.HasActor(5001));
+    assert(instanceFacade.GetActorCount() >= 1);
+
+    auto actorRecordOpt = instanceFacade.GetActor(Client::World::EntityVid{5001});
+    assert(actorRecordOpt.has_value());
+    assert(actorRecordOpt->name == "WarriorMob");
+
+    // Test for_each_actor (funkcyjna iteracja C++23)
+    size_t actorCounter = 0;
+    instanceFacade.for_each_actor([&](const Client::World::ActorRecord& rec) {
+        if (rec.vid == Client::World::EntityVid{5001}) {
+            ++actorCounter;
+        }
+    });
+    assert(actorCounter == 1);
+
+    auto mainHandleOpt = instanceFacade.GetMainActorHandle();
+    assert(mainHandleOpt.has_value());
+    auto mainResolvedVid = instanceFacade.ResolveGenerationalVid(*mainHandleOpt);
+    assert(mainResolvedVid.has_value());
+    assert(*mainResolvedVid == Client::World::EntityVid{9999});
 
     // 6. Wyrejestrowanie i uniewaznienie generacyjne (ochrona przed dangling pointer i ABA)
     auto unregRes = instanceFacade.UnregisterInstance(5001);
     assert(unregRes.has_value());
     assert(ctx.actors.Count() == 1); // Tylko gracz zostal
     assert(ctx.spatialGrid.Count() == 1);
+    assert(!instanceFacade.HasActor(5001));
 
     // Stary handle musi byc natychmiast uniewazniony!
     auto staleResolve = instanceFacade.ResolveGenerational(handle);
     assert(!staleResolve.has_value() && "Stale Generational EntityHandle must be invalid after unregistration");
 
     instanceFacade.ClearWorldContext();
-    std::cout << "[OK] Test_StranglerInstanceFacade (incl. Generational Handle & ABA guard)\n";
+    std::cout << "[OK] Test_StranglerInstanceFacade (incl. Generational Handle & ABA guard & C++23 AI Boundary)\n";
 }
 
 int main() {

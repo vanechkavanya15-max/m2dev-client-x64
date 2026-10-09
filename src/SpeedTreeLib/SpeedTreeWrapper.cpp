@@ -123,6 +123,8 @@ void CSpeedTreeWrapper::OnRenderPCBlocker()
 	STATEMANAGER.SetTextureStageState(1, D3DTSS_ALPHAARG2, D3DTA_CURRENT);
 	STATEMANAGER.SetTextureStageState(1, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
 
+	ScopedD3DVertexDeclGuard speedTreeDeclGuard(nullptr, false);
+
 	DWORD dwLighting = STATEMANAGER.GetRenderState(D3DRS_LIGHTING);
 	DWORD dwFogEnable = STATEMANAGER.GetRenderState(D3DRS_FOGENABLE);
 	DWORD dwAlphaBlendEnable = STATEMANAGER.GetRenderState(D3DRS_ALPHABLENDENABLE);
@@ -277,6 +279,8 @@ void CSpeedTreeWrapper::OnRender()
 	STATEMANAGER.SetSamplerState(1, D3DSAMP_ADDRESSU, D3DTADDRESS_WRAP);
 	STATEMANAGER.SetSamplerState(1, D3DSAMP_ADDRESSV, D3DTADDRESS_WRAP);
 	
+	ScopedD3DVertexDeclGuard speedTreeDeclGuard(nullptr, false);
+
 	STATEMANAGER.SaveRenderState(D3DRS_LIGHTING, FALSE);
 	STATEMANAGER.SaveRenderState(D3DRS_COLORVERTEX, TRUE);
     STATEMANAGER.SaveRenderState(D3DRS_ALPHATESTENABLE, TRUE);

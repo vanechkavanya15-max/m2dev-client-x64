@@ -41,7 +41,7 @@ public:
 
     bool RegisterActor(const ActorRecord& record);
     bool UnregisterActor(EntityVid vid);
-    std::optional<ActorRecord> GetActor(EntityVid vid) const;
+    [[nodiscard]] std::optional<ActorRecord> GetActor(EntityVid vid) const;
     [[nodiscard]] bool HasActor(EntityVid vid) const;
 
     template <typename VisitorFn>
@@ -66,6 +66,14 @@ public:
         return false;
     }
 
+    template <typename VisitorFn>
+    void for_each_actor(VisitorFn&& visitor) const {
+        std::shared_lock lock(m_mutex);
+        for (const auto& [vid, actor] : m_actors) {
+            std::forward<VisitorFn>(visitor)(actor);
+        }
+    }
+
     bool UpdatePosition(EntityVid vid, float x, float y, float z, float rotation);
     void SetDead(EntityVid vid, bool isDead);
     [[nodiscard]] bool IsAlive(EntityVid vid) const;
@@ -74,7 +82,7 @@ public:
     void SetMainActorVid(EntityVid vid);
     [[nodiscard]] EntityVid GetMainActorVid() const;
 
-    size_t Count() const;
+    [[nodiscard]] size_t Count() const;
     void Clear();
 
 private:

@@ -5,6 +5,9 @@
 
 void CMapOutdoor::__RenderTerrain_RenderHardwareTransformPatch()
 {
+	// Bezwzgledna gwarancja RAII: czyszczenie shaderow/deklaracji oraz ustawienie FVF
+	ScopedD3DFFPGuard htpFFPGuard(D3DFVF_XYZ | D3DFVF_NORMAL, false);
+
 	DWORD dwFogColor;
 	float fFogFarDistance;
 	float fFogNearDistance;

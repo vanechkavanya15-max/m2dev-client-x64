@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "src/UserInterface/InstanceComponents/InstanceCombatComponent.h"
+#include "src/UserInterface/InstanceComponents/InstanceBattleComponent.h"
 
 using namespace UserInterface::InstanceComponents;
 
@@ -116,12 +117,121 @@ void TestConcurrentCombatDamages() {
     std::cout << "[PASS] TestConcurrentCombatDamages\n";
 }
 
+void TestPopSingleDamage() {
+    InstanceCombatComponent combat;
+    assert(!combat.HasDamages());
+
+    combat.AddDamage(100, 1, false, false);
+    combat.AddDamage(200, 2, true, false);
+    assert(combat.HasDamages());
+    assert(combat.GetPendingDamageCount() == 2);
+
+    InstanceCombatComponent::DamageRecord rec;
+    bool ok1 = combat.PopDamage(rec);
+    assert(ok1);
+    assert(rec.damage == 100);
+    assert(rec.flag == 1);
+    assert(!rec.isSelf);
+    assert(combat.GetPendingDamageCount() == 1);
+
+    bool ok2 = combat.PopDamage(rec);
+    assert(ok2);
+    assert(rec.damage == 200);
+    assert(rec.flag == 2);
+    assert(rec.isSelf);
+    assert(combat.GetPendingDamageCount() == 0);
+    assert(!combat.HasDamages());
+
+    bool ok3 = combat.PopDamage(rec);
+    assert(!ok3);
+
+    std::cout << "[PASS] TestPopSingleDamage\n";
+}
+
+void TestBattleStateAndDuel() {
+    InstanceBattleComponent battle;
+    assert(battle.GetDuelMode() == 0);
+    assert(battle.GetSkillTargetVID() == 0);
+    assert(battle.GetLastDmgActorVID() == 0);
+    assert(battle.GetAdvActorVID() == 0);
+    assert(battle.GetLastComboIndex() == 0);
+
+    battle.SetDuelMode(2);
+    assert(battle.GetDuelMode() == 2);
+
+    battle.SetSkillTargetVID(12345);
+    assert(battle.GetSkillTargetVID() == 12345);
+
+    battle.SetLastDmgActorVID(67890);
+    assert(battle.GetLastDmgActorVID() == 67890);
+
+    battle.SetAdvActorVID(11111);
+    assert(battle.GetAdvActorVID() == 11111);
+
+    battle.SetLastComboIndex(4);
+    assert(battle.GetLastComboIndex() == 4);
+
+    battle.Clear();
+    assert(battle.GetDuelMode() == 0);
+    assert(battle.GetSkillTargetVID() == 0);
+    assert(battle.GetLastDmgActorVID() == 0);
+    assert(battle.GetAdvActorVID() == 0);
+    assert(battle.GetLastComboIndex() == 0);
+
+    std::cout << "[PASS] TestBattleStateAndDuel\n";
+}
+
+void TestSymmetricPVPAndBattleKeys() {
+    InstanceCombatComponent::ClearAllBattleKeys();
+
+    assert(!InstanceCombatComponent::HasSymmetricPVPKey(500, 600));
+    assert(!InstanceCombatComponent::HasSymmetricPVPKey(600, 500));
+
+    InstanceCombatComponent::InsertSymmetricPVPKey(500, 600);
+    assert(InstanceCombatComponent::HasSymmetricPVPKey(500, 600));
+    assert(InstanceCombatComponent::HasSymmetricPVPKey(600, 500)); // Symmetric!
+
+    InstanceCombatComponent::RemoveSymmetricPVPKey(600, 500);
+    assert(!InstanceCombatComponent::HasSymmetricPVPKey(500, 600));
+    assert(!InstanceCombatComponent::HasSymmetricPVPKey(600, 500));
+
+    // PVP Ready key
+    assert(!InstanceCombatComponent::HasPVPReadyKey(1, 2));
+    InstanceCombatComponent::InsertPVPReadyKey(1, 2);
+    assert(InstanceCombatComponent::HasPVPReadyKey(1, 2));
+    assert(InstanceCombatComponent::HasPVPReadyKey(2, 1));
+
+    // GVG key
+    assert(!InstanceCombatComponent::HasGVGKey(10, 20));
+    InstanceCombatComponent::InsertGVGKey(10, 20);
+    assert(InstanceCombatComponent::HasGVGKey(10, 20));
+    assert(InstanceCombatComponent::HasGVGKey(20, 10));
+    InstanceCombatComponent::RemoveGVGKey(20, 10);
+    assert(!InstanceCombatComponent::HasGVGKey(10, 20));
+
+    // DUEL key
+    assert(!InstanceCombatComponent::HasDUELKey(99, 88));
+    InstanceCombatComponent::InsertDUELKey(99, 88);
+    assert(InstanceCombatComponent::HasDUELKey(99, 88));
+    assert(InstanceCombatComponent::HasDUELKey(88, 99));
+
+    // Clear all
+    InstanceCombatComponent::ClearAllBattleKeys();
+    assert(!InstanceCombatComponent::HasPVPReadyKey(1, 2));
+    assert(!InstanceCombatComponent::HasDUELKey(99, 88));
+
+    std::cout << "[PASS] TestSymmetricPVPAndBattleKeys\n";
+}
+
 int main() {
     std::cout << "--- Running test_c26_instance_components ---\n";
     TestCombatDamages();
     TestCombatStateAndCombo();
     TestPVPKeyRegistry();
     TestConcurrentCombatDamages();
-    std::cout << "All 4 test cases passed successfully!\n";
+    TestPopSingleDamage();
+    TestBattleStateAndDuel();
+    TestSymmetricPVPAndBattleKeys();
+    std::cout << "All 7 test cases passed successfully!\n";
     return 0;
 }

@@ -19,6 +19,9 @@ struct SoftwareTransformPatch_SSplatVertex
 
 void CMapOutdoor::__RenderTerrain_RenderSoftwareTransformPatch()
 {	
+	// Bezwzgledna gwarancja RAII: czyszczenie shaderow/deklaracji oraz ustawienie FVF
+	ScopedD3DFFPGuard stpFFPGuard(D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_SPECULAR | D3DFVF_TEX2, false);
+
 	SoftwareTransformPatch_SRenderState kTPRS;
 
 	DWORD dwFogEnable = STATEMANAGER.GetRenderState(D3DRS_FOGENABLE);

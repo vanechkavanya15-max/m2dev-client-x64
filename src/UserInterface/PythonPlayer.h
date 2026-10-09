@@ -1,5 +1,8 @@
 #pragma once
 
+#include <optional>
+#include "Client/Actor/EntityHandle.h"
+#include "Client/World/ActorRegistry.h"
 #include "AbstractPlayer.h"
 #include "Packet.h"
 #include "PythonSkill.h"
@@ -285,6 +288,25 @@ class CPythonPlayer : public CSingleton<CPythonPlayer>, public IAbstractPlayer
 
 		CInstanceBase* NEW_FindActorPtr(DWORD dwVID);
 		CInstanceBase* NEW_GetMainActorPtr();
+
+		// ========================================================================
+		// Nowoczesne interfejsy C++23 / AI-Friendly Boundary
+		// ========================================================================
+		using EntityVid = Client::World::EntityVid;
+		using EntityHandle = Client::Actor::EntityHandle;
+
+		[[nodiscard]] EntityVid GetMainActorVid() const noexcept;
+		[[nodiscard]] std::optional<EntityHandle> GetMainActorHandle() const noexcept;
+		[[nodiscard]] CInstanceBase* GetMainActor() const noexcept;
+
+		[[nodiscard]] CInstanceBase* FindActor(EntityVid vid) const noexcept;
+		[[nodiscard]] CInstanceBase* FindActor(DWORD vid) const noexcept;
+
+		[[nodiscard]] EntityVid GetTargetVid() const noexcept;
+		void SetTargetVid(EntityVid vid) noexcept;
+		[[nodiscard]] bool HasTarget() const noexcept;
+		[[nodiscard]] bool IsTarget(EntityVid vid) const noexcept;
+		[[nodiscard]] bool IsTarget(DWORD vid) const noexcept;
 
 		// flying target set
 		void	Clear();

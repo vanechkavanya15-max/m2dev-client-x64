@@ -144,6 +144,9 @@ void CSpeedTreeForestDirectX::Render(unsigned long ulRenderBitVector)
 	if (m_pMainTreeMap.empty())
 		return;
 
+	// Gwarancja RAII: wyczyszczenie deklaracji wierzcholkow po zakonczeniu renderowania drzew SpeedTree
+	ScopedD3DVertexDeclGuard speedTreeDeclGuard(nullptr, false);
+
 	if (!(ulRenderBitVector & Forest_RenderToShadow) && !(ulRenderBitVector & Forest_RenderToMiniMap))
 		UpdateCompundMatrix(CCameraManager::Instance().GetCurrentCamera()->GetEye(), ms_matView, ms_matProj);
 

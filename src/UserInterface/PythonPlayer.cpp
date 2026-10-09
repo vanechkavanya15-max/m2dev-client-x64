@@ -16,6 +16,8 @@
 #include "Services/SkillService.h"
 #include "Client/Bridge/StranglerFacade.h"
 
+using EntityVid = Client::World::EntityVid;
+
 Client::Gameplay::InventoryDomain& CPythonPlayer::GetInventoryDomain() noexcept
 {
 	return Client::Bridge::StranglerFacade::Instance().GetWorldContext().inventory;
@@ -141,13 +143,68 @@ void CPythonPlayer::NEW_ShowEffect(int dwEID, TPixelPosition kPPosDst)
 
 CInstanceBase* CPythonPlayer::NEW_FindActorPtr(DWORD dwVID)
 {
-	CPythonCharacterManager& rkChrMgr = CPythonCharacterManager::Instance();
-	return rkChrMgr.GetInstancePtr(dwVID);
+	CPythonCharacterManager& chrMgr = CPythonCharacterManager::Instance();
+	return chrMgr.GetInstancePtr(dwVID);
 }
 
 CInstanceBase* CPythonPlayer::NEW_GetMainActorPtr()
 {
 	return NEW_FindActorPtr(m_dwMainCharacterIndex);
+}
+
+CPythonPlayer::EntityVid CPythonPlayer::GetMainActorVid() const noexcept
+{
+	return EntityVid(m_dwMainCharacterIndex);
+}
+
+std::optional<Client::Actor::EntityHandle> CPythonPlayer::GetMainActorHandle() const noexcept
+{
+	CInstanceBase* mainActor = const_cast<CPythonPlayer*>(this)->NEW_GetMainActorPtr();
+	if (mainActor)
+	{
+		return mainActor->GetGenerationalHandle();
+	}
+	return std::nullopt;
+}
+
+CInstanceBase* CPythonPlayer::GetMainActor() const noexcept
+{
+	return const_cast<CPythonPlayer*>(this)->NEW_GetMainActorPtr();
+}
+
+CInstanceBase* CPythonPlayer::FindActor(DWORD vid) const noexcept
+{
+	return const_cast<CPythonPlayer*>(this)->NEW_FindActorPtr(vid);
+}
+
+CInstanceBase* CPythonPlayer::FindActor(EntityVid vid) const noexcept
+{
+	return FindActor(vid.get());
+}
+
+CPythonPlayer::EntityVid CPythonPlayer::GetTargetVid() const noexcept
+{
+	return EntityVid(m_dwTargetVID);
+}
+
+void CPythonPlayer::SetTargetVid(EntityVid vid) noexcept
+{
+	const_cast<CPythonPlayer*>(this)->__SetTargetVID(vid.get());
+}
+
+bool CPythonPlayer::HasTarget() const noexcept
+{
+	return const_cast<CPythonPlayer*>(this)->__IsTarget();
+}
+
+bool CPythonPlayer::IsTarget(DWORD vid) const noexcept
+{
+	return const_cast<CPythonPlayer*>(this)->__IsSameTargetVID(vid);
+}
+
+bool CPythonPlayer::IsTarget(EntityVid vid) const noexcept
+{
+	return IsTarget(vid.get());
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////

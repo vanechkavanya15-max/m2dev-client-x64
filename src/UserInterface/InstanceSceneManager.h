@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <algorithm>
+#include <functional>
 #include "InstanceBase.h"
 
 namespace UserInterface {
@@ -31,7 +32,7 @@ public:
 
     void Clear();
     void ClearAlive();
-    void ClearDead();
+    void ClearDead(std::function<void(DWORD)> onInstanceDeleted = nullptr);
 
     // Petle renderowania i przejscia graficzne
     void Render();
@@ -39,7 +40,7 @@ public:
     void RenderShadowAllInstances();
     void RenderCollision();
     void Deform();
-    void UpdateDeleting();
+    void UpdateDeleting(std::function<void(DWORD)> onInstanceDeleted = nullptr);
 
     // Sortowanie instancji pod katem kamery
     void SortAliveInstances(const D3DXVECTOR3& cameraEye);

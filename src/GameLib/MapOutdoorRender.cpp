@@ -26,6 +26,10 @@ void CMapOutdoor::RenderTerrain()
 	if (!m_pTerrainPatchProxyList)
 		return;
 
+	// Bezwzgledna gwarancja RAII: wyczyszczenie VertexDeclaration, VertexShader i PixelShader
+	// przed wejsciem do renderera terenu opartego na FVF, oraz gwarancja czystego stanu na wyjsciu.
+	ScopedD3DFFPGuard terrainFFPGuard(0, false);
+
 	CCamera * pCamera = CCameraManager::Instance().GetCurrentCamera();
 	if (!pCamera)
 		return;
@@ -387,6 +391,9 @@ void CMapOutdoor::RenderArea(bool bRenderAmbience)
 {
 	if (!IsVisiblePart(PART_OBJECT))
 		return;
+
+	// Zabezpieczenie przed wyciekiem deklaracji wierzcholkow z modeli/obiektow
+	ScopedD3DVertexDeclGuard areaDeclGuard(nullptr, false);
 
 	m_dwRenderedCRCNum = 0;
 	m_dwRenderedGraphicThingInstanceNum = 0;
@@ -805,6 +812,8 @@ void CMapOutdoor::RenderMarkedArea()
 {
 	if (!m_pTerrainPatchProxyList)
 		return;
+
+	ScopedD3DFFPGuard markedFFPGuard(D3DFVF_XYZ | D3DFVF_NORMAL, true);
 
 	m_matWorldForCommonUse._41 = 0.0f;
 	m_matWorldForCommonUse._42 = 0.0f;

@@ -22,10 +22,6 @@ D3DXCOLOR g_akD3DXClrTitle[CInstanceBase::TITLE_NUM];
 D3DXCOLOR g_akD3DXClrName[CInstanceBase::NAMECOLOR_NUM];
 
 std::map<int, std::string> g_TitleNameMap;
-std::set<DWORD> g_kSet_dwPVPReadyKey;
-std::set<DWORD> g_kSet_dwPVPKey;
-std::set<DWORD> g_kSet_dwGVGKey;
-std::set<DWORD> g_kSet_dwDUELKey;
 
 bool g_isEmpireNameMode=false;
 
@@ -69,33 +65,26 @@ void CInstanceBase::AddDamageEffect(DWORD damage, BYTE flag, BOOL bSelf, BOOL bT
 	m_combatComponent.AddDamage(damage, flag, bSelf != FALSE, bTarget != FALSE);
 	TraceError("AddDamageEffect: damage=%u flag=%u bSelf=%d bTarget=%d IsShowDamage=%d",
 		damage, flag, bSelf, bTarget, CPythonSystem::Instance().IsShowDamage());
-	if(CPythonSystem::Instance().IsShowDamage())
-	{
-		SEffectDamage sDamage;
-		sDamage.bSelf = bSelf;
-		sDamage.bTarget = bTarget;
-		sDamage.damage = damage;
-		sDamage.flag = flag;
-		m_DamageQueue.push_back(sDamage);
-		TraceError("AddDamageEffect: Queued, queue size now=%d", m_DamageQueue.size());
-	}
 }
 
 void CInstanceBase::ProcessDamage()
 {
-	if(m_DamageQueue.empty())
+	if (!CPythonSystem::Instance().IsShowDamage())
+	{
+		m_combatComponent.ClearDamages();
+		return;
+	}
+
+	UserInterface::InstanceComponents::InstanceCombatComponent::DamageRecord sDamage;
+	if (!m_combatComponent.PopDamage(sDamage))
 		return;
 
 	TraceError("ProcessDamage: Queue not empty, processing...");
 
-	SEffectDamage sDamage = m_DamageQueue.front();
-
-	m_DamageQueue.pop_front();
-
 	DWORD damage = sDamage.damage;
 	BYTE flag = sDamage.flag;
-	BOOL bSelf = sDamage.bSelf;
-	BOOL bTarget = sDamage.bTarget;
+	BOOL bSelf = sDamage.isSelf ? TRUE : FALSE;
+	BOOL bTarget = sDamage.isTarget ? TRUE : FALSE;
 
 	TraceError("ProcessDamage: damage=%u flag=%u bSelf=%d bTarget=%d", damage, flag, bSelf, bTarget);
 
@@ -404,112 +393,66 @@ void CInstanceBase::DeleteBlendOut()
 
 void CInstanceBase::ClearPVPKeySystem()
 {
-	g_kSet_dwPVPReadyKey.clear();
-	g_kSet_dwPVPKey.clear();
-	g_kSet_dwGVGKey.clear();
-	g_kSet_dwDUELKey.clear();
+	UserInterface::InstanceComponents::InstanceCombatComponent::ClearAllBattleKeys();
 }
 
 void CInstanceBase::InsertPVPKey(DWORD dwVIDSrc, DWORD dwVIDDst)
 {
-	DWORD dwPVPKey=__GetPVPKey(dwVIDSrc, dwVIDDst);
-
-	g_kSet_dwPVPKey.insert(dwPVPKey);
+	UserInterface::InstanceComponents::InstanceCombatComponent::InsertSymmetricPVPKey(dwVIDSrc, dwVIDDst);
+	UserInterface::InstanceComponents::InstanceCombatComponent::InsertPVPKey(dwVIDSrc, dwVIDDst);
 }
 
 void CInstanceBase::InsertPVPReadyKey(DWORD dwVIDSrc, DWORD dwVIDDst)
 {
-	DWORD dwPVPReadyKey=__GetPVPKey(dwVIDSrc, dwVIDDst);
-
-	g_kSet_dwPVPKey.insert(dwPVPReadyKey);
+	UserInterface::InstanceComponents::InstanceCombatComponent::InsertPVPReadyKey(dwVIDSrc, dwVIDDst);
 }
 
 void CInstanceBase::RemovePVPKey(DWORD dwVIDSrc, DWORD dwVIDDst)
 {
-	DWORD dwPVPKey=__GetPVPKey(dwVIDSrc, dwVIDDst);
-
-	g_kSet_dwPVPKey.erase(dwPVPKey);
+	UserInterface::InstanceComponents::InstanceCombatComponent::RemoveSymmetricPVPKey(dwVIDSrc, dwVIDDst);
+	UserInterface::InstanceComponents::InstanceCombatComponent::RemovePVPKey(dwVIDSrc, dwVIDDst);
 }
 
 void CInstanceBase::InsertGVGKey(DWORD dwSrcGuildVID, DWORD dwDstGuildVID)
 {
-	DWORD dwGVGKey = __GetPVPKey(dwSrcGuildVID, dwDstGuildVID);
-	g_kSet_dwGVGKey.insert(dwGVGKey);
+	UserInterface::InstanceComponents::InstanceCombatComponent::InsertGVGKey(dwSrcGuildVID, dwDstGuildVID);
 }
 
 void CInstanceBase::RemoveGVGKey(DWORD dwSrcGuildVID, DWORD dwDstGuildVID)
 {
-	DWORD dwGVGKey = __GetPVPKey(dwSrcGuildVID, dwDstGuildVID);
-	g_kSet_dwGVGKey.erase(dwGVGKey);
+	UserInterface::InstanceComponents::InstanceCombatComponent::RemoveGVGKey(dwSrcGuildVID, dwDstGuildVID);
 }
 
 void CInstanceBase::InsertDUELKey(DWORD dwVIDSrc, DWORD dwVIDDst)
 {
-	DWORD dwPVPKey=__GetPVPKey(dwVIDSrc, dwVIDDst);
-
-	g_kSet_dwDUELKey.insert(dwPVPKey);
+	UserInterface::InstanceComponents::InstanceCombatComponent::InsertDUELKey(dwVIDSrc, dwVIDDst);
 }
 
 DWORD CInstanceBase::__GetPVPKey(DWORD dwVIDSrc, DWORD dwVIDDst)
 {
-	if (dwVIDSrc>dwVIDDst)
-		std::swap(dwVIDSrc, dwVIDDst);
-
-	DWORD awSrc[2];
-	awSrc[0]=dwVIDSrc;
-	awSrc[1]=dwVIDDst;
-
-    const BYTE * s = (const BYTE *) awSrc;
-    const BYTE * end = s + sizeof(awSrc);
-    unsigned long h = 0;
-
-    while (s < end)
-    {
-        h *= 16777619;
-        h ^= (BYTE) *(BYTE *) (s++);
-    }
-
-    return h;
+	return UserInterface::InstanceComponents::InstanceCombatComponent::ComputeSymmetricKey(dwVIDSrc, dwVIDDst);
 }
 
 bool CInstanceBase::__FindPVPKey(DWORD dwVIDSrc, DWORD dwVIDDst)
 {
-	DWORD dwPVPKey=__GetPVPKey(dwVIDSrc, dwVIDDst);
-
-	if (g_kSet_dwPVPKey.end()==g_kSet_dwPVPKey.find(dwPVPKey))
-		return false;
-
-	return true;
+	return UserInterface::InstanceComponents::InstanceCombatComponent::HasSymmetricPVPKey(dwVIDSrc, dwVIDDst);
 }
 
 bool CInstanceBase::__FindPVPReadyKey(DWORD dwVIDSrc, DWORD dwVIDDst)
 {
-	DWORD dwPVPKey=__GetPVPKey(dwVIDSrc, dwVIDDst);
-
-	if (g_kSet_dwPVPReadyKey.end()==g_kSet_dwPVPReadyKey.find(dwPVPKey))
-		return false;
-
-	return true;
+	return UserInterface::InstanceComponents::InstanceCombatComponent::HasPVPReadyKey(dwVIDSrc, dwVIDDst);
 }
+
 //길드전시 상대 길드인지 확인할때.
 bool CInstanceBase::__FindGVGKey(DWORD dwSrcGuildID, DWORD dwDstGuildID)
 {
-	DWORD dwGVGKey=__GetPVPKey(dwSrcGuildID, dwDstGuildID);
-
-	if (g_kSet_dwGVGKey.end()==g_kSet_dwGVGKey.find(dwGVGKey))
-		return false;
-
-	return true;
+	return UserInterface::InstanceComponents::InstanceCombatComponent::HasGVGKey(dwSrcGuildID, dwDstGuildID);
 }
+
 //대련 모드에서는 대련 상대만 공격할 수 있다.
 bool CInstanceBase::__FindDUELKey(DWORD dwVIDSrc, DWORD dwVIDDst)
 {
-	DWORD dwDUELKey=__GetPVPKey(dwVIDSrc, dwVIDDst);
-
-	if (g_kSet_dwDUELKey.end()==g_kSet_dwDUELKey.find(dwDUELKey))
-		return false;
-
-	return true;
+	return UserInterface::InstanceComponents::InstanceCombatComponent::HasDUELKey(dwVIDSrc, dwVIDDst);
 }
 
 bool CInstanceBase::IsPVPInstance(CInstanceBase& rkInstSel)

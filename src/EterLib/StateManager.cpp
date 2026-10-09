@@ -397,6 +397,8 @@ void CStateManager::SetDefaultState()
 	SetTexture(6, NULL);
 	SetTexture(7, NULL);
 
+	SetVertexShader(0);
+	SetVertexDeclaration(0);
 	SetPixelShader(0);
 	SetFVF(D3DFVF_XYZ);
 
@@ -422,6 +424,9 @@ void CStateManager::SaveMaterial(const D3DMATERIAL9* pMaterial)
 
 void CStateManager::RestoreMaterial()
 {
+	if (m_MaterialStack.empty())
+		return;
+
 	SetMaterial(&m_MaterialStack.back());
 	m_MaterialStack.pop_back();
 }
@@ -475,6 +480,9 @@ void CStateManager::RestoreRenderState(D3DRENDERSTATETYPE Type)
 	}
 #endif _DEBUG
 
+	if (m_RenderStateStack[Type].empty())
+		return;
+
 	SetRenderState(Type, m_RenderStateStack[Type].back());
 	m_RenderStateStack[Type].pop_back();
 }
@@ -502,6 +510,9 @@ void CStateManager::SaveTexture(DWORD dwStage, LPDIRECT3DBASETEXTURE9 pTexture)
 
 void CStateManager::RestoreTexture(DWORD dwStage)
 {
+	if (m_TextureStack[dwStage].empty())
+		return;
+
 	SetTexture(dwStage, m_TextureStack[dwStage].back());
 	m_TextureStack[dwStage].pop_back();
 }
@@ -536,6 +547,10 @@ void CStateManager::RestoreTextureStageState(DWORD dwStage, D3DTEXTURESTAGESTATE
 		StateManager_Assert(!" This texture stage state was not saved!");
 	}
 #endif _DEBUG
+
+	if (m_TextureStageStateStack[dwStage][Type].empty())
+		return;
+
 	SetTextureStageState(dwStage, Type, m_TextureStageStateStack[dwStage][Type].back());
 	m_TextureStageStateStack[dwStage][Type].pop_back();
 }
@@ -569,6 +584,10 @@ void CStateManager::RestoreSamplerState(DWORD dwStage, D3DSAMPLERSTATETYPE Type)
 		StateManager_Assert(!" This texture stage state was not saved!");
 	}
 #endif _DEBUG
+
+	if (m_SamplerStateStack[dwStage][Type].empty())
+		return;
+
 	SetSamplerState(dwStage, Type, m_SamplerStateStack[dwStage][Type].back());
 	m_SamplerStateStack[dwStage][Type].pop_back();
 }
@@ -593,6 +612,9 @@ void CStateManager::SaveVertexShader(LPDIRECT3DVERTEXSHADER9 dwShader)
 
 void CStateManager::RestoreVertexShader()
 {
+	if (m_VertexShaderStack.empty())
+		return;
+
 	SetVertexShader(m_VertexShaderStack.back());
 	m_VertexShaderStack.pop_back();
 }
@@ -620,6 +642,9 @@ void CStateManager::SaveVertexProcessing(BOOL IsON)
 }
 void CStateManager::RestoreVertexProcessing()
 {
+	if (m_VertexProcessingStack.empty())
+		return;
+
 	m_lpD3DDev->SetSoftwareVertexProcessing(m_VertexProcessingStack.back());
 	m_VertexProcessingStack.pop_back();
 }
@@ -631,6 +656,9 @@ void CStateManager::SaveVertexDeclaration(LPDIRECT3DVERTEXDECLARATION9 dwShader)
 }
 void CStateManager::RestoreVertexDeclaration()
 {
+	if (m_VertexDeclarationStack.empty())
+		return;
+
 	SetVertexDeclaration(m_VertexDeclarationStack.back());
 	m_VertexDeclarationStack.pop_back();
 }
@@ -656,16 +684,23 @@ void CStateManager::SaveFVF(DWORD dwShader)
 }
 void CStateManager::RestoreFVF()
 {
+	if (m_FVFStack.empty())
+		return;
+
 	SetFVF(m_FVFStack.back());
 	m_FVFStack.pop_back();
 }
 void CStateManager::SetFVF(DWORD dwShader)
 {
-	if (m_CurrentState.m_dwVertexDeclaration != NULL)
+	m_lpD3DDev->SetVertexDeclaration(NULL);
+	m_CurrentState.m_dwVertexDeclaration = NULL;
+
+	if (m_CurrentState.m_dwVertexShader != NULL)
 	{
-		m_lpD3DDev->SetVertexDeclaration(NULL);
-		m_CurrentState.m_dwVertexDeclaration = NULL;
+		m_lpD3DDev->SetVertexShader(NULL);
+		m_CurrentState.m_dwVertexShader = NULL;
 	}
+
 	m_lpD3DDev->SetFVF(dwShader);
 	m_CurrentState.m_dwFVF = dwShader;
 }
@@ -683,6 +718,9 @@ void CStateManager::SavePixelShader(LPDIRECT3DPIXELSHADER9 dwShader)
 
 void CStateManager::RestorePixelShader()
 {
+	if (m_PixelShaderStack.empty())
+		return;
+
 	SetPixelShader(m_PixelShaderStack.back());
 	m_PixelShaderStack.pop_back();
 }
@@ -694,6 +732,39 @@ void CStateManager::SetPixelShader(LPDIRECT3DPIXELSHADER9 dwShader)
 
 	m_lpD3DDev->SetPixelShader(dwShader);
 	m_CurrentState.m_dwPixelShader = dwShader;
+}
+
+void CStateManager::ClearVertexDeclaration()
+{
+	SetVertexDeclaration(NULL);
+}
+
+void CStateManager::ClearShaders()
+{
+	SetVertexShader(NULL);
+	SetPixelShader(NULL);
+}
+
+void CStateManager::ClearAllShadersAndDeclaration()
+{
+	SetVertexShader(NULL);
+	SetPixelShader(NULL);
+	SetVertexDeclaration(NULL);
+	if (m_lpD3DDev)
+	{
+		m_lpD3DDev->SetVertexDeclaration(NULL);
+		m_lpD3DDev->SetVertexShader(NULL);
+		m_lpD3DDev->SetPixelShader(NULL);
+	}
+}
+
+void CStateManager::SetFixedFunctionPipeline(DWORD dwFVF)
+{
+	ClearAllShadersAndDeclaration();
+	if (dwFVF != 0)
+	{
+		SetFVF(dwFVF);
+	}
 }
 
 void CStateManager::GetPixelShader(LPDIRECT3DPIXELSHADER9* pdwShader)
@@ -718,6 +789,9 @@ void CStateManager::RestoreTransform(D3DTRANSFORMSTATETYPE Type)
 		StateManager_Assert(!" This render state was not saved!");
 	}
 #endif _DEBUG
+
+	if (m_TransformStack[Type].empty())
+		return;
 
 	SetTransform(Type, &m_TransformStack[Type].back());
 	m_TransformStack[Type].pop_back();
@@ -757,6 +831,9 @@ void CStateManager::SaveStreamSource(UINT StreamNumber, LPDIRECT3DVERTEXBUFFER9 
 
 void CStateManager::RestoreStreamSource(UINT StreamNumber)
 {
+	if (m_StreamStack[StreamNumber].empty())
+		return;
+
 	const auto& topStream = m_StreamStack[StreamNumber].back();
 	SetStreamSource(StreamNumber,
 		topStream.m_lpStreamData,
@@ -782,6 +859,9 @@ void CStateManager::SaveIndices(LPDIRECT3DINDEXBUFFER9 pIndexData, UINT BaseVert
 
 void CStateManager::RestoreIndices()
 {
+	if (m_IndexStack.empty())
+		return;
+
 	const auto& topIndex = m_IndexStack.back();
 	SetIndices(topIndex.m_lpIndexData, topIndex.m_BaseVertexIndex);
 	m_IndexStack.pop_back();

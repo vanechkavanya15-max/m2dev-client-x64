@@ -1075,10 +1075,7 @@ void CGrannyLODController::RenderGltfModel()
 		ms_lpd3dDevice->CreateVertexDeclaration(elements, &s_pGltfVertexDecl);
 	}
 
-	if (s_pGltfVertexDecl)
-	{
-		STATEMANAGER.SetVertexDeclaration(s_pGltfVertexDecl);
-	}
+	ScopedD3DVertexDeclGuard gltfDeclGuard(s_pGltfVertexDecl, false);
 
 	STATEMANAGER.SetTransform(D3DTS_WORLD, &m_matWorld);
 

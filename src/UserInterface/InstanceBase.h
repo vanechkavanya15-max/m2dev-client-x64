@@ -12,6 +12,8 @@
 #include "Client/Gameplay/CombatError.h"
 #include "InstanceComponents/InstancePhysicsComponent.h"
 #include "InstanceComponents/InstanceCombatComponent.h"
+#include "InstanceComponents/InstanceMountComponent.h"
+#include "InstanceComponents/InstanceBattleComponent.h"
 #include "Client/Bridge/StranglerInstanceFacade.h"
 #include "Client/Actor/EntityHandle.h"
 
@@ -849,33 +851,7 @@ class CInstanceBase
 		void __AttachHorseSaddle();
 		void __DetachHorseSaddle();
 		
-		struct SHORSE
-		{
-			bool m_isMounting;
-			CActorInstance* m_pkActor;
-			
-			SHORSE();			
-			~SHORSE();
-			
-			void Destroy();
-			void Create(const TPixelPosition& c_rkPPos, UINT eRace, UINT eHitEffect);
-			
-			void SetAttackSpeed(UINT uAtkSpd);
-			void SetMoveSpeed(UINT uMovSpd);
-			void Deform();
-			void Render();
-			CActorInstance& GetActorRef();
-			CActorInstance* GetActorPtr();
-
-			bool IsMounting();
-			bool CanAttack();
-			bool CanUseSkill();
-
-			UINT GetLevel();
-			bool IsNewMount();
-
-			void __Initialize();
-		} m_kHorse;
+		using SHORSE = UserInterface::InstanceComponents::InstanceMountComponent;
 
 
 	protected:
@@ -1029,6 +1005,7 @@ class CInstanceBase
 		UserInterface::InstanceComponents::InstanceVisualComponent m_visualComponent;
 		UserInterface::InstanceComponents::InstancePhysicsComponent m_physicsComponent;
 		UserInterface::InstanceComponents::InstanceCombatComponent m_combatComponent;
+		UserInterface::InstanceComponents::InstanceMountComponent m_mountComponent;
 
 	public:
 		[[nodiscard]] UserInterface::InstanceComponents::InstanceVisualComponent& GetVisualComponent() noexcept { return m_visualComponent; }
@@ -1039,6 +1016,12 @@ class CInstanceBase
 
 		[[nodiscard]] UserInterface::InstanceComponents::InstanceCombatComponent& GetCombatComponent() noexcept { return m_combatComponent; }
 		[[nodiscard]] const UserInterface::InstanceComponents::InstanceCombatComponent& GetCombatComponent() const noexcept { return m_combatComponent; }
+
+		[[nodiscard]] UserInterface::InstanceComponents::InstanceBattleComponent& GetBattleComponent() noexcept { return m_combatComponent; }
+		[[nodiscard]] const UserInterface::InstanceComponents::InstanceBattleComponent& GetBattleComponent() const noexcept { return m_combatComponent; }
+
+		[[nodiscard]] UserInterface::InstanceComponents::InstanceMountComponent& GetMountComponent() noexcept { return m_mountComponent; }
+		[[nodiscard]] const UserInterface::InstanceComponents::InstanceMountComponent& GetMountComponent() const noexcept { return m_mountComponent; }
 
 		// Generational Entity Handle (Use-After-Free / ABA guard C++23)
 		[[nodiscard]] Client::Actor::EntityHandle GetGenerationalHandle() const noexcept { return m_generationalHandle; }
@@ -1080,7 +1063,7 @@ class CInstanceBase
 		};
 
 		typedef std::list<SEffectDamage> CommandDamageQueue;
-		CommandDamageQueue m_DamageQueue;
+		// CommandDamageQueue m_DamageQueue; // Decoupled: handled by m_combatComponent
 
 		void ProcessDamage();
 

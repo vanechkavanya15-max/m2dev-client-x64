@@ -298,6 +298,12 @@ public:
 	void	SetPixelShader(LPDIRECT3DPIXELSHADER9 dwShader);
 	void	GetPixelShader(LPDIRECT3DPIXELSHADER9* pdwShader);
 
+	// Helpers for pipeline state cleanup & FFP
+	void	ClearVertexDeclaration();
+	void	ClearShaders();
+	void	ClearAllShadersAndDeclaration();
+	void	SetFixedFunctionPipeline(DWORD dwFVF);
+
 	// *** These states are cached, but not protected from multiple sends of the same value.
 	// Transform
 	void SaveTransform(D3DTRANSFORMSTATETYPE Transform, const D3DXMATRIX* pMatrix);
@@ -380,5 +386,7 @@ private:
 };
 
 #define STATEMANAGER (CStateManager::Instance())
+
+#include "StateManagerGuards.h"
 
 #endif __CSTATEMANAGER_H

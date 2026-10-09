@@ -397,7 +397,7 @@ void CInstanceBase::NEW_Attack(float fDirRot)
 	}
 	else
 	{
-		if (m_kHorse.IsMounting())
+		if (m_mountComponent.IsMounting())
 		{
 			InputComboAttack(fDirRot);
 		}

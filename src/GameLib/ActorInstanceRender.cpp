@@ -36,6 +36,9 @@ void CActorInstance::OnRender()
 	if (!m_pkCurRaceData)
 		return;
 
+	// Gwarancja RAII: wyczyszczenie deklaracji wierzcholkow po zakonczeniu renderowania aktora
+	ScopedD3DVertexDeclGuard actorDeclGuard(nullptr, false);
+
 	D3DMATERIAL9 kMtrl;
 	STATEMANAGER.GetMaterial(&kMtrl);
 

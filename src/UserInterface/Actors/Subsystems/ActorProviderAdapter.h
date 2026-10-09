@@ -43,38 +43,14 @@ namespace UserInterface::Actors::Subsystems
         /**
          * @brief Pobranie instancji na biezaca klatke (ZAKAZ CACHOWANIA WSKAZNIKA).
          */
-        [[nodiscard]] CInstanceBase* GetInstance(uint32_t dwVID) const override;
-
-        /**
-         * @brief Pobiera instancje glownego gracza.
-         */
+        [[nodiscard]] CInstanceBase* GetInstance(uint32_t vid) const override;
         [[nodiscard]] CInstanceBase* GetMainActor() const override;
-
-        /**
-         * @brief Pobiera aktualnie wybranego aktora pod kursorem myszy.
-         */
         [[nodiscard]] CInstanceBase* GetPickedActor() const override;
 
-        /**
-         * @brief Sprawdza czy dany aktor istnieje i nie jest martwy.
-         */
-        [[nodiscard]] bool IsActorAlive(uint32_t dwVID) const override;
-
-        /**
-         * @brief Pobiera pozycje pikselowa aktora w przestrzeni swiata gry.
-         */
-        [[nodiscard]] bool GetActorPosition(uint32_t dwVID, TPixelPosition* pOutPos) const override;
-
-        /**
-         * @brief Oblicza odleglosc euklidesowa pomiedzy dwoma aktorami w 3D.
-         * @return Odleglosc w jednostkach swiata lub -1.0f jesli ktorys aktor nie istnieje.
-         */
-        [[nodiscard]] float GetDistance(uint32_t dwVID1, uint32_t dwVID2) const override;
-
-        /**
-         * @brief Sprawdza czy dwa byty naleza do tej samej grupy (Party).
-         */
-        [[nodiscard]] bool IsSamePartyMember(uint32_t dwVID1, uint32_t dwVID2) const override;
+        [[nodiscard]] bool IsActorAlive(uint32_t vid) const override;
+        [[nodiscard]] bool GetActorPosition(uint32_t vid, TPixelPosition* outPos) const override;
+        [[nodiscard]] float GetDistance(uint32_t vid1, uint32_t vid2) const override;
+        [[nodiscard]] bool IsSamePartyMember(uint32_t vid1, uint32_t vid2) const override;
 
         // Metody konfiguracji adaptera:
 
@@ -84,8 +60,11 @@ namespace UserInterface::Actors::Subsystems
         void SetPicker(const CharacterPicker* pPicker) noexcept;
         [[nodiscard]] const CharacterPicker* GetPicker() const noexcept;
 
-        void SetMainActorVID(uint32_t dwVID) noexcept;
+        void SetMainActorVID(uint32_t vid) noexcept;
         [[nodiscard]] uint32_t GetMainActorVID() const noexcept;
+
+        void SetMainActorVid(EntityVid vid) noexcept { SetMainActorVID(vid.get()); }
+        [[nodiscard]] EntityVid GetMainActorVid() const noexcept { return EntityVid(m_mainActorVID); }
 
     private:
         const ActorRegistry* m_pRegistry{nullptr};

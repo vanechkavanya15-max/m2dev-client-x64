@@ -9,7 +9,7 @@ void CInstanceBase::SetAttackSpeed(UINT uAtkSpd)
 		uAtkSpd = 0;
 
 	m_GraphicThingInstance.SetAttackSpeed(uAtkSpd/100.0f);	
-	m_kHorse.SetAttackSpeed(uAtkSpd);
+	m_mountComponent.SetAttackSpeed(uAtkSpd);
 }
 
 void CInstanceBase::SetMoveSpeed(UINT uMovSpd)
@@ -18,7 +18,7 @@ void CInstanceBase::SetMoveSpeed(UINT uMovSpd)
 		uMovSpd = 0;
 
 	m_GraphicThingInstance.SetMoveSpeed(uMovSpd/100.0f);	
-	m_kHorse.SetMoveSpeed(uMovSpd);
+	m_mountComponent.SetMoveSpeed(uMovSpd);
 	m_physicsComponent.SetMoveSpeed(uMovSpd);
 }
 

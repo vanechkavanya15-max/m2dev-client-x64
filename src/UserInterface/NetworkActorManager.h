@@ -1,6 +1,7 @@
 #pragma once
 
 #include "InstanceBase.h"
+#include "Client/World/ActorRegistry.h"
 
 struct SNetworkActorData
 {
@@ -131,6 +132,28 @@ class CNetworkActorManager : public CReferenceObject
 		void SetActorOwner(DWORD dwOwnerVID, DWORD dwVictimVID);
 
 		void Update();
+
+		// ========================================================================
+		// Nowoczesne interfejsy C++23 / AI-Friendly Boundary
+		// ========================================================================
+		using EntityVid = Client::World::EntityVid;
+		using NetworkActorMap = std::map<DWORD, SNetworkActorData>;
+
+		[[nodiscard]] const NetworkActorMap& GetActors() const noexcept { return m_kNetActorDict; }
+		[[nodiscard]] size_t GetActorCount() const noexcept { return m_kNetActorDict.size(); }
+		[[nodiscard]] bool HasActor(DWORD vid) const noexcept { return m_kNetActorDict.find(vid) != m_kNetActorDict.end(); }
+		[[nodiscard]] bool HasActor(EntityVid vid) const noexcept { return HasActor(vid.get()); }
+		[[nodiscard]] EntityVid GetMainActorVid() const noexcept { return EntityVid(m_dwMainVID); }
+		void SetMainActor(EntityVid vid) noexcept { SetMainActorVID(vid.get()); }
+
+		template <typename Func>
+		void for_each_actor(Func&& func) const
+		{
+			for (const auto& [vid, actorData] : m_kNetActorDict)
+			{
+				func(actorData);
+			}
+		}
 
 	protected:
 		void __OLD_Update();
