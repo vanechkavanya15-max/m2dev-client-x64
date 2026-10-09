@@ -12,6 +12,8 @@ namespace Client::Gameplay {
     class SkillDomain;
 }
 
+namespace Client::Network::Handlers {
+
 #pragma pack(push, 1)
 /**
  * @brief Represents the packet received from the server when a skill cooldown ends.
@@ -57,3 +59,5 @@ public:
      */
     static EterBase::PacketResult<void> HandlePacket(std::span<const uint8_t> buffer, Client::Gameplay::SkillDomain& skillDomain);
 };
+
+} // namespace Client::Network::Handlers

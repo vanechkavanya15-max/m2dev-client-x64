@@ -98,14 +98,14 @@ namespace EterLib::NullRHI
         }
 
         // IDirect3DResource9 (Dummy Implementations)
-        HRESULT GetDevice(void** ppDevice) override { if(ppDevice) *ppDevice = nullptr; return S_OK; }
+        HRESULT STDMETHODCALLTYPE GetDevice(IDirect3DDevice9** ppDevice) override { if(ppDevice) *ppDevice = nullptr; return S_OK; }
         HRESULT SetPrivateData(const GUID& refguid, const void* pData, DWORD SizeOfData, DWORD Flags) override { return S_OK; }
         HRESULT GetPrivateData(const GUID& refguid, void* pData, DWORD* pSizeOfData) override { return S_OK; }
         HRESULT FreePrivateData(const GUID& refguid) override { return S_OK; }
         DWORD SetPriority(DWORD PriorityNew) override { return 0; }
         DWORD GetPriority() override { return 0; }
         void PreLoad() override {}
-        DWORD GetType() override { return 1; } // D3DRTYPE_VERTEXBUFFER
+        D3DRESOURCETYPE STDMETHODCALLTYPE GetType() override { return D3DRTYPE_VERTEXBUFFER; }
 
         // IDirect3DVertexBuffer9
         HRESULT GetDesc(D3DVERTEXBUFFER_DESC* pDesc) override 
@@ -194,14 +194,14 @@ namespace EterLib::NullRHI
         }
 
         // IDirect3DResource9 (Dummy Implementations)
-        HRESULT GetDevice(void** ppDevice) override { if(ppDevice) *ppDevice = nullptr; return S_OK; }
+        HRESULT STDMETHODCALLTYPE GetDevice(IDirect3DDevice9** ppDevice) override { if(ppDevice) *ppDevice = nullptr; return S_OK; }
         HRESULT SetPrivateData(const GUID& refguid, const void* pData, DWORD SizeOfData, DWORD Flags) override { return S_OK; }
         HRESULT GetPrivateData(const GUID& refguid, void* pData, DWORD* pSizeOfData) override { return S_OK; }
         HRESULT FreePrivateData(const GUID& refguid) override { return S_OK; }
         DWORD SetPriority(DWORD PriorityNew) override { return 0; }
         DWORD GetPriority() override { return 0; }
         void PreLoad() override {}
-        DWORD GetType() override { return 2; } // D3DRTYPE_INDEXBUFFER
+        D3DRESOURCETYPE STDMETHODCALLTYPE GetType() override { return D3DRTYPE_INDEXBUFFER; }
 
         // IDirect3DIndexBuffer9
         HRESULT GetDesc(D3DINDEXBUFFER_DESC* pDesc) override 

@@ -8,7 +8,7 @@
 #include "../Protocol/Protocol.h"
 #include "Client/Gameplay/IPlayerStatsService.h"
 
-namespace Network::Handlers
+namespace Client::Network::Handlers
 {
     /**
      * @brief Handler for GC::POINTS packet.

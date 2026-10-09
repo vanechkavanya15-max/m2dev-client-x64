@@ -2,19 +2,7 @@
 #include <cstring>
 #include <algorithm>
 
-#ifndef TEST_MODE_DISABLE_STDAFX
-#include "EterBase/StdAfx.h"
-#endif
-
-#ifdef TEST_MODE_DISABLE_STDAFX
-enum { LOGIN_STATUS_MAX_LEN = 8 };
-typedef struct packet_login_failure
-{
-    uint16_t    header;
-    uint16_t    length;
-    char    szStatus[LOGIN_STATUS_MAX_LEN + 1];
-} TPacketGCLoginFailure;
-#endif
+#include "../Protocol/Protocol.h"
 
 namespace Client::Network
 {
@@ -32,10 +20,9 @@ namespace Client::Network
 
         const auto* packet = reinterpret_cast<const TPacketGCLoginFailure*>(payload.data());
 
-        const char* end = std::find(packet->szStatus, packet->szStatus + sizeof(packet->szStatus), '\0');
-        
+        size_t statusLen = strnlen(packet->szStatus, sizeof(packet->szStatus));
         LoginFailureStatus status;
-        status.status = std::string(packet->szStatus, static_cast<std::size_t>(std::distance(packet->szStatus, end)));
+        status.status = std::string(packet->szStatus, statusLen);
 
         if (m_callback)
         {

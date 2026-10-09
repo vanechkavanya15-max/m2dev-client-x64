@@ -289,8 +289,8 @@ namespace EterLib::NullRHI
         if (PaletteNumber) *PaletteNumber = 0;
         return D3D_OK;
     }
-    HRESULT STDMETHODCALLTYPE NullDirect3DDevice9::SetScissorRect(const void*) { return D3D_OK; }
-    HRESULT STDMETHODCALLTYPE NullDirect3DDevice9::GetScissorRect(void*) { return D3D_OK; }
+    HRESULT STDMETHODCALLTYPE NullDirect3DDevice9::SetScissorRect(CONST RECT*) { return D3D_OK; }
+    HRESULT STDMETHODCALLTYPE NullDirect3DDevice9::GetScissorRect(RECT*) { return D3D_OK; }
     HRESULT STDMETHODCALLTYPE NullDirect3DDevice9::SetSoftwareVertexProcessing(BOOL) { return D3D_OK; }
     BOOL STDMETHODCALLTYPE NullDirect3DDevice9::GetSoftwareVertexProcessing() { return 0; }
     HRESULT STDMETHODCALLTYPE NullDirect3DDevice9::SetNPatchMode(float) { return D3D_OK; }
@@ -321,7 +321,7 @@ namespace EterLib::NullRHI
     }
 
     HRESULT STDMETHODCALLTYPE NullDirect3DDevice9::ProcessVertices(UINT, UINT, UINT, IDirect3DVertexBuffer9*, IDirect3DVertexDeclaration9*, DWORD) { return D3D_OK; }
-    HRESULT STDMETHODCALLTYPE NullDirect3DDevice9::CreateVertexDeclaration(const void*, IDirect3DVertexDeclaration9** ppDecl)
+    HRESULT STDMETHODCALLTYPE NullDirect3DDevice9::CreateVertexDeclaration(CONST D3DVERTEXELEMENT9*, IDirect3DVertexDeclaration9** ppDecl)
     {
         if (ppDecl) *ppDecl = nullptr;
         return D3D_OK;
@@ -391,11 +391,10 @@ namespace EterLib::NullRHI
     HRESULT STDMETHODCALLTYPE NullDirect3DDevice9::SetPixelShaderConstantI(UINT, const int*, UINT) { return D3D_OK; }
     HRESULT STDMETHODCALLTYPE NullDirect3DDevice9::GetPixelShaderConstantI(UINT, int*, UINT) { return D3D_OK; }
     HRESULT STDMETHODCALLTYPE NullDirect3DDevice9::SetPixelShaderConstantB(UINT, const BOOL*, UINT) { return D3D_OK; }
-    HRESULT STDMETHODCALLTYPE NullDirect3DDevice9::GetPixelShaderConstantB(UINT, BOOL*, UINT) { return D3D_OK; }
-    HRESULT STDMETHODCALLTYPE NullDirect3DDevice9::DrawRectPatch(UINT, const float*, const void*) { return D3D_OK; }
-    HRESULT STDMETHODCALLTYPE NullDirect3DDevice9::DrawTriPatch(UINT, const float*, const void*) { return D3D_OK; }
+    HRESULT STDMETHODCALLTYPE NullDirect3DDevice9::DrawRectPatch(UINT, const float*, CONST D3DRECTPATCH_INFO*) { return D3D_OK; }
+    HRESULT STDMETHODCALLTYPE NullDirect3DDevice9::DrawTriPatch(UINT, const float*, CONST D3DTRIPATCH_INFO*) { return D3D_OK; }
     HRESULT STDMETHODCALLTYPE NullDirect3DDevice9::DeletePatch(UINT) { return D3D_OK; }
-    HRESULT STDMETHODCALLTYPE NullDirect3DDevice9::CreateQuery(DWORD, IDirect3DQuery9** ppQuery)
+    HRESULT STDMETHODCALLTYPE NullDirect3DDevice9::CreateQuery(D3DQUERYTYPE, IDirect3DQuery9** ppQuery)
     {
         if (ppQuery) *ppQuery = nullptr;
         return D3D_OK;

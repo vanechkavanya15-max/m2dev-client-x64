@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <span>
 
-namespace Network::Handlers
+namespace Client::Network::Handlers
 {
     class QuestHandler
     {

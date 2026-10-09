@@ -110,9 +110,6 @@ struct WorldContext {
     // Koordynacja lokalnego gracza i poruszania
     // ========================================================================
     void SetLocalPlayer(EntityVid vid, float x, float y, float z, float rotation, const std::string& name = "");
-    void SetLocalPlayer(EterBase::EntityId vid, float x, float y, float z, float rotation, const std::string& name = "") {
-        SetLocalPlayer(EntityVid{vid.get()}, x, y, z, rotation, name);
-    }
     void UpdatePlayerPosition(float x, float y, float z, float rotation) noexcept;
 
     // ========================================================================
@@ -120,13 +117,7 @@ struct WorldContext {
     // ========================================================================
     bool RegisterActor(const Client::World::ActorRecord& record);
     bool UnregisterActor(EntityVid vid);
-    bool UnregisterActor(EterBase::EntityId vid) {
-        return UnregisterActor(EntityVid{vid.get()});
-    }
     bool UpdateActorPosition(EntityVid vid, float x, float y, float z, float rotation);
-    bool UpdateActorPosition(EterBase::EntityId vid, float x, float y, float z, float rotation) {
-        return UpdateActorPosition(EntityVid{vid.get()}, x, y, z, rotation);
-    }
     [[nodiscard]] std::vector<Client::World::ActorRecord> FindActorsInRadius(float x, float y, float radius) const;
     [[nodiscard]] std::vector<Client::World::ActorRecord> FindNearbyActors(float radius) const;
     [[nodiscard]] std::optional<Client::World::ActorRecord> FindNearestActor(float maxRadius, bool excludeSelf = true) const;

@@ -15,8 +15,11 @@ class CNetworkActorManager;
 struct SNetworkActorData;
 struct SNetworkUpdateActorData;
 
+namespace Client::Bridge { class PySocialEventAdapter; }
+
 class CPythonNetworkStream : public CNetworkStream, public CSingleton<CPythonNetworkStream>
 {
+	friend class Client::Bridge::PySocialEventAdapter;
 	public:
 		// Table-driven packet dispatch (Phase 5)
 		struct PacketHandlerEntry {

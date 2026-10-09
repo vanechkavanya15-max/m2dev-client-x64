@@ -1,21 +1,7 @@
+#include <Python.h>
 #include "PythonEventBridge.h"
+#include "PyGILScopeGuard.h"
 #include <iostream>
-
-// Minimal Mock definitions required for compilation if python.h is empty
-// In the real system these are provided by the actual Python C-API headers
-#ifndef _MSC_VER
-extern "C" {
-    typedef ptrdiff_t Py_ssize_t;
-    // We assume PyObject is defined in the header or here.
-    
-    // Function prototypes matching Python C API
-    PyObject* PyUnicode_InternFromString(const char* v);
-    PyObject* PyObject_VectorcallMethod(PyObject* name, PyObject* const* args, size_t nargsf, PyObject* kwnames);
-    void Py_DecRef(PyObject* o);
-    PyObject* PyLong_FromUnsignedLong(unsigned long v);
-    PyObject* PyBool_FromLong(long v);
-}
-#endif
 
 namespace Client::Bridge {
 
@@ -35,6 +21,7 @@ namespace Client::Bridge {
 
     void PythonEventBridge::InitializeInternedStrings() 
     {
+        PyGILScopeGuard gil;
         m_internedStrings.OnTargetBoardRefresh = PyUnicode_InternFromString("OnTargetBoardRefresh");
         m_internedStrings.OnMountStateChanged = PyUnicode_InternFromString("OnMountStateChanged");
         m_internedStrings.OnActorDead = PyUnicode_InternFromString("OnActorDead");
@@ -43,10 +30,11 @@ namespace Client::Bridge {
 
     void PythonEventBridge::FreeInternedStrings() 
     {
-        if (m_internedStrings.OnTargetBoardRefresh) Py_DecRef(m_internedStrings.OnTargetBoardRefresh);
-        if (m_internedStrings.OnMountStateChanged) Py_DecRef(m_internedStrings.OnMountStateChanged);
-        if (m_internedStrings.OnActorDead) Py_DecRef(m_internedStrings.OnActorDead);
-        if (m_internedStrings.OnTextTailVisibilityChanged) Py_DecRef(m_internedStrings.OnTextTailVisibilityChanged);
+        PyGILScopeGuard gil;
+        if (m_internedStrings.OnTargetBoardRefresh) Py_XDECREF(m_internedStrings.OnTargetBoardRefresh);
+        if (m_internedStrings.OnMountStateChanged) Py_XDECREF(m_internedStrings.OnMountStateChanged);
+        if (m_internedStrings.OnActorDead) Py_XDECREF(m_internedStrings.OnActorDead);
+        if (m_internedStrings.OnTextTailVisibilityChanged) Py_XDECREF(m_internedStrings.OnTextTailVisibilityChanged);
     }
 
     std::expected<void, PythonBridgeError> PythonEventBridge::BindModule(PyObject* module) noexcept 
@@ -115,6 +103,7 @@ namespace Client::Bridge {
     void PythonEventBridge::OnTargetBoardRefresh(const EterBase::TargetBoardRefreshEvent& event) 
     {
         if (!IsBound()) return;
+        PyGILScopeGuard gil;
         
         PyObject* args[2];
         args[0] = m_pythonModule;
@@ -123,14 +112,15 @@ namespace Client::Bridge {
         PyObject* result = PyObject_VectorcallMethod(m_internedStrings.OnTargetBoardRefresh, args, 2, nullptr);
         
         if (result) {
-            Py_DecRef(result);
+            Py_XDECREF(result);
         }
-        if (args[1]) Py_DecRef(args[1]);
+        if (args[1]) Py_XDECREF(args[1]);
     }
 
     void PythonEventBridge::OnMountStateChanged(const EterBase::MountStateChangedEvent& event) 
     {
         if (!IsBound()) return;
+        PyGILScopeGuard gil;
 
         PyObject* args[4];
         args[0] = m_pythonModule;
@@ -141,16 +131,17 @@ namespace Client::Bridge {
         PyObject* result = PyObject_VectorcallMethod(m_internedStrings.OnMountStateChanged, args, 4, nullptr);
         
         if (result) {
-            Py_DecRef(result);
+            Py_XDECREF(result);
         }
-        if (args[1]) Py_DecRef(args[1]);
-        if (args[2]) Py_DecRef(args[2]);
-        if (args[3]) Py_DecRef(args[3]);
+        if (args[1]) Py_XDECREF(args[1]);
+        if (args[2]) Py_XDECREF(args[2]);
+        if (args[3]) Py_XDECREF(args[3]);
     }
 
     void PythonEventBridge::OnActorDead(const EterBase::ActorDeadEvent& event) 
     {
         if (!IsBound()) return;
+        PyGILScopeGuard gil;
 
         PyObject* args[3];
         args[0] = m_pythonModule;
@@ -160,15 +151,16 @@ namespace Client::Bridge {
         PyObject* result = PyObject_VectorcallMethod(m_internedStrings.OnActorDead, args, 3, nullptr);
         
         if (result) {
-            Py_DecRef(result);
+            Py_XDECREF(result);
         }
-        if (args[1]) Py_DecRef(args[1]);
-        if (args[2]) Py_DecRef(args[2]);
+        if (args[1]) Py_XDECREF(args[1]);
+        if (args[2]) Py_XDECREF(args[2]);
     }
 
     void PythonEventBridge::OnTextTailVisibilityChanged(const EterBase::TextTailVisibilityChangedEvent& event) 
     {
         if (!IsBound()) return;
+        PyGILScopeGuard gil;
 
         PyObject* args[3];
         args[0] = m_pythonModule;
@@ -178,10 +170,10 @@ namespace Client::Bridge {
         PyObject* result = PyObject_VectorcallMethod(m_internedStrings.OnTextTailVisibilityChanged, args, 3, nullptr);
         
         if (result) {
-            Py_DecRef(result);
+            Py_XDECREF(result);
         }
-        if (args[1]) Py_DecRef(args[1]);
-        if (args[2]) Py_DecRef(args[2]);
+        if (args[1]) Py_XDECREF(args[1]);
+        if (args[2]) Py_XDECREF(args[2]);
     }
 
 } // namespace Client::Bridge

@@ -13,7 +13,13 @@ namespace Client::Concurrency
             }
         }
 
-        m_queues.resize(numThreads);
+        m_queues.clear();
+        m_queues.reserve(numThreads);
+        for (std::size_t i = 0; i < numThreads; ++i)
+        {
+            m_queues.emplace_back();
+        }
+
         m_mutexes = std::make_unique<std::mutex[]>(numThreads);
 
         m_threads.reserve(numThreads);
@@ -43,7 +49,7 @@ namespace Client::Concurrency
 
         m_queuedJobs.fetch_add(1, std::memory_order_release);
 
-        // Wybieramy kolejke o najmniejszym obciazeniu (round-robin lub proste haszowanie)
+        // Wybieramy kolejke o najmniejszym obciazeniu (round-robin)
         static std::atomic<std::size_t> roundRobinIdx{0};
         const std::size_t targetQueue = roundRobinIdx.fetch_add(1, std::memory_order_relaxed) % m_queues.size();
 
@@ -82,8 +88,9 @@ namespace Client::Concurrency
             // 3. Wykonanie zadania
             if (foundJob)
             {
-                m_queuedJobs.fetch_sub(1, std::memory_order_relaxed);
+                // Inkrementujemy aktywne PRZED dekrementacja kolejki, aby wyeliminowac race window w WaitAll
                 m_activeJobs.fetch_add(1, std::memory_order_relaxed);
+                m_queuedJobs.fetch_sub(1, std::memory_order_relaxed);
 
                 if (currentJob)
                 {
@@ -92,10 +99,11 @@ namespace Client::Concurrency
 
                 m_activeJobs.fetch_sub(1, std::memory_order_release);
 
-                // Powiadom ewentualne WaitAll
+                // Powiadomienie ewentualnych watkow oczekujacych w WaitAll
                 if (m_queuedJobs.load(std::memory_order_acquire) == 0 &&
                     m_activeJobs.load(std::memory_order_acquire) == 0)
                 {
+                    std::lock_guard<std::mutex> lock(m_waitMutex);
                     m_waitCv.notify_all();
                 }
             }

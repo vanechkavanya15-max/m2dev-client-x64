@@ -1,3 +1,5 @@
+#include <winsock2.h>
+#include <windows.h>
 #include "PySocialEventAdapter.h"
 #include "UserInterface/PythonNetworkStream.h"
 #include "UserInterface/Domain/PartyContainerModel.h"

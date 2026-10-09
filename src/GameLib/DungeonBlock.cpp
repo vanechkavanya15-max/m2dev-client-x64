@@ -209,6 +209,11 @@ bool CDungeonBlock::Load(const char * c_szFileName)
 	m_pThing = (CGraphicThing *)CResourceManager::Instance().GetResourcePointer(c_szFileName);
 
 	m_pThing->AddReference();
+	if (m_pThing->IsGltf())
+	{
+		return true;
+	}
+
 	if (m_pThing->GetModelCount() <= 0)
 	{
 		TraceError("CDungeonBlock::Load(filename=%s) - model count is %d\n", c_szFileName, m_pThing->GetModelCount());

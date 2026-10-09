@@ -311,8 +311,8 @@ namespace EterLib::NullRHI
         HRESULT STDMETHODCALLTYPE GetPaletteEntries(UINT PaletteNumber, void* pEntries) override;
         HRESULT STDMETHODCALLTYPE SetCurrentTexturePalette(UINT PaletteNumber) override;
         HRESULT STDMETHODCALLTYPE GetCurrentTexturePalette(UINT *PaletteNumber) override;
-        HRESULT STDMETHODCALLTYPE SetScissorRect(const void* pRect) override;
-        HRESULT STDMETHODCALLTYPE GetScissorRect(void* pRect) override;
+        HRESULT STDMETHODCALLTYPE SetScissorRect(CONST RECT* pRect) override;
+        HRESULT STDMETHODCALLTYPE GetScissorRect(RECT* pRect) override;
         HRESULT STDMETHODCALLTYPE SetSoftwareVertexProcessing(BOOL bSoftware) override;
         BOOL STDMETHODCALLTYPE GetSoftwareVertexProcessing() override;
         HRESULT STDMETHODCALLTYPE SetNPatchMode(float nSegments) override;
@@ -322,7 +322,7 @@ namespace EterLib::NullRHI
         HRESULT STDMETHODCALLTYPE DrawPrimitiveUP(D3DPRIMITIVETYPE PrimitiveType, UINT PrimitiveCount, const void* pVertexStreamZeroData, UINT VertexStreamZeroStride) override;
         HRESULT STDMETHODCALLTYPE DrawIndexedPrimitiveUP(D3DPRIMITIVETYPE PrimitiveType, UINT MinVertexIndex, UINT NumVertices, UINT PrimitiveCount, const void* pIndexData, D3DFORMAT IndexDataFormat, const void* pVertexStreamZeroData, UINT VertexStreamZeroStride) override;
         HRESULT STDMETHODCALLTYPE ProcessVertices(UINT SrcStartIndex, UINT DestIndex, UINT VertexCount, IDirect3DVertexBuffer9* pDestBuffer, IDirect3DVertexDeclaration9* pVertexDecl, DWORD Flags) override;
-        HRESULT STDMETHODCALLTYPE CreateVertexDeclaration(const void* pVertexElements, IDirect3DVertexDeclaration9** ppDecl) override;
+        HRESULT STDMETHODCALLTYPE CreateVertexDeclaration(CONST D3DVERTEXELEMENT9* pVertexElements, IDirect3DVertexDeclaration9** ppDecl) override;
         HRESULT STDMETHODCALLTYPE SetVertexDeclaration(IDirect3DVertexDeclaration9* pDecl) override;
         HRESULT STDMETHODCALLTYPE GetVertexDeclaration(IDirect3DVertexDeclaration9** ppDecl) override;
         HRESULT STDMETHODCALLTYPE SetFVF(DWORD FVF) override;
@@ -351,10 +351,10 @@ namespace EterLib::NullRHI
         HRESULT STDMETHODCALLTYPE GetPixelShaderConstantI(UINT StartRegister, int* pConstantData, UINT Vector4iCount) override;
         HRESULT STDMETHODCALLTYPE SetPixelShaderConstantB(UINT StartRegister, const BOOL* pConstantData, UINT BoolCount) override;
         HRESULT STDMETHODCALLTYPE GetPixelShaderConstantB(UINT StartRegister, BOOL* pConstantData, UINT BoolCount) override;
-        HRESULT STDMETHODCALLTYPE DrawRectPatch(UINT Handle, const float* pNumSegs, const void* pRectPatchInfo) override;
-        HRESULT STDMETHODCALLTYPE DrawTriPatch(UINT Handle, const float* pNumSegs, const void* pTriPatchInfo) override;
+        HRESULT STDMETHODCALLTYPE DrawRectPatch(UINT Handle, const float* pNumSegs, CONST D3DRECTPATCH_INFO* pRectPatchInfo) override;
+        HRESULT STDMETHODCALLTYPE DrawTriPatch(UINT Handle, const float* pNumSegs, CONST D3DTRIPATCH_INFO* pTriPatchInfo) override;
         HRESULT STDMETHODCALLTYPE DeletePatch(UINT Handle) override;
-        HRESULT STDMETHODCALLTYPE CreateQuery(DWORD Type, IDirect3DQuery9** ppQuery) override;
+        HRESULT STDMETHODCALLTYPE CreateQuery(D3DQUERYTYPE Type, IDirect3DQuery9** ppQuery) override;
 
     private:
         std::atomic<ULONG> m_refCount{1};

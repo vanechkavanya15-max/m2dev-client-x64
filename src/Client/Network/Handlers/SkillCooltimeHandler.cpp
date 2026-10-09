@@ -2,6 +2,8 @@
 #include "../../Gameplay/SkillDomain.h"
 #include "../../../EterBase/LogModern.h"
 
+namespace Client::Network::Handlers {
+
 EterBase::PacketResult<void> SkillCooltimeHandler::HandlePacket(std::span<const uint8_t> buffer, Client::Gameplay::SkillDomain& skillDomain)
 {
     if (buffer.size() < sizeof(TPacketGCSkillCoolTimeEnd))
@@ -27,3 +29,5 @@ EterBase::PacketResult<void> SkillCooltimeHandler::HandlePacket(std::span<const 
 
     return {};
 }
+
+} // namespace Client::Network::Handlers

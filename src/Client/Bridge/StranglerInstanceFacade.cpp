@@ -53,7 +53,7 @@ EterBase::VoidResult<> StranglerInstanceFacade::UnregisterInstance(uint32_t vid)
         return EterBase::MakeError("Brak ustawionego WorldContext w StranglerInstanceFacade");
     }
 
-    if (!m_context->UnregisterActor(Client::World::EntityVid(vid))) {
+    if (!m_context->UnregisterActor(Client::Core::EntityVid{vid})) {
         return EterBase::MakeError("Aktor o zadanym VID nie istnieje w ActorRegistry");
     }
 
@@ -65,7 +65,7 @@ EterBase::VoidResult<> StranglerInstanceFacade::UpdatePosition(uint32_t vid, flo
         return EterBase::MakeError("Brak ustawionego WorldContext w StranglerInstanceFacade");
     }
 
-    if (!m_context->UpdateActorPosition(Client::World::EntityVid(vid), x, y, z, rotation)) {
+    if (!m_context->UpdateActorPosition(Client::Core::EntityVid{vid}, x, y, z, rotation)) {
         return EterBase::MakeError("Aktor o zadanym VID nie istnieje, aktualizacja pozycji niemozliwa");
     }
 
@@ -93,7 +93,7 @@ EterBase::VoidResult<> StranglerInstanceFacade::SetMainInstance(
         return EterBase::MakeError("Brak ustawionego WorldContext w StranglerInstanceFacade");
     }
 
-    m_context->SetLocalPlayer(Client::World::EntityVid(vid), x, y, z, rotation, std::string(name));
+    m_context->SetLocalPlayer(Client::Core::EntityVid{vid}, x, y, z, rotation, std::string(name));
     return {};
 }
 

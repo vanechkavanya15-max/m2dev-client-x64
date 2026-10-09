@@ -23,10 +23,10 @@ struct SimulationResult {
     std::string errorMessage;
 };
 
-class SessionSimulationHarness {
+class StressAndLootSimulationScenario {
 public:
-    SessionSimulationHarness();
-    ~SessionSimulationHarness() = default;
+    StressAndLootSimulationScenario();
+    ~StressAndLootSimulationScenario() = default;
 
     SimulationResult RunStressAndLootScenario();
 

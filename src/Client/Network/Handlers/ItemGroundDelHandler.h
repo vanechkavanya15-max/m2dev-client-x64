@@ -7,6 +7,8 @@
 #include "../../../EterBase/LogModern.h"
 #include "Client/Core/EventBus.h"
 
+namespace Client::Network::Handlers {
+
 #pragma pack(push, 1)
 struct ItemGroundDelPacket
 {
@@ -29,3 +31,5 @@ class ItemGroundDelHandler
 public:
     static EterBase::PacketResult<void> Handle(std::span<const uint8_t> buffer);
 };
+
+} // namespace Client::Network::Handlers

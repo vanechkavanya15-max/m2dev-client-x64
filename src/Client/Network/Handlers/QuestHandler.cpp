@@ -7,7 +7,7 @@
 #include <cstring>
 #include <string>
 
-namespace Network::Handlers
+namespace Client::Network::Handlers
 {
     namespace Events
     {

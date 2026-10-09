@@ -3,7 +3,7 @@
 #include "../../../EterBase/LogModern.h"
 #include <cstring>
 
-namespace Network::Handlers
+namespace Client::Network::Handlers
 {
     EterBase::PacketResult<void> PlayerPointsHandler::HandlePoints(std::span<const uint8_t> payload, Client::Gameplay::IPlayerStatsService& statsService)
     {

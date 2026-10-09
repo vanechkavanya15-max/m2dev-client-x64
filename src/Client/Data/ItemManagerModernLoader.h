@@ -12,7 +12,7 @@
 #include <string_view>
 #include <string>
 
-#include "ItemData.h"
+#include "GameLib/ItemData.h"
 
 class ItemManagerModernLoader
 {

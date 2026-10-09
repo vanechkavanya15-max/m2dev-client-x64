@@ -9,6 +9,8 @@ namespace {
     }
 } // namespace
 
+namespace Client::Network::Handlers {
+
 EterBase::PacketResult<void> ItemGroundDelHandler::Handle(std::span<const uint8_t> buffer)
 {
     // Step 1: Validate buffer size using C++23 monadic transform
@@ -44,3 +46,5 @@ EterBase::PacketResult<void> ItemGroundDelHandler::Handle(std::span<const uint8_
         .transform(parsePacket)
         .transform(handleDeletion);
 }
+
+} // namespace Client::Network::Handlers

@@ -1,31 +1,24 @@
- #include "../../../EterBase/StrongTypes.h"
- #include "../../World/ECSComponents.h"
- #include "Client/Core/EventBus.h"
-#include "../../Network/ModernPacketDispatcher.h"
- 
-namespace Client::Network
- {
- #pragma pack(push, 1)
-     /**
-             : dropVid(vid), itemVnum(vnum), coords(c), ownershipLabel(std::move(ownership)) {}
-     };
- 
+#pragma once
 
-     /**
-     * @brief Klasa obslugujaca pakiety dodawania przedmiotu na ziemie (ItemGroundAdd).
-     * Implementuje interfejs IPacketHandler.
-      */
+#include "ItemGroundAddHandler.h"
+#include "../../Network/ModernPacketDispatcher.h"
+
+namespace Client::Network
+{
     class ItemGroundAddPacketHandler final : public IPacketHandler
     {
     public:
         ItemGroundAddPacketHandler() noexcept = default;
         ~ItemGroundAddPacketHandler() override = default;
 
-        [[nodiscard]] EterBase::PacketResult<void> Handle(std::span<const uint8_t> payload) override;
+        [[nodiscard]] EterBase::PacketResult<void> Handle(std::span<const uint8_t> payload) override
+        {
+            return Client::Network::Handlers::ProcessItemGroundAdd(payload);
+        }
         
         [[nodiscard]] constexpr uint16_t GetExpectedSize() const noexcept override
         {
-            return sizeof(PacketItemGroundAdd);
+            return sizeof(Client::Network::Handlers::PacketItemGroundAdd);
         }
         
         [[nodiscard]] constexpr bool IsDynamicSize() const noexcept override
@@ -33,4 +26,4 @@ namespace Client::Network
             return false;
         }
     };
- }
+}

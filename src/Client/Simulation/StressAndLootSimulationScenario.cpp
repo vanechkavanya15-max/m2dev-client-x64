@@ -4,13 +4,13 @@
 
 namespace Client::Simulation {
 
-SessionSimulationHarness::SessionSimulationHarness() {
+StressAndLootSimulationScenario::StressAndLootSimulationScenario() {
     m_grid = std::make_unique<Client::World::SpatialHashGrid>(1024.0f);
     m_inventory = std::make_unique<Client::Gameplay::InventoryDomain>();
     m_session = std::make_unique<Client::Core::GameSession>();
 }
 
-SimulationResult SessionSimulationHarness::RunStressAndLootScenario() {
+SimulationResult StressAndLootSimulationScenario::RunStressAndLootScenario() {
     SimulationResult result;
     result.success = true;
 

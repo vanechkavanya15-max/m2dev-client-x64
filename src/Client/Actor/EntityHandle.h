@@ -2,7 +2,7 @@
 
 #include <cstdint>
 #include <compare>
-#include <vector>
+#include <deque>
 #include <optional>
 #include <limits>
 #include "../../EterBase/Result.h"
@@ -39,6 +39,8 @@ private:
 /**
  * @brief Rejestr z indeksem generacyjnym O(1).
  * Zapewnia bezpieczne zarzadzanie pamiecia i odpornosc na kolizje (Use-After-Free).
+ * Zastosowanie std::deque gwarantuje pelna stabilnosc wskaznikow (pointer stability)
+ * przy dodawaniu nowych elementow (push_back nigdy nie uniewaznia istniejacych referencji).
  */
 template <typename T>
 class GenerationalRegistry {
@@ -49,7 +51,7 @@ private:
         EntityHandle::IndexType nextFreeIndex = EntityHandle::InvalidIndex;
     };
 
-    std::vector<Slot> m_slots;
+    std::deque<Slot> m_slots;
     EntityHandle::IndexType m_firstFreeIndex = EntityHandle::InvalidIndex;
     size_t m_activeCount = 0;
 
@@ -87,7 +89,8 @@ public:
 
     /**
      * @brief Pobiera obiekt z rejestru na podstawie uchwytu.
-     * UWAGA: Zwracany wskaznik jest wazny tylko do nastepnego wywolania Insert().
+     * Zwracany wskaznik jest stabilny (std::deque zapobiega uniewaznieniu pamieci przy push_back)
+     * i pozostaje wazny az do wywolania Erase() lub Clear().
      */
     [[nodiscard]] EterBase::Result<T*, EterBase::EntityError> Get(EntityHandle handle) noexcept {
         if (!handle.IsValid() || handle.GetIndex() >= m_slots.size()) {
@@ -105,7 +108,8 @@ public:
 
     /**
      * @brief Pobiera obiekt z rejestru (wersja const).
-     * UWAGA: Zwracany wskaznik jest wazny tylko do nastepnego wywolania Insert().
+     * Zwracany wskaznik jest stabilny (std::deque zapobiega uniewaznieniu pamieci przy push_back)
+     * i pozostaje wazny az do wywolania Erase() lub Clear().
      */
     [[nodiscard]] EterBase::Result<const T*, EterBase::EntityError> Get(EntityHandle handle) const noexcept {
         if (!handle.IsValid() || handle.GetIndex() >= m_slots.size()) {

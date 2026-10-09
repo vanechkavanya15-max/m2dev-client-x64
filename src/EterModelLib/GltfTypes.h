@@ -73,6 +73,9 @@ struct GltfJoint
     std::string name;
     int parentIndex;
     float4x4 inverseBindMatrix;
+    float3 localTranslation = {0.0f, 0.0f, 0.0f};
+    float4 localRotation = {0.0f, 0.0f, 0.0f, 1.0f};
+    float3 localScale = {1.0f, 1.0f, 1.0f};
 };
 
 struct GltfSkin
@@ -92,6 +95,7 @@ enum class GltfAnimationPathType
 struct GltfAnimationChannel
 {
     int jointIndex;
+    std::string targetNodeName;
     GltfAnimationPathType pathType;
     std::vector<float> times;
     std::vector<float4> values;

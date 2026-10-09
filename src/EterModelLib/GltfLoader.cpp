@@ -240,7 +240,7 @@ bool GltfLoader::ProcessData(cgltf_data* data, GltfModelData& outModelData)
                 }
             }
 
-            // Indeksy (Index buffery)
+            // Indeksy (Index buffery z poprawnym offsetem wierzcholkow submesha)
             if (prim.indices)
             {
                 submesh.indexCount = (unsigned int)prim.indices->count;
@@ -248,19 +248,25 @@ bool GltfLoader::ProcessData(cgltf_data* data, GltfModelData& outModelData)
                 outModelData.indices.resize(startIndex + submesh.indexCount);
                 for (size_t idx = 0; idx < prim.indices->count; ++idx)
                 {
-                    outModelData.indices[startIndex + idx] = (unsigned int)cgltf_accessor_read_index(prim.indices, idx);
+                    outModelData.indices[startIndex + idx] = (unsigned int)cgltf_accessor_read_index(prim.indices, idx) + (unsigned int)startVertex;
                 }
             }
             else
             {
-                submesh.indexCount = 0;
+                submesh.indexCount = (unsigned int)vertexCount;
+                size_t startIndex = outModelData.indices.size();
+                outModelData.indices.resize(startIndex + submesh.indexCount);
+                for (size_t idx = 0; idx < vertexCount; ++idx)
+                {
+                    outModelData.indices[startIndex + idx] = (unsigned int)(startVertex + idx);
+                }
             }
 
             outModelData.submeshes.push_back(submesh);
         }
     }
 
-    // Szkielet (Skin / Joints / InverseBindMatrices)
+    // Szkielet (Skin / Joints / InverseBindMatrices / Rest Pose)
     if (data->skins_count > 0)
     {
         const cgltf_skin& skin = data->skins[0];
@@ -288,6 +294,17 @@ bool GltfLoader::ProcessData(cgltf_data* data, GltfModelData& outModelData)
                     }
                 }
             }
+
+            // Odczyt bind pose (rest pose) kosci
+            if (jointNode->has_translation) {
+                joint.localTranslation = {jointNode->translation[0], jointNode->translation[1], jointNode->translation[2]};
+            }
+            if (jointNode->has_rotation) {
+                joint.localRotation = {jointNode->rotation[0], jointNode->rotation[1], jointNode->rotation[2], jointNode->rotation[3]};
+            }
+            if (jointNode->has_scale) {
+                joint.localScale = {jointNode->scale[0], jointNode->scale[1], jointNode->scale[2]};
+            }
             
             for (int r = 0; r < 4; ++r) {
                 for (int c = 0; c < 4; ++c) {
@@ -312,6 +329,10 @@ bool GltfLoader::ProcessData(cgltf_data* data, GltfModelData& outModelData)
             GltfAnimationChannel animChannel;
             
             animChannel.jointIndex = -1;
+            if (channel.target_node && channel.target_node->name) {
+                animChannel.targetNodeName = channel.target_node->name;
+            }
+
             if (data->skins_count > 0) {
                 const cgltf_skin& skin = data->skins[0];
                 for (size_t j = 0; j < skin.joints_count; ++j) {

@@ -23,7 +23,7 @@ namespace Client::Concurrency {
  */
 class JobSystem {
 public:
-    using Job = std::move_only_function<void()>;
+    using Job = std::function<void()>;
 
     /**
      * @brief Constructs the JobSystem with a specific number of threads.

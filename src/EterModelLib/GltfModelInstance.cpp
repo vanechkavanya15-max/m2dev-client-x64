@@ -315,12 +315,25 @@ void CGltfModelInstance::UpdateTransforms(float time)
     std::vector<Quaternion> rotations(boneCount, Quaternion::Identity());
     std::vector<Vector3> scales(boneCount, Vector3(1.0f, 1.0f, 1.0f));
 
+    const auto& joints = m_pModel->GetModelData().skin.joints;
+    for (size_t j = 0; j < boneCount && j < joints.size(); ++j)
+    {
+        translations[j] = Vector3(joints[j].localTranslation.x, joints[j].localTranslation.y, joints[j].localTranslation.z);
+        rotations[j] = Quaternion(joints[j].localRotation.x, joints[j].localRotation.y, joints[j].localRotation.z, joints[j].localRotation.w);
+        scales[j] = Vector3(joints[j].localScale.x, joints[j].localScale.y, joints[j].localScale.z);
+    }
+
     const GltfMotionData* pMotion = GetCurrentAnimation();
     if (pMotion)
     {
         for (const auto& channel : pMotion->channels)
         {
             int jointIdx = channel.jointIndex;
+            if ((jointIdx < 0 || static_cast<size_t>(jointIdx) >= boneCount) && !channel.targetNodeName.empty())
+            {
+                jointIdx = m_pModel->FindBoneIndex(channel.targetNodeName);
+            }
+
             if (jointIdx < 0 || static_cast<size_t>(jointIdx) >= boneCount)
             {
                 continue;

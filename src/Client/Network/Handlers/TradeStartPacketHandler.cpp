@@ -1,6 +1,5 @@
 #include "TradeStartPacketHandler.h"
 #include "Client/Network/Protocol/Packets/Packet_Exchange.h"
-#include "Client/Network/Protocol/Protocol.h"
 
 namespace Client::Network::Handlers {
 

@@ -12,6 +12,30 @@
 #include <cstdint>
 #include "../GameType.h"
 
+#ifndef _EXCHANGE_SUB_DEFINED
+#define _EXCHANGE_SUB_DEFINED
+namespace ExchangeSub {
+    namespace CG { enum : uint8_t {
+        START,
+        ITEM_ADD,
+        ITEM_DEL,
+        ELK_ADD,
+        ACCEPT,
+        CANCEL,
+    }; }
+    namespace GC { enum : uint8_t {
+        START,
+        ITEM_ADD,
+        ITEM_DEL,
+        ELK_ADD,
+        ACCEPT,
+        END,
+        ALREADY,
+        LESS_ELK,
+    }; }
+}
+#endif
+
 #pragma pack(push, 1)
 
 /**

@@ -1053,8 +1053,29 @@ void CGrannyLODController::RenderGltfModel()
 			const GltfMaterial& mat = modelData.materials[submesh.materialIndex];
 			if (!mat.diffuseTexture.empty())
 			{
-				CResource* pResource = CResourceManager::Instance().GetResourcePointer(mat.diffuseTexture.c_str());
-				if (pResource)
+				extern const std::string& GetModelLocalPath();
+				CResourceManager& resMgr = CResourceManager::Instance();
+				CResource* pResource = resMgr.GetResourcePointer(mat.diffuseTexture.c_str());
+
+				if (!pResource || pResource->IsEmpty())
+				{
+					const std::string& localPath = GetModelLocalPath();
+					if (!localPath.empty())
+					{
+						std::string localTex = localPath + mat.diffuseTexture;
+						pResource = resMgr.GetResourcePointer(localTex.c_str());
+
+						if ((!pResource || pResource->IsEmpty()) && (mat.diffuseTexture.find('/') != std::string::npos || mat.diffuseTexture.find('\\') != std::string::npos))
+						{
+							size_t lastSlash = mat.diffuseTexture.find_last_of("/\\");
+							std::string fileNameOnly = mat.diffuseTexture.substr(lastSlash + 1);
+							std::string localFile = localPath + fileNameOnly;
+							pResource = resMgr.GetResourcePointer(localFile.c_str());
+						}
+					}
+				}
+
+				if (pResource && !pResource->IsEmpty())
 				{
 					CGraphicImage* pImage = static_cast<CGraphicImage*>(pResource);
 					if (pImage)
@@ -1068,11 +1089,12 @@ void CGrannyLODController::RenderGltfModel()
 		STATEMANAGER.SetTexture(0, pD3DTexture);
 		STATEMANAGER.SetTexture(1, NULL);
 
+		UINT minVertexIndex = submesh.vertexOffset;
 		UINT numVertices = submesh.vertexCount > 0 ? submesh.vertexCount : (UINT)deformedVertices.size();
 
 		STATEMANAGER.DrawIndexedPrimitiveUP(
 			D3DPT_TRIANGLELIST,
-			0,
+			minVertexIndex,
 			numVertices,
 			primitiveCount,
 			&modelData.indices[submesh.indexOffset],
