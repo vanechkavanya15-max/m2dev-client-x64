@@ -190,7 +190,7 @@ void CPythonPlayer::Update()
 		PyCallClassMemberFunc(m_ppyGameWindow, "RefreshStamina", Py_BuildValue("()"));
 	}
 
-	__Update_AutoAttack();
+	// Auto-atak jest w pelni zarzadzany przez m_combatController.UpdateAutoAttack(fElapsedTime) w linii 148
 	__Update_NotifyGuildAreaEvent();
 }
 
