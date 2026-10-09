@@ -20,6 +20,11 @@ namespace UI
 
     void PythonInternedStrings::Initialize()
     {
+        if (!Py_IsInitialized())
+        {
+            return;
+        }
+
         if (OnUpdate != nullptr)
         {
             return;
@@ -43,6 +48,25 @@ namespace UI
 
     void PythonInternedStrings::Finalize()
     {
+        if (!Py_IsInitialized())
+        {
+            OnUpdate = nullptr;
+            OnRender = nullptr;
+            OnSelectEmptySlot = nullptr;
+            OnSelectItemSlot = nullptr;
+            OnUnselectEmptySlot = nullptr;
+            OnUnselectItemSlot = nullptr;
+            OnUseSlot = nullptr;
+            OnOverInItem = nullptr;
+            OnOverOutItem = nullptr;
+            OnPressedSlotButton = nullptr;
+            OnMoveWindow = nullptr;
+            OnPressEscapeKey = nullptr;
+            SetItemData = nullptr;
+            RefreshStatus = nullptr;
+            return;
+        }
+
         Py_CLEAR(OnUpdate);
         Py_CLEAR(OnRender);
         Py_CLEAR(OnSelectEmptySlot);

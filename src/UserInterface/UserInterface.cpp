@@ -265,22 +265,23 @@ static bool Main(HINSTANCE hInstance, LPSTR lpCmdLine)
 	// Create game thread pool singleton before CPythonApplication
 	static CGameThreadPool gameThreadPool;
 
-	auto app = new CPythonApplication;
-	app->Initialize (hInstance);
 	CPythonLauncher pyLauncher;
 
 	if (pyLauncher.Create())
 	{
-		RunMainScript (pyLauncher, lpCmdLine);
+		auto app = new CPythonApplication;
+		app->Initialize(hInstance);
+
+		RunMainScript(pyLauncher, lpCmdLine);
 		TraceError("Main: RunMainScript finished!");
+
+		app->Clear();
+		app->Destroy();
+		delete app;
 	}
 
-	app->Clear();
-	timeEndPeriod (1);
+	timeEndPeriod(1);
 	pyLauncher.Clear();
-
-	app->Destroy();
-	delete app;
 
 	CFontManager::Instance().Destroy();
 	return 0;

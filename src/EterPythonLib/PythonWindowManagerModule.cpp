@@ -2,6 +2,7 @@
 #include "PythonWindow.h"
 #include "PythonSlotWindow.h"
 #include "PythonGridSlotWindow.h"
+#include "PythonInternedStrings.h"
 
 bool PyTuple_GetWindow(PyObject* poArgs, int pos, UI::CWindow ** ppRetWindow)
 {
@@ -2502,6 +2503,8 @@ PyObject* wndMgrIsScissorRectEnabled(PyObject* poSelf, PyObject* poArgs)
 
 void initwndMgr()
 {
+	UI::PythonInternedStrings::Initialize();
+
 	static PyMethodDef s_methods[] =
 	{
 		// WindowManager

@@ -15,7 +15,10 @@ namespace UI
 
 	PyObject * BuildEmptyTuple()
 	{
-		Py_INCREF(gs_poEmptyTuple);
+		if (!gs_poEmptyTuple && Py_IsInitialized())
+			gs_poEmptyTuple = Py_BuildValue("()");
+		if (gs_poEmptyTuple)
+			Py_INCREF(gs_poEmptyTuple);
 		return gs_poEmptyTuple;
 	}
 
@@ -57,14 +60,24 @@ namespace UI
 		m_ActiveWindowList.clear();
 		m_LockWindowList.clear();
 
-		gs_poEmptyTuple = Py_BuildValue("()");
-		UI::PythonInternedStrings::Initialize();
+		if (Py_IsInitialized())
+		{
+			gs_poEmptyTuple = Py_BuildValue("()");
+			UI::PythonInternedStrings::Initialize();
+		}
 	}
 
 	CWindowManager::~CWindowManager()
 	{		
-		UI::PythonInternedStrings::Finalize();
-		Py_DECREF(gs_poEmptyTuple);
+		if (Py_IsInitialized())
+		{
+			UI::PythonInternedStrings::Finalize();
+			if (gs_poEmptyTuple)
+			{
+				Py_DECREF(gs_poEmptyTuple);
+				gs_poEmptyTuple = NULL;
+			}
+		}
 
 		stl_wipe_second(m_LayerWindowMap);
 		m_LayerWindowMap.clear();
