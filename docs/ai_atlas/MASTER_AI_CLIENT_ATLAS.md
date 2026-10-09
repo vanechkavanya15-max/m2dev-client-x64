@@ -2,8 +2,9 @@
 
 > Dokument jest glownym indeksem nawigacyjnym (Knowledge Base) dla agentow AI
 > pracujacych w glownym repozytorium silnika klienta gier ([E:\m2dev-client-src-mainOryginalx64](file:///E:/m2dev-client-src-mainOryginalx64)).
-> Dekonstrukcja Monolitow: 100% ZAKONCZONA (Siec, Gracz, Aktor, Protokol, Bindingi Pythona).
-> Wynik Weryfikacji: 40/40 testow CTest PASS (0.77s), plik binarny Metin2_Release.exe (29.5 MB) zbudowany pomyslnie.
+> Dekonstrukcja Monolitow i Likwidacja Długu Hybrydowego: 100% ZAKONCZONA.
+> Single Source of Truth w zarzadzaniu postaciami, komponenty kompozycyjne InstanceBase, strazniki RAII D3D9, ujednolicone interfejsy C++23.
+> Wynik Weryfikacji: 41/41 testow CTest PASS (0.76s), plik binarny Metin2_Release.exe (29.5 MB) zbudowany pomyslnie.
 
 ---
 

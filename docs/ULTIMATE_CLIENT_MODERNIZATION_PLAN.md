@@ -279,9 +279,10 @@ Aby zagwarantowac, ze klient gry w kazdym momencie pozostaje w 100% zdatny do ko
 | **Faza 2: Aktorzy i Byt** | ActorRegistry, GenerationalRegistry, StranglerInstanceFacade | **100% PASS** | Eliminacja Use-After-Free, brak dangling pointers |
 | **Faza 3: EventBus & Python** | CoreEventBus, dekompozycja PythonPlayerModule (4 domeny SRP) | **100% PASS** | 130 funkcji C-API rozbitych na czyste domeny, zero wyciekow |
 | **Faza 4: Domenizacja** | InventoryDomain, SkillDomain, PlayerStatsDomain, Protocol.h, Appearance/Mount | **100% PASS** | Wyciecie m_playerStatus, Protocol.h w 5 domenach, czysty rdzen |
+| **Faza 5: Likwidacja Długu Hybrydowego** | Single Source of Truth w PythonCharacterManager, komponenty CInstanceBase, strazniki RAII D3D9 | **100% PASS** | Likwidacja multi-state desynchronization, ScopedD3DFFPGuard, 0 wyciekow stanow renderera |
 
 ### Koncowe Metryki Jakosciowe:
-* **CTest**: **40/40 testow zakonczonych sukcesem (100% PASS w 0.77s)**.
+* **CTest**: **41/41 testow zakonczonych sukcesem (100% PASS w 0.76–0.80s)**.
 * **Plik Wykonywalny**: [`Metin2_Release.exe`](file:///E:/m2dev-client-src-mainOryginalx64/build/bin/Release/Metin2_Release.exe) (29.5 MB) zlinkowany bezblednie.
-* **Architektura**: Pelna zgodnosc ze standardem **AI-First 2026** (brak monolitow, brak mikro-plikow <50 linii, naturalna granularnosc SRP 200–450 linii).
+* **Architektura**: Pelna zgodnosc ze standardem **AI-First 2026** (jeden wlasciciel encji, brak monolitow, brak mikro-plikow <50 linii, naturalna granularnosc SRP 200–450 linii, hermetyczne RAII w grafice D3D9).
 
