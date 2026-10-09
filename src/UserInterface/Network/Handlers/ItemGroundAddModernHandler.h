@@ -18,7 +18,8 @@
 struct ItemGroundAddModernPacket
 {
     /** @brief The protocol header identifying this specific packet. */
-    uint8_t header;
+    uint16_t header;
+    uint16_t length;
 
     /** @brief The X coordinate in the global world. */
     int32_t x;
@@ -36,7 +37,7 @@ struct ItemGroundAddModernPacket
     uint32_t vnum;
 };
 #pragma pack(pop)
-static_assert(sizeof(ItemGroundAddModernPacket) == 21, "ItemGroundAddModernPacket must be exactly 21 bytes");
+static_assert(sizeof(ItemGroundAddModernPacket) == 24, "ItemGroundAddModernPacket must be exactly 24 bytes");
 
 /**
  * @brief Event triggered when an item is added to the ground.

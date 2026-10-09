@@ -314,6 +314,76 @@ void TestPhaseGamePacketDispatcher()
     std::cout << "[PASS] Test PhaseGamePacketDispatcher zakonczony sukcesem.\n";
 }
 
+void TestNetworkStreamBridgeAndFraming()
+{
+    std::cout << "[TEST] Rozpoczecie symulacji NetworkStream i weryfikacji framingu x64...\n";
+
+    MockGameEventSink sink;
+    auto& dispatcher = PhaseGamePacketDispatcher::Instance();
+    dispatcher.ClearRouters();
+    dispatcher.RegisterDefaultRouters(&sink);
+
+    // 1. Weryfikacja zapobiegania rozlaczeniu klienta (HasHandlerForHeader)
+    assert(dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0x0401))); // ATTACK
+    assert(dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0x0410))); // DAMAGE_INFO
+    assert(dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0x0413))); // CREATE_FLY
+    assert(dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0x0415))); // DUEL_START
+    assert(dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0x0510))); // ITEM_DEL
+    assert(dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0x0511))); // ITEM_SET
+    assert(dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0x0515))); // ITEM_GROUND_ADD
+    assert(dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0x0516))); // ITEM_GROUND_DEL
+    assert(dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0x0205))); // CHARACTER_ADD
+    assert(dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0x0207))); // CHAR_ADDITIONAL_INFO
+    assert(dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0x0208))); // CHARACTER_DEL
+    assert(dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0x0304))); // SYNC_POSITION
+    assert(dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0x0B22))); // OBSERVER_MOVE
+
+    // 2. Symulacja odbioru pakietu GC_ATTACK (0x0401) ze 100% integralnoscia danych (Zero Memory Corruption)
+    TPacketGCAttack attackPacket{};
+    attackPacket.header = 0x0401;
+    attackPacket.length = sizeof(TPacketGCAttack);
+    attackPacket.dwVID = 1337;
+    attackPacket.dwVictimVID = 7331;
+    attackPacket.bType = 2;
+
+    bool dispatched = dispatcher.DispatchPacket(attackPacket.header, &attackPacket);
+    assert(dispatched);
+    assert(sink.lastAttackEvent.dwAttackerVID == 1337);
+    assert(sink.lastAttackEvent.dwVictimVID == 7331);
+    assert(sink.lastAttackEvent.byMotionType == 2);
+
+    // 3. Symulacja odbioru pakietu GC_DAMAGE_INFO (0x0410)
+    TPacketGCDamageInfo damagePacket{};
+    damagePacket.header = 0x0410;
+    damagePacket.length = sizeof(TPacketGCDamageInfo);
+    damagePacket.dwVID = 5555;
+    damagePacket.damage = 98765;
+    damagePacket.flag = 0x04;
+
+    dispatched = dispatcher.DispatchPacket(damagePacket.header, &damagePacket);
+    assert(dispatched);
+    assert(sink.lastDamageEvent.dwTargetVID == 5555);
+    assert(sink.lastDamageEvent.nDamage == 98765);
+    assert(sink.lastDamageEvent.byFlag == 0x04);
+
+    // 4. Symulacja odbioru pakietu GC_CHARACTER_DEL (0x0208)
+    TPacketGCCharacterDelete delPacket{};
+    delPacket.header = 0x0208;
+    delPacket.length = sizeof(TPacketGCCharacterDelete);
+    delPacket.dwVID = 8888;
+
+    dispatched = dispatcher.DispatchPacket(delPacket.header, &delPacket);
+    assert(dispatched);
+    assert(sink.lastDeadEvent.dwVID == 8888);
+
+    // 5. Weryfikacja odrzucania nieznanego opkodu bez awarii (zero-crash)
+    assert(!dispatcher.HasHandlerForHeader(static_cast<uint16_t>(0xFAFA)));
+    assert(!dispatcher.DispatchPacket(static_cast<uint16_t>(0xFAFA), &attackPacket));
+
+    dispatcher.ClearRouters();
+    std::cout << "[PASS] Symulacja NetworkStream i weryfikacja framingu x64 zakonczona sukcesem.\n";
+}
+
 int main()
 {
     std::cout << "========================================================\n";
@@ -324,6 +394,7 @@ int main()
     TestNetItemRouter();
     TestNetActorRouter();
     TestPhaseGamePacketDispatcher();
+    TestNetworkStreamBridgeAndFraming();
 
     std::cout << "\n>>> WSZYSTKIE TESTY ZAKONCZONE SUKCESEM (100% PASS) <<<\n";
     return 0;

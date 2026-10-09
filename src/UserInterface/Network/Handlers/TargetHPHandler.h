@@ -13,7 +13,8 @@ namespace Network::Handlers
      */
     struct PacketTargetHP
     {
-        uint8_t header;
+        uint16_t header;
+        uint16_t length;
         uint32_t targetVid;
         uint8_t hpPercentage;
     };

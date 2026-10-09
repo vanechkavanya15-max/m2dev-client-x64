@@ -346,8 +346,9 @@ bool CPythonNetworkStream::DispatchPacket(const PacketHandlerMap& handlers)
 	auto it = handlers.find(header);
 	if (it == handlers.end())
 	{
-		// Check if modern C++23 PacketDispatcher can handle this opcode
-		if (Network::PacketDispatcher::Instance().HasHandler(header))
+		// Check if modern C++23 PacketDispatcher or PhaseGamePacketDispatcher domain routers can handle this opcode
+		if (Network::PacketDispatcher::Instance().HasHandler(header) ||
+		    UserInterface::Network::Routers::PhaseGamePacketDispatcher::Instance().HasHandlerForHeader(header))
 		{
 			TDynamicSizePacketHeader packetFrame;
 			if (!Peek(sizeof(TDynamicSizePacketHeader), &packetFrame))
@@ -370,8 +371,8 @@ bool CPythonNetworkStream::DispatchPacket(const PacketHandlerMap& handlers)
 
 			LogRecvPacket(header, packetFrame.length);
 
-			std::span<const uint8_t> payload(packetBuffer.data() + PACKET_HEADER_SIZE, packetFrame.length - PACKET_HEADER_SIZE);
-			auto res = Network::Dispatchers::NetworkStreamPhaseGameBridge::RouteGamePacket(header, payload);
+			std::span<const uint8_t> packetSpan(packetBuffer.data(), packetFrame.length);
+			auto res = Network::Dispatchers::NetworkStreamPhaseGameBridge::RouteGamePacket(header, packetSpan);
 			if (!res.has_value())
 			{
 				TraceError("DispatchPacket: Modern dispatch failed for header 0x%04X: %s", header, EterBase::ToString(res.error()).data());

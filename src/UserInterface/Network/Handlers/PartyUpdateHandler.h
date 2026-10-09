@@ -29,7 +29,8 @@ namespace Network::Handlers
      */
     struct PacketPartyUpdate
     {
-        uint8_t header;
+        uint16_t header;
+        uint16_t length;
         uint32_t pid;
         uint8_t state;
         uint8_t percent_hp;

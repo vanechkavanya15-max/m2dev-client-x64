@@ -13,7 +13,8 @@ namespace Network::Handlers
      */
     struct PacketItemGroundDel
     {
-        uint8_t header;
+        uint16_t header;
+        uint16_t length;
         uint32_t itemVid;
     };
 #pragma pack(pop)

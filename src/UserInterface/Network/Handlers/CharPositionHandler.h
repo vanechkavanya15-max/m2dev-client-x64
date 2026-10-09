@@ -9,14 +9,14 @@ namespace Network::Handlers
 {
 #pragma pack(push, 1)
     /**
-     * @brief Struktura pakietu synchronizacji pozycji postaci (TPacketGCCharacterPosition).
+     * @brief Struktura pakietu synchronizacji pozycji postaci (TPacketGCPosition).
      */
     struct PacketCharPosition
     {
-        uint8_t header;
+        uint16_t header;
+        uint16_t length;
         uint32_t characterVid;
-        int32_t x;
-        int32_t y;
+        uint8_t  position;
     };
 #pragma pack(pop)
 

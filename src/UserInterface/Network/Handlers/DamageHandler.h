@@ -13,7 +13,8 @@ namespace Network::Handlers
      */
     struct PacketDamageInfo
     {
-        uint8_t header;
+        uint16_t header;
+        uint16_t length;
         uint32_t victimVid;
         uint8_t damageFlag;
         int32_t damageValue;

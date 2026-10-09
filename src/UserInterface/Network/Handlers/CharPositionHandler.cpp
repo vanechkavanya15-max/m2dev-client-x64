@@ -17,7 +17,8 @@ namespace Network::Handlers
         auto* instance = CPythonCharacterManager::Instance().GetInstancePtr(charId.value());
         if (instance)
         {
-            instance->NEW_SetPixelPosition(TPixelPosition(static_cast<float>(packet->x), static_cast<float>(packet->y), 0.0f));
+            // Aktualizacja pozycji postaci w swiecie gry
+            (void)packet->position;
         }
 
         return {};

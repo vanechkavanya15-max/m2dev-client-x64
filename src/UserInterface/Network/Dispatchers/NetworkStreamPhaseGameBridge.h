@@ -26,17 +26,25 @@ namespace Network::Dispatchers {
             EterBase::ModernLogger::Trace("NetworkStreamPhaseGameBridge: Routing packet opcode 0x{:04X}, size: {} bytes", opcode, payload.size());
             
             // Filar 2: Dyspozycja pakietu do routerow domenowych
-            UserInterface::Network::Routers::PhaseGamePacketDispatcher::Instance().DispatchPacket(opcode, payload.data());
+            bool bDispatchedByRouter = UserInterface::Network::Routers::PhaseGamePacketDispatcher::Instance().DispatchPacket(opcode, payload.data());
 
             auto& dispatcher = Network::PacketDispatcher::Instance();
 
             if (!dispatcher.HasHandler(opcode)) {
+                if (bDispatchedByRouter) {
+                    EterBase::ModernLogger::Debug("NetworkStreamPhaseGameBridge: Packet opcode 0x{:04X} successfully dispatched via domain router.", opcode);
+                    return {};
+                }
                 EterBase::ModernLogger::Trace("NetworkStreamPhaseGameBridge: Unhandled packet opcode 0x{:04X}", opcode);
                 return EterBase::MakeError(EterBase::PacketError::UnknownOpcode);
             }
 
             auto result = dispatcher.DispatchModern(opcode, payload);
             if (!result.has_value()) {
+                if (bDispatchedByRouter) {
+                    EterBase::ModernLogger::Debug("NetworkStreamPhaseGameBridge: Packet opcode 0x{:04X} dispatched via domain router despite legacy dispatcher fallback.", opcode);
+                    return {};
+                }
                 EterBase::ModernLogger::Error("NetworkStreamPhaseGameBridge: Failed to dispatch packet opcode 0x{:04X}. Error: {}", 
                     opcode, EterBase::ToString(result.error()));
                 

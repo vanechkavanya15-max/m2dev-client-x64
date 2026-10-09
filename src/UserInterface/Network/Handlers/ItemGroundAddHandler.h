@@ -14,7 +14,8 @@
 struct ItemGroundAddPacket
 {
     /** @brief The protocol header identifying this specific packet. */
-    uint8_t header;
+    uint16_t header;
+    uint16_t length;
 
     /** @brief The X coordinate in the global world. */
     int32_t x;

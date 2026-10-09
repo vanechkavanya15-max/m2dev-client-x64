@@ -13,7 +13,8 @@ namespace Network::Handlers
      */
     struct ActorAddPacket
     {
-        uint8_t  header;        ///< Packet identifier (e.g., 0x01)
+        uint16_t header;        ///< Packet identifier (e.g., 0x0205)
+        uint16_t length;        ///< Packet total length
         uint32_t id;            ///< Unique virtual ID of the actor
         float    angle;         ///< Facing angle/rotation
         int32_t  x;             ///< Global X coordinate

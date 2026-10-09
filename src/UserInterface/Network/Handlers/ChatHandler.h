@@ -14,10 +14,11 @@ namespace Network::Handlers
      */
     struct PacketChatHeader
     {
-        uint8_t header;
-        uint16_t size;
-        uint8_t type;
+        uint16_t header;
+        uint16_t length;
+        uint8_t  type;
         uint32_t senderId;
+        uint8_t  empire;
     };
 #pragma pack(pop)
 
