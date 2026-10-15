@@ -1,0 +1,234 @@
+{
+  "system_name": "Metin2 Client C++23 Modern Engine",
+  "version": "2026.1",
+  "architecture_pattern": "Strangler Fig Pattern (C++23 Modern Core + Legacy UI Adapter)",
+  "single_source_of_truth": {
+    "system_index": "docs/AI_NATIVE_SYSTEM_INDEX.json",
+    "cheatsheet": "docs/AI_API_CHEATSHEET.md",
+    "protocol_map": "docs/AI_PROTOCOL_MAP.json",
+    "system_map": "docs/CLIENT_SYSTEM_MAP.md",
+    "fast_boot_manual": "docs/FAST_BOOT_DIRECT_TO_WORLD_MANUAL.md"
+  },
+  "cli_flags": [
+    {
+      "flag": "--headless",
+      "description": "Uruchamia silnik bez urzadzenia graficznego DirectX i bez okna Win32 (render 0% GPU, audio zmockowane)",
+      "target": "CPythonApplication / SetHeadlessMode(true)"
+    },
+    {
+      "flag": "--stealth",
+      "description": "Ukrywa okno gry (SetWindowVisible(false)), pozostawiajac aktywny pelny renderer D3D9",
+      "target": "SetWindowVisible(false)"
+    },
+    {
+      "flag": "--no-python",
+      "description": "Tryb Pure C++ Domain Mode: pomija start interpretera Pythona (pyLauncher), bezposredni start app->Loop()",
+      "target": "UserInterface.cpp / g_bNoPythonMode"
+    },
+    {
+      "flag": "--eager-packs",
+      "alias": "--eager",
+      "description": "Wylacza asynchroniczny streaming paczek Sharded VFS 2.0 i wymusza synchroniczne ladowanie wszystkich paczek na starcie",
+      "target": "UserInterface.cpp / g_bEagerPackLoading"
+    },
+    {
+      "flag": "--turbo-ticks=<N>",
+      "alias": "__COMMAND_TURBO_TICKS__=<N>",
+      "description": "Deterministyczna symulacja: wykonuje N tickow UpdateGame() bez VSync z krokiem 16.6ms i konczy proces (ExitProcess(0))",
+      "target": "CPythonApplication::SetTurboTicks(N)"
+    },
+    {
+      "flag": "--server=<name>",
+      "description": "Wybiera profil sterownika protokolu sieciowego (standard_x64, beavium, martysama, luria)",
+      "target": "ProtocolDriverRegistry::SetActiveDriver(name)"
+    },
+    {
+      "flag": "--profile=<path>",
+      "description": "Laduje profil serwera z pliku JSON za pomoca ServerProfileManager",
+      "target": "ServerProfileManager::LoadProfile(path)"
+    }
+  ],
+  "ipc_interface": {
+    "protocol": "JSON-RPC 2.0",
+    "transport": "Named Pipe (Windows IPC)",
+    "pipe_name": "\\\\.\\pipe\\M2ClientEngineHarness",
+    "framing": "Dual-Mode (Direct JSON string lub 4-bajtowy uint32_t little-endian length prefix)",
+    "methods": [
+      {
+        "method": "game_ping",
+        "immediate": true,
+        "description": "Sprawdza responsywnosc silnika i mostka AgentMCPBridge"
+      },
+      {
+        "method": "get_state",
+        "alias": "get_engine_state",
+        "immediate": true,
+        "description": "Zwraca pelny stan silnika, gracza, kontrolerow, fazy sieciowej i dlawika GPU"
+      },
+      {
+        "method": "get_world_megasnapshot",
+        "alias": "game_get_tactical_snapshot",
+        "immediate": false,
+        "description": "Megapack Snapshot dla modeli AI: pobiera w 1 zapytaniu stan gracza, encje w promieniu, caly inwentarz, umiejetnosci i silnik"
+      },
+      {
+        "method": "tick_frame",
+        "immediate": false,
+        "description": "Krok deterministyczny: wykonuje zadana liczbe klatek symulacji z okreslonym delta_time"
+      },
+      {
+        "method": "inject_packet",
+        "immediate": false,
+        "description": "Wstrzykuje surowy strumien bajtow jako pakiet sieciowy bezposrednio do kolejki odbiorczej"
+      },
+      {
+        "method": "audit_dual_state",
+        "alias": "audit_state",
+        "immediate": false,
+        "description": "Audyt spojnosci Dual-State miedzy C++ (CPythonPlayer/CPythonCharacterManager/ActorRegistry) a Pythonem (player/chr)"
+      },
+      {
+        "method": "game_set_window_mode",
+        "immediate": false,
+        "description": "Dynamiczne sterowanie widocznoscia okna oraz przelaczaniem dlawika GPU 0% (throttling)"
+      },
+      {
+        "method": "game_set_protocol_driver",
+        "immediate": true,
+        "description": "Przelacza aktywny sterownik protokolu sieciowego w locie"
+      },
+      {
+        "method": "game_login",
+        "immediate": false,
+        "description": "Wysyla sekwencje logowania: Handshake -> RSA/DH2 -> Auth -> DirectEnterMode"
+      },
+      {
+        "method": "game_select_character",
+        "immediate": false,
+        "description": "Wybiera postac na podanym slocie (0-4) i przechodzi do fazy Loading"
+      },
+      {
+        "method": "game_enter_game",
+        "immediate": false,
+        "description": "Wysyla pakiet CG::ENTERGAME potwierdzajacy wejscie do swiata gry"
+      },
+      {
+        "method": "game_set_attack_key_state",
+        "immediate": false,
+        "description": "Wlacza lub wylacza stan klawisza ataku postaci (spacja/auto-atak)"
+      },
+      {
+        "method": "game_set_dir_key_state",
+        "immediate": false,
+        "description": "Ustawia stan pojedynczego klawisza kierunku ruchu (0=Gora, 1=Dol, 2=Lewo, 3=Prawo)"
+      },
+      {
+        "method": "game_set_multi_dir_key_state",
+        "immediate": false,
+        "description": "Ustawia stan ruchu wielokierunkowego postaci (WASD)"
+      },
+      {
+        "method": "game_move_to_position",
+        "alias": "game_move_to",
+        "immediate": false,
+        "description": "Kieruje postac gracza bezposrednio do zadanych koordynatow na mapie (X, Y, Z)"
+      },
+      {
+        "method": "game_stop",
+        "immediate": false,
+        "description": "Natychmiastowo zatrzymuje ruch postaci gracza (NEW_Stop)"
+      },
+      {
+        "method": "game_pick_close_item",
+        "immediate": false,
+        "description": "Podnosi najblizszy lezacy na ziemi przedmiot (klawisz Z / PickCloseItem)"
+      },
+      {
+        "method": "game_set_target",
+        "immediate": false,
+        "description": "Zaznacza cel w swiecie gry wg podanego VID (SetTarget)"
+      },
+      {
+        "method": "game_clear_target",
+        "immediate": false,
+        "description": "Odznacza biezacy cel w swiecie gry (ClearTarget)"
+      },
+      {
+        "method": "game_use_skill",
+        "immediate": false,
+        "description": "Uzywa lub aktywuje umiejetnosc ze wskazanego slotu postaci (ClickSkillSlot)"
+      },
+      {
+        "method": "game_send_chat",
+        "alias": "chat_send",
+        "immediate": false,
+        "description": "Wysyla wiadomosc na czat lub komende GM do serwera gry"
+      },
+      {
+        "method": "game_attack_target",
+        "immediate": false,
+        "description": "Natywny bezposredni atak celu target_vid (SetTarget + AttackTarget)"
+      },
+      {
+        "method": "game_use_item",
+        "immediate": false,
+        "description": "Natywne uzycie przedmiotu w oknie i komorce (SendItemUsePacket)"
+      },
+      {
+        "method": "game_get_inventory",
+        "immediate": false,
+        "description": "Pobiera zawartosc inwentarza z danego okna za pomoca IInventoryDomainContract"
+      },
+      {
+        "method": "game_get_nearby_entities",
+        "immediate": false,
+        "description": "Pobiera otaczajace byty w zadanym promieniu za pomoca IWorldQueryContract"
+      },
+      {
+        "method": "shutdown",
+        "immediate": true,
+        "description": "Bezpiecznie zamyka aplikacje klienta gry (WM_CLOSE + ExitProcess)"
+      }
+    ]
+  },
+  "protocol_matrix": {
+    "active_profiles": ["standard_x64", "beavium", "martysama", "luria"],
+    "packet_sniffer": {
+      "status": "enabled",
+      "action": "Safe dynamic frame discard with AITelemetry emit when route handler is missing"
+    }
+  },
+  "domain_contracts": {
+    "player": "Client::Contracts::IPlayerDomainContract (src/Client/Contracts/IPlayerDomainContract.h)",
+    "combat": "Client::Contracts::ICombatDomainContract (src/Client/Contracts/ICombatDomainContract.h)",
+    "inventory": "Client::Contracts::IInventoryDomainContract (src/Client/Contracts/IInventoryDomainContract.h)",
+    "world_query": "Client::Contracts::IWorldQueryContract (src/Client/Contracts/IWorldQueryContract.h)"
+  },
+  "c_abi_bridge": {
+    "header": "src/Client/Bridge/BotApi_FFI.h",
+    "structure": "ActorSnapshot (32 bajty, wyrownana)",
+    "functions": [
+      "Bot_GetPlayerVID",
+      "Bot_GetPlayerPos",
+      "Bot_MoveTo",
+      "Bot_AttackTarget",
+      "Bot_GetEntitiesInRadius",
+      "Bot_EvaluateAttack",
+      "Bot_UseItem",
+      "Bot_GetItem"
+    ]
+  },
+  "ai_telemetry": {
+    "header": "src/Client/Core/AITelemetry.h",
+    "format": "JSON-Lines (RFC 8259)",
+    "buffer": "Prealokowany ring-buffer (zero-heap allocation na emit)",
+    "methods": [
+      "EmitPacketTx",
+      "EmitPacketRx",
+      "EmitCombatEvent",
+      "EmitPhaseTransition",
+      "EmitError",
+      "FlushToFile"
+    ]
+  }
+}

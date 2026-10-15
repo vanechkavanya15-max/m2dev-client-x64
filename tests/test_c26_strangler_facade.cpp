@@ -1,0 +1,184 @@
+#include "../src/Client/Bridge/StranglerFacade.h"
+#include "../src/Client/Bridge/StranglerInstanceFacade.h"
+#include "../src/Client/Simulation/MockNetworkPortAdvanced.h"
+#include <iostream>
+#include <cassert>
+#include <memory>
+
+using namespace Client::Bridge;
+using namespace Client::Core;
+using namespace Client::Simulation;
+
+void Test_ExecuteMove(StranglerFacade& facade, std::shared_ptr<MockNetworkPortAdvanced> mockPort) {
+    mockPort->ClearSentPackets();
+    bool result = facade.ExecuteMove(100.0f, 200.0f, 300.0f, 90.0f, 1);
+    assert(result == true);
+
+    auto& ctx = facade.GetWorldContext();
+    assert(ctx.localPlayerCoords.x == 100.0f);
+    assert(ctx.localPlayerCoords.y == 200.0f);
+    assert(ctx.localPlayerCoords.z == 300.0f);
+    assert(ctx.localPlayerRotation == 90.0f);
+
+    assert(!mockPort->GetSentPackets().empty() && "Expected bytes to be transmitted to the network port");
+    std::cout << "[OK] Test_ExecuteMove\n";
+}
+
+void Test_ExecuteAttack(StranglerFacade& facade, std::shared_ptr<MockNetworkPortAdvanced> mockPort) {
+    mockPort->ClearSentPackets();
+    bool result = facade.ExecuteAttack(1234, 0);
+    assert(result == true);
+    assert(!mockPort->GetSentPackets().empty() && "Expected bytes to be transmitted to the network port");
+    std::cout << "[OK] Test_ExecuteAttack\n";
+}
+
+void Test_ExecuteUseSkill(StranglerFacade& facade, std::shared_ptr<MockNetworkPortAdvanced> mockPort) {
+    mockPort->ClearSentPackets();
+    bool result = facade.ExecuteUseSkill(1, 1234);
+    assert(result == true);
+    assert(!mockPort->GetSentPackets().empty() && "Expected bytes to be transmitted to the network port");
+    std::cout << "[OK] Test_ExecuteUseSkill\n";
+}
+
+void Test_ExecuteUseItem(StranglerFacade& facade, std::shared_ptr<MockNetworkPortAdvanced> mockPort) {
+    mockPort->ClearSentPackets();
+    bool result = facade.ExecuteUseItem(10);
+    assert(result == true);
+    assert(!mockPort->GetSentPackets().empty() && "Expected bytes to be transmitted to the network port");
+    std::cout << "[OK] Test_ExecuteUseItem\n";
+}
+
+void Test_ExecutePickupItem(StranglerFacade& facade, std::shared_ptr<MockNetworkPortAdvanced> mockPort) {
+    mockPort->ClearSentPackets();
+    bool result = facade.ExecutePickupItem(999);
+    assert(result == true);
+    assert(!mockPort->GetSentPackets().empty() && "Expected bytes to be transmitted to the network port");
+    std::cout << "[OK] Test_ExecutePickupItem\n";
+}
+
+void Test_ExecuteChat(StranglerFacade& facade, std::shared_ptr<MockNetworkPortAdvanced> mockPort) {
+    mockPort->ClearSentPackets();
+    bool result = facade.ExecuteChat("Hello World", 0);
+    assert(result == true);
+    assert(!mockPort->GetSentPackets().empty() && "Expected bytes to be transmitted to the network port");
+    std::cout << "[OK] Test_ExecuteChat\n";
+}
+
+void Test_ExecuteWhisper(StranglerFacade& facade, std::shared_ptr<MockNetworkPortAdvanced> mockPort) {
+    mockPort->ClearSentPackets();
+    bool result = facade.ExecuteWhisper("TargetUser", "SecretMessage");
+    assert(result == true);
+    assert(!mockPort->GetSentPackets().empty() && "Expected bytes to be transmitted to the network port");
+    std::cout << "[OK] Test_ExecuteWhisper\n";
+}
+
+void Test_StranglerInstanceFacade() {
+    auto& instanceFacade = StranglerInstanceFacade::Instance();
+    WorldContext ctx;
+    instanceFacade.SetWorldContext(&ctx);
+
+    // 1. Rejestracja instancji
+    auto regRes = instanceFacade.RegisterInstance(5001, 1, 0, 100.0f, 200.0f, 0.0f, 45.0f, "WarriorMob");
+    assert(regRes.has_value());
+    assert(ctx.actors.Count() == 1);
+    assert(ctx.spatialGrid.Count() == 1);
+
+    // 2. Generational Handle
+    auto handleOpt = instanceFacade.GetGenerationalHandle(5001);
+    assert(handleOpt.has_value());
+    auto handle = *handleOpt;
+    assert(handle.IsValid());
+    auto resolvedVid = instanceFacade.ResolveGenerational(handle);
+    assert(resolvedVid.has_value());
+    assert(*resolvedVid == 5001);
+
+    // 3. Aktualizacja pozycji
+    auto moveRes = instanceFacade.UpdatePosition(5001, 150.0f, 250.0f, 10.0f, 90.0f);
+    assert(moveRes.has_value());
+    auto actorOpt = ctx.actors.GetActor(Client::World::EntityVid{5001});
+    assert(actorOpt.has_value());
+    assert(actorOpt->x == 150.0f);
+    assert(actorOpt->y == 250.0f);
+
+    // 4. Stan zycia
+    auto deadRes = instanceFacade.SetDead(5001, true);
+    assert(deadRes.has_value());
+    assert(ctx.actors.IsDead(Client::World::EntityVid{5001}));
+    assert(instanceFacade.IsActorDead(Client::World::EntityVid{5001}));
+    assert(instanceFacade.IsActorDead(5001));
+    assert(!instanceFacade.IsActorAlive(5001));
+
+    // 5. Main Instance
+    auto mainRes = instanceFacade.SetMainInstance(9999, 10.0f, 20.0f, 30.0f, 180.0f, "HeroPlayer");
+    assert(mainRes.has_value());
+    assert(ctx.localPlayerVid.get() == 9999);
+    assert(ctx.localPlayerCoords.x == 10.0f);
+    assert(instanceFacade.GetMainActorVid() == Client::World::EntityVid{9999});
+
+    // 5b. Nowoczesne metody dostepowe C++23 (AI Interface Boundary)
+    assert(instanceFacade.HasActor(Client::World::EntityVid{5001}));
+    assert(instanceFacade.HasActor(5001));
+    assert(instanceFacade.GetActorCount() >= 1);
+
+    auto actorRecordOpt = instanceFacade.GetActor(Client::World::EntityVid{5001});
+    assert(actorRecordOpt.has_value());
+    assert(actorRecordOpt->name == "WarriorMob");
+
+    // Test for_each_actor (funkcyjna iteracja C++23)
+    size_t actorCounter = 0;
+    instanceFacade.for_each_actor([&](const Client::World::ActorRecord& rec) {
+        if (rec.vid == Client::World::EntityVid{5001}) {
+            ++actorCounter;
+        }
+    });
+    assert(actorCounter == 1);
+
+    auto mainHandleOpt = instanceFacade.GetMainActorHandle();
+    assert(mainHandleOpt.has_value());
+    auto mainResolvedVid = instanceFacade.ResolveGenerationalVid(*mainHandleOpt);
+    assert(mainResolvedVid.has_value());
+    assert(*mainResolvedVid == Client::World::EntityVid{9999});
+
+    // 6. Wyrejestrowanie i uniewaznienie generacyjne (ochrona przed dangling pointer i ABA)
+    auto unregRes = instanceFacade.UnregisterInstance(5001);
+    assert(unregRes.has_value());
+    assert(ctx.actors.Count() == 1); // Tylko gracz zostal
+    assert(ctx.spatialGrid.Count() == 1);
+    assert(!instanceFacade.HasActor(5001));
+
+    // Stary handle musi byc natychmiast uniewazniony!
+    auto staleResolve = instanceFacade.ResolveGenerational(handle);
+    assert(!staleResolve.has_value() && "Stale Generational EntityHandle must be invalid after unregistration");
+
+    instanceFacade.ClearWorldContext();
+    std::cout << "[OK] Test_StranglerInstanceFacade (incl. Generational Handle & ABA guard & C++23 AI Boundary)\n";
+}
+
+int main() {
+    std::cout << "Running StranglerFacade tests...\n";
+
+    auto& facade = StranglerFacade::Instance();
+    facade.Initialize(nullptr);
+
+    auto mockPort = std::make_shared<MockNetworkPortAdvanced>();
+    auto session = facade.GetSession();
+    assert(session != nullptr);
+    session->SetNetworkPort(mockPort);
+
+    // Tests
+    Test_ExecuteMove(facade, mockPort);
+    Test_ExecuteAttack(facade, mockPort);
+    Test_ExecuteUseSkill(facade, mockPort);
+    Test_ExecuteUseItem(facade, mockPort);
+    Test_ExecutePickupItem(facade, mockPort);
+    Test_ExecuteChat(facade, mockPort);
+    Test_ExecuteWhisper(facade, mockPort);
+
+    facade.Shutdown();
+
+    // StranglerInstanceFacade Lifecycle & GenerationalRegistry Tests
+    Test_StranglerInstanceFacade();
+
+    std::cout << "All StranglerFacade and StranglerInstanceFacade tests passed successfully!\n";
+    return 0;
+}

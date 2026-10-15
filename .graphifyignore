@@ -1,0 +1,112 @@
+# =============================================================
+# .graphifyignore dla m2dev-client-src-mainOryginalx64
+# Cel: wylacz binaria i pliki gry, zachowaj KOD + DOKUMENTACJE
+# =============================================================
+
+# --- Binarne zasoby gry (modele 3D, tekstury, animacje) ---
+*.gr2
+*.glb
+*.gltf
+*.obj
+*.dds
+*.tga
+*.jpg
+*.jpeg
+*.png
+*.bmp
+*.dib
+*.svg
+*.exr
+
+# --- Dzwiek / audio ---
+*.wav
+*.mp3
+*.ogg
+*.flac
+
+# --- Pliki animacji i skory Metin2 ---
+*.msa
+*.mss
+*.msm
+*.msf
+*.msk
+*.mse
+*.msenv
+*.mdatr
+
+# --- Pliki terenu i wody ---
+*.raw
+*.atr
+*.wtr
+*.wdp
+*.prb
+*.pck
+*.spt
+*.sub
+
+# --- Dane binarnych pakietow gry ---
+*.epk
+*.eix
+*.fyp
+
+# --- Kompilacja / Build artifacts ---
+build/
+*.obj
+*.pdb
+*.ilk
+*.lib
+*.dll
+*.exe
+*.exp
+*.map
+*.sbr
+*.bsc
+*.aps
+*.res
+*.tlog
+*.lastbuildstate
+*.recipe
+*.iobj
+*.ipdb
+*.ncb
+*.sdf
+*.suo
+*.user
+*.opensdf
+*.VC.db
+*.VC.opendb
+.vs/
+
+# --- Cache / temp ---
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+*.cache
+
+# --- Zewnetrzne biblioteki (vendor/extern maja wlasne naglowki) ---
+# Zachowujemy: extern/imgui, extern/include
+# Wylaczamy cale vendory bibliotek 3rd party
+vendor/DirectXMath/
+vendor/doctest/
+vendor/freetype-2.13.3/
+vendor/libsodium/
+vendor/lzo-2.10/
+vendor/mio/
+vendor/zstd-1.5.7/
+
+# --- Pliki assetow z m2dev-client-main (63k plikow binarnych) ---
+m2dev-client-main/
+
+# --- Logi i raporty tymczasowe ---
+log/
+mark/
+*.log
+
+# --- Pliki IDE i projektu Visual Studio (nie kod) ---
+*.filters
+*.rule
+*.vcxproj.user
+
+# --- Pliki Granny 3D SDK / SpeedTree (binarne interfejsy) ---
+SpeedTreeLib/

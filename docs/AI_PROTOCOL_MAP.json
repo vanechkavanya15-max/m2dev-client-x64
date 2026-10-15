@@ -1,0 +1,2817 @@
+{
+  "schema_version": "1.0.0",
+  "generated_for": "Antigravity & Jules Swarm AI Agents",
+  "project": "Metin2 Custom Client Engine x64 (2026 UPM)",
+  "description": "Maszynowo czytelna baza definicji protokolow sieciowych dla wspieranych profili serwerowych: standard_x64, luria, beavium, martysama",
+  "profiles": {
+    "standard_x64": {
+      "name": "standard_x64",
+      "display_name": "Standard Metin2 x64 2026",
+      "description": "Zunifikowany, 64-bitowy standard protokolu z 4-bajtowym jednolitym ramkowaniem pakietow (UPM Filar A).",
+      "framing": {
+        "type": "UNIFORM_4B",
+        "header_size_bytes": 4,
+        "format": "[Header: 2B (uint16_t little-endian)][Length: 2B (uint16_t little-endian)][Payload: (Length - 4)B]",
+        "length_includes_header": true,
+        "dynamic_handling": "uniform_length_field_at_offset_2"
+      },
+      "cryptography": {
+        "key_agreement": "None (TLS session / direct handshake)",
+        "cipher": "Plaintext / TLS 1.3 / Session Token",
+        "block_size_bytes": 0,
+        "auth_security": "Direct Session Token + Login Key"
+      },
+      "network": {
+        "default_ip": "127.0.0.1",
+        "default_auth_port": 11000,
+        "default_game_ports": [
+          11011,
+          11021,
+          11031,
+          11041
+        ],
+        "mark_port": 11011
+      },
+      "opcodes_cg": {
+        "CLIENT_VERSION": {
+          "hex": "0x000D",
+          "dec": 13,
+          "name": "CLIENT_VERSION",
+          "description": "Wersja klienta"
+        },
+        "STATE_CHECKER": {
+          "hex": "0x000F",
+          "dec": 15,
+          "name": "STATE_CHECKER",
+          "description": "Sprawdzanie stanu serwera"
+        },
+        "TEXT": {
+          "hex": "0x0011",
+          "dec": 17,
+          "name": "TEXT",
+          "description": "Tekst kontrolny"
+        },
+        "LOGIN2": {
+          "hex": "0x0101",
+          "dec": 257,
+          "name": "LOGIN2",
+          "description": "Logowanie do serwera gry"
+        },
+        "LOGIN3": {
+          "hex": "0x0102",
+          "dec": 258,
+          "name": "LOGIN3",
+          "description": "Logowanie alternatywne"
+        },
+        "LOGIN_SECURE": {
+          "hex": "0x0103",
+          "dec": 259,
+          "name": "LOGIN_SECURE",
+          "description": "Logowanie z podpisem"
+        },
+        "EMPIRE": {
+          "hex": "0x010A",
+          "dec": 266,
+          "name": "EMPIRE",
+          "description": "Wybor krolestwa"
+        },
+        "CHANGE_NAME": {
+          "hex": "0x010B",
+          "dec": 267,
+          "name": "CHANGE_NAME",
+          "description": "Zmiana nazwy postaci"
+        },
+        "CHARACTER_CREATE": {
+          "hex": "0x0201",
+          "dec": 513,
+          "name": "CHARACTER_CREATE",
+          "description": "Tworzenie nowej postaci"
+        },
+        "CHARACTER_DELETE": {
+          "hex": "0x0202",
+          "dec": 514,
+          "name": "CHARACTER_DELETE",
+          "description": "Usuniecie postaci"
+        },
+        "CHARACTER_SELECT": {
+          "hex": "0x0203",
+          "dec": 515,
+          "name": "CHARACTER_SELECT",
+          "description": "Wybor postaci ze slotu"
+        },
+        "ENTERGAME": {
+          "hex": "0x0204",
+          "dec": 516,
+          "name": "ENTERGAME",
+          "description": "Wejscie do swiata gry"
+        },
+        "MOVE": {
+          "hex": "0x0301",
+          "dec": 769,
+          "name": "MOVE",
+          "size": 19,
+          "struct": "TPacketCGMove",
+          "description": "Komenda ruchu gracza"
+        },
+        "SYNC_POSITION": {
+          "hex": "0x0303",
+          "dec": 771,
+          "name": "SYNC_POSITION",
+          "description": "Synchronizacja pozycji"
+        },
+        "WARP": {
+          "hex": "0x0305",
+          "dec": 773,
+          "name": "WARP",
+          "description": "Teleportacja"
+        },
+        "ATTACK": {
+          "hex": "0x0401",
+          "dec": 1025,
+          "name": "ATTACK",
+          "size": 11,
+          "struct": "TPacketCGAttack",
+          "description": "Komenda ataku"
+        },
+        "USE_SKILL": {
+          "hex": "0x0402",
+          "dec": 1026,
+          "name": "USE_SKILL",
+          "description": "Uzycie umiejetnosci"
+        },
+        "SHOOT": {
+          "hex": "0x0403",
+          "dec": 1027,
+          "name": "SHOOT",
+          "description": "Strzal z luku"
+        },
+        "FLY_TARGETING": {
+          "hex": "0x0404",
+          "dec": 1028,
+          "name": "FLY_TARGETING",
+          "description": "Namierzenie pocisku"
+        },
+        "ADD_FLY_TARGETING": {
+          "hex": "0x0405",
+          "dec": 1029,
+          "name": "ADD_FLY_TARGETING",
+          "description": "Dodanie celu lotu"
+        },
+        "ITEM_USE": {
+          "hex": "0x0501",
+          "dec": 1281,
+          "name": "ITEM_USE",
+          "size": 6,
+          "struct": "TPacketCGItemUse",
+          "description": "Uzycie przedmiotu"
+        },
+        "ITEM_DROP": {
+          "hex": "0x0502",
+          "dec": 1282,
+          "name": "ITEM_DROP",
+          "description": "Wyrzucenie przedmiotu"
+        },
+        "ITEM_DROP2": {
+          "hex": "0x0503",
+          "dec": 1283,
+          "name": "ITEM_DROP2",
+          "description": "Wyrzucenie zlota"
+        },
+        "ITEM_MOVE": {
+          "hex": "0x0504",
+          "dec": 1284,
+          "name": "ITEM_MOVE",
+          "description": "Przeniesienie przedmiotu"
+        },
+        "ITEM_PICKUP": {
+          "hex": "0x0505",
+          "dec": 1285,
+          "name": "ITEM_PICKUP",
+          "description": "Podniesienie przedmiotu"
+        },
+        "ITEM_USE_TO_ITEM": {
+          "hex": "0x0506",
+          "dec": 1286,
+          "name": "ITEM_USE_TO_ITEM",
+          "description": "Nalozenie przedmiotu na przedmiot"
+        },
+        "ITEM_GIVE": {
+          "hex": "0x0507",
+          "dec": 1287,
+          "name": "ITEM_GIVE",
+          "description": "Przekazanie przedmiotu NPC"
+        },
+        "EXCHANGE": {
+          "hex": "0x0508",
+          "dec": 1288,
+          "name": "EXCHANGE",
+          "description": "Handel z innym graczem"
+        },
+        "QUICKSLOT_ADD": {
+          "hex": "0x0509",
+          "dec": 1289,
+          "name": "QUICKSLOT_ADD",
+          "description": "Dodanie do paska szybkiego dostepu"
+        },
+        "QUICKSLOT_DEL": {
+          "hex": "0x050A",
+          "dec": 1290,
+          "name": "QUICKSLOT_DEL",
+          "description": "Usuniecie z paska szybkiego dostepu"
+        },
+        "QUICKSLOT_SWAP": {
+          "hex": "0x050B",
+          "dec": 1291,
+          "name": "QUICKSLOT_SWAP",
+          "description": "Zamiana na pasku szybkiego dostepu"
+        },
+        "REFINE": {
+          "hex": "0x050C",
+          "dec": 1292,
+          "name": "REFINE",
+          "description": "Ulepszanie przedmiotu u kowala"
+        },
+        "DRAGON_SOUL_REFINE": {
+          "hex": "0x050D",
+          "dec": 1293,
+          "name": "DRAGON_SOUL_REFINE",
+          "description": "Ulepszanie alchemii smoczych kamieni"
+        },
+        "CHAT": {
+          "hex": "0x0601",
+          "dec": 1537,
+          "name": "CHAT",
+          "description": "Wiadomosc na czacie"
+        },
+        "WHISPER": {
+          "hex": "0x0602",
+          "dec": 1538,
+          "name": "WHISPER",
+          "description": "Wiadomosc prywatna"
+        },
+        "PARTY_INVITE": {
+          "hex": "0x0701",
+          "dec": 1793,
+          "name": "PARTY_INVITE",
+          "description": "Zaproszenie do grupy"
+        },
+        "PARTY_INVITE_ANSWER": {
+          "hex": "0x0702",
+          "dec": 1794,
+          "name": "PARTY_INVITE_ANSWER",
+          "description": "Odpowiedz na zaproszenie do grupy"
+        },
+        "PARTY_REMOVE": {
+          "hex": "0x0703",
+          "dec": 1795,
+          "name": "PARTY_REMOVE",
+          "description": "Wyrzucenie z grupy"
+        },
+        "PARTY_SET_STATE": {
+          "hex": "0x0704",
+          "dec": 1796,
+          "name": "PARTY_SET_STATE",
+          "description": "Zmiana statusu grupy"
+        },
+        "PARTY_USE_SKILL": {
+          "hex": "0x0705",
+          "dec": 1797,
+          "name": "PARTY_USE_SKILL",
+          "description": "Umiejetnosc dowodzenia grupy"
+        },
+        "PARTY_PARAMETER": {
+          "hex": "0x0706",
+          "dec": 1798,
+          "name": "PARTY_PARAMETER",
+          "description": "Parametry grupy"
+        },
+        "GUILD": {
+          "hex": "0x0720",
+          "dec": 1824,
+          "name": "GUILD",
+          "description": "Akcje gildii"
+        },
+        "ANSWER_MAKE_GUILD": {
+          "hex": "0x0721",
+          "dec": 1825,
+          "name": "ANSWER_MAKE_GUILD",
+          "description": "Zalozenie gildii"
+        },
+        "GUILD_SYMBOL_UPLOAD": {
+          "hex": "0x0722",
+          "dec": 1826,
+          "name": "GUILD_SYMBOL_UPLOAD",
+          "description": "Wgranie symbolu gildii"
+        },
+        "SYMBOL_CRC": {
+          "hex": "0x0723",
+          "dec": 1827,
+          "name": "SYMBOL_CRC",
+          "description": "Suma kontrolna symbolu"
+        },
+        "MESSENGER": {
+          "hex": "0x0740",
+          "dec": 1856,
+          "name": "MESSENGER",
+          "description": "Lista przyjaciol"
+        },
+        "SHOP": {
+          "hex": "0x0801",
+          "dec": 2049,
+          "name": "SHOP",
+          "description": "Interakcja ze sklepem NPC"
+        },
+        "MYSHOP": {
+          "hex": "0x0802",
+          "dec": 2050,
+          "name": "MYSHOP",
+          "description": "Otwarcie prywatnego sklepu"
+        },
+        "SAFEBOX_CHECKIN": {
+          "hex": "0x0820",
+          "dec": 2080,
+          "name": "SAFEBOX_CHECKIN",
+          "description": "Zlozenie przedmiotu w magazynie"
+        },
+        "SAFEBOX_CHECKOUT": {
+          "hex": "0x0821",
+          "dec": 2081,
+          "name": "SAFEBOX_CHECKOUT",
+          "description": "Wyjecie przedmiotu z magazynu"
+        },
+        "SAFEBOX_ITEM_MOVE": {
+          "hex": "0x0822",
+          "dec": 2082,
+          "name": "SAFEBOX_ITEM_MOVE",
+          "description": "Przeniesienie w magazynie"
+        },
+        "SAFEBOX_MONEY": {
+          "hex": "0x0823",
+          "dec": 2083,
+          "name": "SAFEBOX_MONEY",
+          "description": "Zlozenie/wyjecie zlota z magazynu"
+        },
+        "MALL_CHECKOUT": {
+          "hex": "0x0840",
+          "dec": 2112,
+          "name": "MALL_CHECKOUT",
+          "description": "Magazyn Item Shop"
+        },
+        "SCRIPT_ANSWER": {
+          "hex": "0x0901",
+          "dec": 2305,
+          "name": "SCRIPT_ANSWER",
+          "description": "Odpowiedz w dialogu questowym"
+        },
+        "SCRIPT_BUTTON": {
+          "hex": "0x0902",
+          "dec": 2306,
+          "name": "SCRIPT_BUTTON",
+          "description": "Klikniecie przycisku questu"
+        },
+        "SCRIPT_SELECT_ITEM": {
+          "hex": "0x0903",
+          "dec": 2307,
+          "name": "SCRIPT_SELECT_ITEM",
+          "description": "Wybor przedmiotu w quescie"
+        },
+        "QUEST_INPUT_STRING": {
+          "hex": "0x0904",
+          "dec": 2308,
+          "name": "QUEST_INPUT_STRING",
+          "description": "Wprowadzenie tekstu w quescie"
+        },
+        "QUEST_CONFIRM": {
+          "hex": "0x0905",
+          "dec": 2309,
+          "name": "QUEST_CONFIRM",
+          "description": "Potwierdzenie questu"
+        },
+        "QUEST_CANCEL": {
+          "hex": "0x0906",
+          "dec": 2310,
+          "name": "QUEST_CANCEL",
+          "description": "Anulowanie questu"
+        },
+        "TARGET": {
+          "hex": "0x0A01",
+          "dec": 2561,
+          "name": "TARGET",
+          "size": 8,
+          "struct": "TPacketCGTarget",
+          "description": "Wybor celu"
+        },
+        "ON_CLICK": {
+          "hex": "0x0A02",
+          "dec": 2562,
+          "name": "ON_CLICK",
+          "description": "Klikniecie na byt w swiecie"
+        },
+        "CHARACTER_POSITION": {
+          "hex": "0x0A60",
+          "dec": 2656,
+          "name": "CHARACTER_POSITION",
+          "description": "Pozycja kamery i postaci"
+        },
+        "FISHING": {
+          "hex": "0x0B01",
+          "dec": 2817,
+          "name": "FISHING",
+          "description": "Lowienie ryb"
+        },
+        "DUNGEON": {
+          "hex": "0x0B02",
+          "dec": 2818,
+          "name": "DUNGEON",
+          "description": "Akcje w lochach"
+        },
+        "MARK_LOGIN": {
+          "hex": "0x0C01",
+          "dec": 3073,
+          "name": "MARK_LOGIN",
+          "description": "Pobieranie znakow gildii"
+        },
+        "MARK_CRCLIST": {
+          "hex": "0x0C02",
+          "dec": 3074,
+          "name": "MARK_CRCLIST",
+          "description": "Lista sum kontrolnych znakow"
+        },
+        "MARK_UPLOAD": {
+          "hex": "0x0C03",
+          "dec": 3075,
+          "name": "MARK_UPLOAD",
+          "description": "Wgranie znaku gildii"
+        },
+        "MARK_IDXLIST": {
+          "hex": "0x0C04",
+          "dec": 3076,
+          "name": "MARK_IDXLIST",
+          "description": "Indeks znakow gildii"
+        }
+      },
+      "opcodes_gc": {
+        "RESPOND_CHANNELSTATUS": {
+          "hex": "0x0010",
+          "dec": 16,
+          "name": "RESPOND_CHANNELSTATUS",
+          "is_dynamic": false
+        },
+        "LOGIN_SUCCESS3": {
+          "hex": "0x0104",
+          "dec": 260,
+          "name": "LOGIN_SUCCESS3",
+          "is_dynamic": false
+        },
+        "LOGIN_SUCCESS4": {
+          "hex": "0x0105",
+          "dec": 261,
+          "name": "LOGIN_SUCCESS4",
+          "is_dynamic": false
+        },
+        "LOGIN_FAILURE": {
+          "hex": "0x0106",
+          "dec": 262,
+          "name": "LOGIN_FAILURE",
+          "is_dynamic": false
+        },
+        "LOGIN_KEY": {
+          "hex": "0x0107",
+          "dec": 263,
+          "name": "LOGIN_KEY",
+          "is_dynamic": false
+        },
+        "AUTH_SUCCESS": {
+          "hex": "0x0108",
+          "dec": 264,
+          "name": "AUTH_SUCCESS",
+          "is_dynamic": false
+        },
+        "EMPIRE": {
+          "hex": "0x0109",
+          "dec": 265,
+          "name": "EMPIRE",
+          "is_dynamic": false
+        },
+        "CHANGE_NAME": {
+          "hex": "0x010C",
+          "dec": 268,
+          "name": "CHANGE_NAME",
+          "is_dynamic": false
+        },
+        "CHARACTER_ADD": {
+          "hex": "0x0205",
+          "dec": 517,
+          "name": "CHARACTER_ADD",
+          "is_dynamic": false
+        },
+        "CHARACTER_ADD2": {
+          "hex": "0x0206",
+          "dec": 518,
+          "name": "CHARACTER_ADD2",
+          "is_dynamic": false
+        },
+        "CHAR_ADDITIONAL_INFO": {
+          "hex": "0x0207",
+          "dec": 519,
+          "name": "CHAR_ADDITIONAL_INFO",
+          "is_dynamic": false
+        },
+        "CHARACTER_DEL": {
+          "hex": "0x0208",
+          "dec": 520,
+          "name": "CHARACTER_DEL",
+          "is_dynamic": false
+        },
+        "CHARACTER_UPDATE": {
+          "hex": "0x0209",
+          "dec": 521,
+          "name": "CHARACTER_UPDATE",
+          "is_dynamic": false
+        },
+        "CHARACTER_UPDATE2": {
+          "hex": "0x020A",
+          "dec": 522,
+          "name": "CHARACTER_UPDATE2",
+          "is_dynamic": false
+        },
+        "CHARACTER_POSITION": {
+          "hex": "0x020B",
+          "dec": 523,
+          "name": "CHARACTER_POSITION",
+          "is_dynamic": false
+        },
+        "PLAYER_CREATE_SUCCESS": {
+          "hex": "0x020C",
+          "dec": 524,
+          "name": "PLAYER_CREATE_SUCCESS",
+          "is_dynamic": false
+        },
+        "PLAYER_CREATE_FAILURE": {
+          "hex": "0x020D",
+          "dec": 525,
+          "name": "PLAYER_CREATE_FAILURE",
+          "is_dynamic": false
+        },
+        "PLAYER_DELETE_SUCCESS": {
+          "hex": "0x020E",
+          "dec": 526,
+          "name": "PLAYER_DELETE_SUCCESS",
+          "is_dynamic": false
+        },
+        "PLAYER_DELETE_WRONG_SOCIAL_ID": {
+          "hex": "0x020F",
+          "dec": 527,
+          "name": "PLAYER_DELETE_WRONG_SOCIAL_ID",
+          "is_dynamic": false
+        },
+        "MAIN_CHARACTER": {
+          "hex": "0x0210",
+          "dec": 528,
+          "name": "MAIN_CHARACTER",
+          "is_dynamic": false
+        },
+        "PLAYER_POINTS": {
+          "hex": "0x0214",
+          "dec": 532,
+          "name": "PLAYER_POINTS",
+          "is_dynamic": false
+        },
+        "PLAYER_POINT_CHANGE": {
+          "hex": "0x0215",
+          "dec": 533,
+          "name": "PLAYER_POINT_CHANGE",
+          "is_dynamic": false
+        },
+        "STUN": {
+          "hex": "0x0216",
+          "dec": 534,
+          "name": "STUN",
+          "is_dynamic": false
+        },
+        "DEAD": {
+          "hex": "0x0217",
+          "dec": 535,
+          "name": "DEAD",
+          "is_dynamic": false
+        },
+        "CHANGE_SPEED": {
+          "hex": "0x0218",
+          "dec": 536,
+          "name": "CHANGE_SPEED",
+          "is_dynamic": false
+        },
+        "WALK_MODE": {
+          "hex": "0x0219",
+          "dec": 537,
+          "name": "WALK_MODE",
+          "is_dynamic": false
+        },
+        "SKILL_LEVEL": {
+          "hex": "0x021A",
+          "dec": 538,
+          "name": "SKILL_LEVEL",
+          "is_dynamic": false
+        },
+        "SKILL_LEVEL_NEW": {
+          "hex": "0x021B",
+          "dec": 539,
+          "name": "SKILL_LEVEL_NEW",
+          "is_dynamic": false
+        },
+        "SKILL_COOLTIME_END": {
+          "hex": "0x021C",
+          "dec": 540,
+          "name": "SKILL_COOLTIME_END",
+          "is_dynamic": false
+        },
+        "CHANGE_SKILL_GROUP": {
+          "hex": "0x021D",
+          "dec": 541,
+          "name": "CHANGE_SKILL_GROUP",
+          "is_dynamic": false
+        },
+        "VIEW_EQUIP": {
+          "hex": "0x021E",
+          "dec": 542,
+          "name": "VIEW_EQUIP",
+          "is_dynamic": false
+        },
+        "MOVE": {
+          "hex": "0x0302",
+          "dec": 770,
+          "name": "MOVE",
+          "is_dynamic": false
+        },
+        "SYNC_POSITION": {
+          "hex": "0x0304",
+          "dec": 772,
+          "name": "SYNC_POSITION",
+          "is_dynamic": false
+        },
+        "WARP": {
+          "hex": "0x0306",
+          "dec": 774,
+          "name": "WARP",
+          "is_dynamic": false
+        },
+        "MOTION": {
+          "hex": "0x0307",
+          "dec": 775,
+          "name": "MOTION",
+          "is_dynamic": false
+        },
+        "DIG_MOTION": {
+          "hex": "0x0308",
+          "dec": 776,
+          "name": "DIG_MOTION",
+          "is_dynamic": false
+        },
+        "DAMAGE_INFO": {
+          "hex": "0x0410",
+          "dec": 1040,
+          "name": "DAMAGE_INFO",
+          "is_dynamic": false
+        },
+        "FLY_TARGETING": {
+          "hex": "0x0411",
+          "dec": 1041,
+          "name": "FLY_TARGETING",
+          "is_dynamic": false
+        },
+        "ADD_FLY_TARGETING": {
+          "hex": "0x0412",
+          "dec": 1042,
+          "name": "ADD_FLY_TARGETING",
+          "is_dynamic": false
+        },
+        "CREATE_FLY": {
+          "hex": "0x0413",
+          "dec": 1043,
+          "name": "CREATE_FLY",
+          "is_dynamic": false
+        },
+        "PVP": {
+          "hex": "0x0414",
+          "dec": 1044,
+          "name": "PVP",
+          "is_dynamic": false
+        },
+        "DUEL_START": {
+          "hex": "0x0415",
+          "dec": 1045,
+          "name": "DUEL_START",
+          "is_dynamic": false
+        },
+        "ITEM_DEL": {
+          "hex": "0x0510",
+          "dec": 1296,
+          "name": "ITEM_DEL",
+          "is_dynamic": false
+        },
+        "ITEM_SET": {
+          "hex": "0x0511",
+          "dec": 1297,
+          "name": "ITEM_SET",
+          "is_dynamic": false
+        },
+        "ITEM_USE": {
+          "hex": "0x0512",
+          "dec": 1298,
+          "name": "ITEM_USE",
+          "is_dynamic": false
+        },
+        "ITEM_DROP": {
+          "hex": "0x0513",
+          "dec": 1299,
+          "name": "ITEM_DROP",
+          "is_dynamic": false
+        },
+        "ITEM_UPDATE": {
+          "hex": "0x0514",
+          "dec": 1300,
+          "name": "ITEM_UPDATE",
+          "is_dynamic": false
+        },
+        "ITEM_GROUND_ADD": {
+          "hex": "0x0515",
+          "dec": 1301,
+          "name": "ITEM_GROUND_ADD",
+          "is_dynamic": false
+        },
+        "ITEM_GROUND_DEL": {
+          "hex": "0x0516",
+          "dec": 1302,
+          "name": "ITEM_GROUND_DEL",
+          "is_dynamic": false
+        },
+        "ITEM_OWNERSHIP": {
+          "hex": "0x0517",
+          "dec": 1303,
+          "name": "ITEM_OWNERSHIP",
+          "is_dynamic": false
+        },
+        "ITEM_GET": {
+          "hex": "0x0518",
+          "dec": 1304,
+          "name": "ITEM_GET",
+          "is_dynamic": false
+        },
+        "QUICKSLOT_ADD": {
+          "hex": "0x0519",
+          "dec": 1305,
+          "name": "QUICKSLOT_ADD",
+          "is_dynamic": false
+        },
+        "QUICKSLOT_DEL": {
+          "hex": "0x051A",
+          "dec": 1306,
+          "name": "QUICKSLOT_DEL",
+          "is_dynamic": false
+        },
+        "QUICKSLOT_SWAP": {
+          "hex": "0x051B",
+          "dec": 1307,
+          "name": "QUICKSLOT_SWAP",
+          "is_dynamic": false
+        },
+        "EXCHANGE": {
+          "hex": "0x051C",
+          "dec": 1308,
+          "name": "EXCHANGE",
+          "is_dynamic": false
+        },
+        "REFINE_INFORMATION": {
+          "hex": "0x051D",
+          "dec": 1309,
+          "name": "REFINE_INFORMATION",
+          "is_dynamic": false
+        },
+        "REFINE_INFORMATION_NEW": {
+          "hex": "0x051E",
+          "dec": 1310,
+          "name": "REFINE_INFORMATION_NEW",
+          "is_dynamic": false
+        },
+        "DRAGON_SOUL_REFINE": {
+          "hex": "0x051F",
+          "dec": 1311,
+          "name": "DRAGON_SOUL_REFINE",
+          "is_dynamic": false
+        },
+        "CHAT": {
+          "hex": "0x0603",
+          "dec": 1539,
+          "name": "CHAT",
+          "is_dynamic": false
+        },
+        "WHISPER": {
+          "hex": "0x0604",
+          "dec": 1540,
+          "name": "WHISPER",
+          "is_dynamic": false
+        },
+        "PARTY_INVITE": {
+          "hex": "0x0710",
+          "dec": 1808,
+          "name": "PARTY_INVITE",
+          "is_dynamic": false
+        },
+        "PARTY_ADD": {
+          "hex": "0x0711",
+          "dec": 1809,
+          "name": "PARTY_ADD",
+          "is_dynamic": false
+        },
+        "PARTY_UPDATE": {
+          "hex": "0x0712",
+          "dec": 1810,
+          "name": "PARTY_UPDATE",
+          "is_dynamic": false
+        },
+        "PARTY_REMOVE": {
+          "hex": "0x0713",
+          "dec": 1811,
+          "name": "PARTY_REMOVE",
+          "is_dynamic": false
+        },
+        "PARTY_LINK": {
+          "hex": "0x0714",
+          "dec": 1812,
+          "name": "PARTY_LINK",
+          "is_dynamic": false
+        },
+        "PARTY_UNLINK": {
+          "hex": "0x0715",
+          "dec": 1813,
+          "name": "PARTY_UNLINK",
+          "is_dynamic": false
+        },
+        "PARTY_PARAMETER": {
+          "hex": "0x0716",
+          "dec": 1814,
+          "name": "PARTY_PARAMETER",
+          "is_dynamic": false
+        },
+        "GUILD": {
+          "hex": "0x0730",
+          "dec": 1840,
+          "name": "GUILD",
+          "is_dynamic": false
+        },
+        "REQUEST_MAKE_GUILD": {
+          "hex": "0x0731",
+          "dec": 1841,
+          "name": "REQUEST_MAKE_GUILD",
+          "is_dynamic": false
+        },
+        "SYMBOL_DATA": {
+          "hex": "0x0732",
+          "dec": 1842,
+          "name": "SYMBOL_DATA",
+          "is_dynamic": false
+        },
+        "MESSENGER": {
+          "hex": "0x0741",
+          "dec": 1857,
+          "name": "MESSENGER",
+          "is_dynamic": false
+        },
+        "LOVER_INFO": {
+          "hex": "0x0750",
+          "dec": 1872,
+          "name": "LOVER_INFO",
+          "is_dynamic": false
+        },
+        "LOVE_POINT_UPDATE": {
+          "hex": "0x0751",
+          "dec": 1873,
+          "name": "LOVE_POINT_UPDATE",
+          "is_dynamic": false
+        },
+        "SHOP": {
+          "hex": "0x0810",
+          "dec": 2064,
+          "name": "SHOP",
+          "is_dynamic": false
+        },
+        "SHOP_SIGN": {
+          "hex": "0x0811",
+          "dec": 2065,
+          "name": "SHOP_SIGN",
+          "is_dynamic": false
+        },
+        "SAFEBOX_SET": {
+          "hex": "0x0830",
+          "dec": 2096,
+          "name": "SAFEBOX_SET",
+          "is_dynamic": false
+        },
+        "SAFEBOX_DEL": {
+          "hex": "0x0831",
+          "dec": 2097,
+          "name": "SAFEBOX_DEL",
+          "is_dynamic": false
+        },
+        "SAFEBOX_WRONG_PASSWORD": {
+          "hex": "0x0832",
+          "dec": 2098,
+          "name": "SAFEBOX_WRONG_PASSWORD",
+          "is_dynamic": false
+        },
+        "SAFEBOX_SIZE": {
+          "hex": "0x0833",
+          "dec": 2099,
+          "name": "SAFEBOX_SIZE",
+          "is_dynamic": false
+        },
+        "SAFEBOX_MONEY_CHANGE": {
+          "hex": "0x0834",
+          "dec": 2100,
+          "name": "SAFEBOX_MONEY_CHANGE",
+          "is_dynamic": false
+        },
+        "MALL_OPEN": {
+          "hex": "0x0841",
+          "dec": 2113,
+          "name": "MALL_OPEN",
+          "is_dynamic": false
+        },
+        "MALL_SET": {
+          "hex": "0x0842",
+          "dec": 2114,
+          "name": "MALL_SET",
+          "is_dynamic": false
+        },
+        "MALL_DEL": {
+          "hex": "0x0843",
+          "dec": 2115,
+          "name": "MALL_DEL",
+          "is_dynamic": false
+        },
+        "SCRIPT": {
+          "hex": "0x0910",
+          "dec": 2320,
+          "name": "SCRIPT",
+          "is_dynamic": false
+        },
+        "QUEST_CONFIRM": {
+          "hex": "0x0911",
+          "dec": 2321,
+          "name": "QUEST_CONFIRM",
+          "is_dynamic": false
+        },
+        "QUEST_INFO": {
+          "hex": "0x0912",
+          "dec": 2322,
+          "name": "QUEST_INFO",
+          "is_dynamic": false
+        },
+        "TARGET": {
+          "hex": "0x0A10",
+          "dec": 2576,
+          "name": "TARGET",
+          "is_dynamic": false
+        },
+        "TARGET_UPDATE": {
+          "hex": "0x0A11",
+          "dec": 2577,
+          "name": "TARGET_UPDATE",
+          "is_dynamic": false
+        },
+        "TARGET_DELETE": {
+          "hex": "0x0A12",
+          "dec": 2578,
+          "name": "TARGET_DELETE",
+          "is_dynamic": false
+        },
+        "TARGET_CREATE_NEW": {
+          "hex": "0x0A13",
+          "dec": 2579,
+          "name": "TARGET_CREATE_NEW",
+          "is_dynamic": false
+        },
+        "AFFECT_ADD": {
+          "hex": "0x0A20",
+          "dec": 2592,
+          "name": "AFFECT_ADD",
+          "is_dynamic": false
+        },
+        "AFFECT_REMOVE": {
+          "hex": "0x0A21",
+          "dec": 2593,
+          "name": "AFFECT_REMOVE",
+          "is_dynamic": false
+        },
+        "SEPCIAL_EFFECT": {
+          "hex": "0x0A30",
+          "dec": 2608,
+          "name": "SEPCIAL_EFFECT",
+          "is_dynamic": false
+        },
+        "SPECIFIC_EFFECT": {
+          "hex": "0x0A31",
+          "dec": 2609,
+          "name": "SPECIFIC_EFFECT",
+          "is_dynamic": false
+        },
+        "MOUNT": {
+          "hex": "0x0A40",
+          "dec": 2624,
+          "name": "MOUNT",
+          "is_dynamic": false
+        },
+        "OWNERSHIP": {
+          "hex": "0x0A41",
+          "dec": 2625,
+          "name": "OWNERSHIP",
+          "is_dynamic": false
+        },
+        "NPC_POSITION": {
+          "hex": "0x0A50",
+          "dec": 2640,
+          "name": "NPC_POSITION",
+          "is_dynamic": false
+        },
+        "FISHING": {
+          "hex": "0x0B10",
+          "dec": 2832,
+          "name": "FISHING",
+          "is_dynamic": false
+        },
+        "DUNGEON": {
+          "hex": "0x0B11",
+          "dec": 2833,
+          "name": "DUNGEON",
+          "is_dynamic": false
+        },
+        "LAND_LIST": {
+          "hex": "0x0B12",
+          "dec": 2834,
+          "name": "LAND_LIST",
+          "is_dynamic": false
+        },
+        "TIME": {
+          "hex": "0x0B13",
+          "dec": 2835,
+          "name": "TIME",
+          "is_dynamic": false
+        },
+        "CHANNEL": {
+          "hex": "0x0B14",
+          "dec": 2836,
+          "name": "CHANNEL",
+          "is_dynamic": false
+        },
+        "MARK_UPDATE": {
+          "hex": "0x0B15",
+          "dec": 2837,
+          "name": "MARK_UPDATE",
+          "is_dynamic": false
+        },
+        "OBSERVER_ADD": {
+          "hex": "0x0B20",
+          "dec": 2848,
+          "name": "OBSERVER_ADD",
+          "is_dynamic": false
+        },
+        "OBSERVER_REMOVE": {
+          "hex": "0x0B21",
+          "dec": 2849,
+          "name": "OBSERVER_REMOVE",
+          "is_dynamic": false
+        },
+        "OBSERVER_MOVE": {
+          "hex": "0x0B22",
+          "dec": 2850,
+          "name": "OBSERVER_MOVE",
+          "is_dynamic": false
+        },
+        "MARK_BLOCK": {
+          "hex": "0x0C10",
+          "dec": 3088,
+          "name": "MARK_BLOCK",
+          "is_dynamic": false
+        },
+        "MARK_IDXLIST": {
+          "hex": "0x0C11",
+          "dec": 3089,
+          "name": "MARK_IDXLIST",
+          "is_dynamic": false
+        },
+        "MARK_DIFF_DATA": {
+          "hex": "0x0C12",
+          "dec": 3090,
+          "name": "MARK_DIFF_DATA",
+          "is_dynamic": false
+        }
+      }
+    },
+    "luria": {
+      "name": "luria",
+      "display_name": "Luria Online (UPM Profil Luria)",
+      "description": "Protokol produkcyjny serwera Luria z 1-bajtowym ramkowaniem, tablica 137 pakietow GC, DH2 MODP 1024-bit i Blowfish CTR.",
+      "framing": {
+        "type": "TABLE_LOOKUP_1B",
+        "header_size_bytes": 1,
+        "format": "[Header: 1B (uint8_t)][Payload...]",
+        "dynamic_handling": "16-bit uint16_t little-endian na offsetcie 1 (CHAT 0x04, WHISPER 0x05, SCRIPT 0x26), lub 32-bit uint32_t na offsetcie 1 dla pakietu 0xBE"
+      },
+      "cryptography": {
+        "key_agreement": "Diffie-Hellman DH2 MODP 1024-bit (256B handshake, selekcja c1==11 && c2==11)",
+        "cipher": "Blowfish CTR (64-bit blok, big-endian increment counter, niezalezne klucze RX/TX)",
+        "block_size_bytes": 8,
+        "auth_security": "TPacketCGAuthLuria (168B: login, haslo, PIN 5B, token STARRS3543S22, HWID SHA-256 hex 64B)"
+      },
+      "network": {
+        "default_ip": "46.105.73.82",
+        "default_auth_port": 11469,
+        "default_game_ports": [
+          29001,
+          29101,
+          29201,
+          29301,
+          29401,
+          29501
+        ],
+        "mark_port": 29001
+      },
+      "opcodes_cg": {
+        "LOGIN": {
+          "hex": "0x01",
+          "dec": 1,
+          "size": 49,
+          "name": "LOGIN",
+          "description": "Logowanie standardowe (49B)"
+        },
+        "ATTACK": {
+          "hex": "0x02",
+          "dec": 2,
+          "size": 8,
+          "struct": "TPacketCGAttackLuria",
+          "description": "Atak 8B z zabezpieczeniem rotujacej sumy CRC_XOR_TABLE = { 102, 30, 188, 44, 39, 201, 43, 5 }"
+        },
+        "MOVE": {
+          "hex": "0x03",
+          "dec": 3,
+          "size": 19,
+          "struct": "TPacketCGMoveLuria",
+          "description": "Ruch 19B z precyzyjna rotacja 4B float fRot"
+        },
+        "CHAT": {
+          "hex": "0x04",
+          "dec": 4,
+          "is_dynamic": true,
+          "name": "CHAT",
+          "description": "Dynamiczny czat",
+          "phase": "game"
+        },
+        "CHARACTER_CREATE": {
+          "hex": "0x04",
+          "dec": 4,
+          "size": 34,
+          "struct": "TPacketCGCreateCharacterLuria",
+          "description": "Tworzenie postaci (34B: slot, nazwa 25B, job 2B, shape, con, int, str, dex)",
+          "phase": "select"
+        },
+        "CHARACTER_DELETE": {
+          "hex": "0x05",
+          "dec": 5,
+          "size": 10,
+          "struct": "TPacketCGDestroyCharacterLuria",
+          "description": "Usuniecie postaci kodem PIN (10B: slot, szPrivateCode 8B)"
+        },
+        "CHARACTER_SELECT": {
+          "hex": "0x06",
+          "dec": 6,
+          "size": 2,
+          "struct": "TPacketCGSelectCharacterLuria",
+          "description": "Wybor postaci ze slotu (2B: header, index)"
+        },
+        "ENTERGAME": {
+          "hex": "0x0A",
+          "dec": 10,
+          "size": 1,
+          "name": "ENTERGAME",
+          "description": "Wejscie do gry (1B)"
+        },
+        "ITEM_USE": {
+          "hex": "0x0B",
+          "dec": 11,
+          "size": 4,
+          "struct": "TPacketCGItemUseLuria",
+          "description": "Uzycie przedmiotu (4B: window_type, cell 2B)"
+        },
+        "ITEM_DROP": {
+          "hex": "0x0C",
+          "dec": 12,
+          "size": 8,
+          "struct": "TPacketCGItemDropLuria",
+          "description": "Wyrzucenie przedmiotu / zlota (8B: window, cell, count 4B)"
+        },
+        "ITEM_MOVE": {
+          "hex": "0x0D",
+          "dec": 13,
+          "size": 9,
+          "struct": "TPacketCGItemMoveLuria",
+          "description": "Przeniesienie w ekwipunku (9B: srcWin, srcCell, dstWin, dstCell, count 2B)"
+        },
+        "ITEM_PICKUP": {
+          "hex": "0x0F",
+          "dec": 15,
+          "size": 5,
+          "struct": "TPacketCGItemPickUpLuria",
+          "description": "Podniesienie przedmiotu (5B: header, dwVID 4B)"
+        },
+        "ON_CLICK": {
+          "hex": "0x14",
+          "dec": 20,
+          "size": 6,
+          "name": "ON_CLICK",
+          "description": "Klikniecie w cel (6B: vid 4B, flag 1B)"
+        },
+        "TARGET": {
+          "hex": "0x3D",
+          "dec": 61,
+          "size": 5,
+          "struct": "TPacketCGTargetLuria",
+          "description": "Wybor celu (5B: header, targetVid 4B)"
+        },
+        "EMPIRE": {
+          "hex": "0x5A",
+          "dec": 90,
+          "size": 2,
+          "struct": "TPacketCGEmpireLuria",
+          "description": "Wybor krolestwa (2B: header, empire 1B)"
+        },
+        "LOGIN2": {
+          "hex": "0x6D",
+          "dec": 109,
+          "size": 52,
+          "struct": "TPacketCGLogin2Luria",
+          "description": "Wejscie do serwera gry z dwLoginKey (52B)"
+        },
+        "AUTH_LOGIN": {
+          "hex": "0x6F",
+          "dec": 111,
+          "size": 168,
+          "struct": "TPacketCGAuthLuria",
+          "description": "Pelna autoryzacja z PIN, tokenem i SHA-256 HWID (168B)"
+        },
+        "CLIENT_VERSION": {
+          "hex": "0xF1",
+          "dec": 241,
+          "size": 67,
+          "struct": "TPacketCGClientVersionLuria",
+          "description": "Weryfikacja wersji klienta (67B)"
+        },
+        "KEY_AGREEMENT": {
+          "hex": "0xFB",
+          "dec": 251,
+          "size": 261,
+          "struct": "TPacketCGKeyAgreementLuria",
+          "description": "Wymiana kluczy DH2 MODP 1024-bit (261B)"
+        },
+        "PONG": {
+          "hex": "0xFE",
+          "dec": 254,
+          "size": 1,
+          "name": "PONG",
+          "description": "Keepalive odpowiedz na Ping (1B)"
+        },
+        "HANDSHAKE": {
+          "hex": "0xFF",
+          "dec": 255,
+          "size": 13,
+          "struct": "TPacketCGHandshakeLuria",
+          "description": "Synchronizacja czasu zegarow (13B)"
+        }
+      },
+      "opcodes_gc": {
+        "CHARACTER_ADD": {
+          "hex": "0x01",
+          "dec": 1,
+          "size": 37,
+          "is_dynamic": false
+        },
+        "CHARACTER_DEL": {
+          "hex": "0x02",
+          "dec": 2,
+          "size": 5,
+          "is_dynamic": false
+        },
+        "CHARACTER_MOVE": {
+          "hex": "0x03",
+          "dec": 3,
+          "size": 24,
+          "struct": "TPacketGCMoveLuria",
+          "is_dynamic": false
+        },
+        "CHAT": {
+          "hex": "0x04",
+          "dec": 4,
+          "size": 9,
+          "is_dynamic": true
+        },
+        "WHISPER": {
+          "hex": "0x05",
+          "dec": 5,
+          "size": 3,
+          "is_dynamic": true
+        },
+        "LOGIN_SUCCESS3": {
+          "hex": "0x06",
+          "dec": 6,
+          "size": 297,
+          "is_dynamic": false
+        },
+        "LOGIN_FAILURE": {
+          "hex": "0x07",
+          "dec": 7,
+          "size": 10,
+          "is_dynamic": false
+        },
+        "GC_08": {
+          "hex": "0x08",
+          "dec": 8,
+          "size": 81,
+          "is_dynamic": false
+        },
+        "GC_09": {
+          "hex": "0x09",
+          "dec": 9,
+          "size": 2,
+          "is_dynamic": false
+        },
+        "GC_0A": {
+          "hex": "0x0A",
+          "dec": 10,
+          "size": 1,
+          "is_dynamic": false
+        },
+        "GC_0B": {
+          "hex": "0x0B",
+          "dec": 11,
+          "size": 1,
+          "is_dynamic": false
+        },
+        "ATTACK": {
+          "hex": "0x0C",
+          "dec": 12,
+          "size": 10,
+          "is_dynamic": false
+        },
+        "GC_0D": {
+          "hex": "0x0D",
+          "dec": 13,
+          "size": 5,
+          "is_dynamic": false
+        },
+        "DEAD": {
+          "hex": "0x0E",
+          "dec": 14,
+          "size": 5,
+          "struct": "TPacketGCDeadLuria",
+          "is_dynamic": false
+        },
+        "MAIN_CHARACTER": {
+          "hex": "0x0F",
+          "dec": 15,
+          "size": 47,
+          "is_dynamic": false
+        },
+        "CHARACTER_UPDATE": {
+          "hex": "0x10",
+          "dec": 16,
+          "size": 1021,
+          "is_dynamic": false
+        },
+        "POINT_CHANGE": {
+          "hex": "0x11",
+          "dec": 17,
+          "size": 17,
+          "is_dynamic": false
+        },
+        "GC_12": {
+          "hex": "0x12",
+          "dec": 18,
+          "size": 7,
+          "is_dynamic": false
+        },
+        "GC_13": {
+          "hex": "0x13",
+          "dec": 19,
+          "size": 67,
+          "is_dynamic": false
+        },
+        "GC_14": {
+          "hex": "0x14",
+          "dec": 20,
+          "size": 54,
+          "is_dynamic": false
+        },
+        "GC_15": {
+          "hex": "0x15",
+          "dec": 21,
+          "size": 64,
+          "is_dynamic": false
+        },
+        "GC_16": {
+          "hex": "0x16",
+          "dec": 22,
+          "size": 16,
+          "is_dynamic": false
+        },
+        "GC_19": {
+          "hex": "0x19",
+          "dec": 25,
+          "size": 51,
+          "is_dynamic": false
+        },
+        "GC_1A": {
+          "hex": "0x1A",
+          "dec": 26,
+          "size": 21,
+          "is_dynamic": false
+        },
+        "GC_1B": {
+          "hex": "0x1B",
+          "dec": 27,
+          "size": 5,
+          "is_dynamic": false
+        },
+        "GC_1C": {
+          "hex": "0x1C",
+          "dec": 28,
+          "size": 4,
+          "is_dynamic": false
+        },
+        "GC_1D": {
+          "hex": "0x1D",
+          "dec": 29,
+          "size": 2,
+          "is_dynamic": false
+        },
+        "GC_1E": {
+          "hex": "0x1E",
+          "dec": 30,
+          "size": 3,
+          "is_dynamic": false
+        },
+        "GC_1F": {
+          "hex": "0x1F",
+          "dec": 31,
+          "size": 30,
+          "is_dynamic": false
+        },
+        "LOGIN_SUCCESS": {
+          "hex": "0x20",
+          "dec": 32,
+          "size": 489,
+          "is_dynamic": false
+        },
+        "GC_22": {
+          "hex": "0x22",
+          "dec": 34,
+          "size": 29,
+          "is_dynamic": false
+        },
+        "GC_24": {
+          "hex": "0x24",
+          "dec": 36,
+          "size": 11,
+          "is_dynamic": false
+        },
+        "SCRIPT": {
+          "hex": "0x26",
+          "dec": 38,
+          "size": 4,
+          "is_dynamic": true
+        },
+        "GC_27": {
+          "hex": "0x27",
+          "dec": 39,
+          "size": 38,
+          "is_dynamic": false
+        },
+        "GC_28": {
+          "hex": "0x28",
+          "dec": 40,
+          "size": 3,
+          "is_dynamic": true
+        },
+        "TARGET": {
+          "hex": "0x29",
+          "dec": 41,
+          "size": 10,
+          "is_dynamic": false
+        },
+        "GC_2A": {
+          "hex": "0x2A",
+          "dec": 42,
+          "size": 63,
+          "is_dynamic": false
+        },
+        "GC_2B": {
+          "hex": "0x2B",
+          "dec": 43,
+          "size": 6,
+          "is_dynamic": false
+        },
+        "PING": {
+          "hex": "0x2C",
+          "dec": 44,
+          "size": 1,
+          "is_dynamic": false
+        },
+        "GC_2D": {
+          "hex": "0x2D",
+          "dec": 45,
+          "size": 6,
+          "is_dynamic": true
+        },
+        "GC_2E": {
+          "hex": "0x2E",
+          "dec": 46,
+          "size": 74,
+          "is_dynamic": false
+        },
+        "GC_32": {
+          "hex": "0x32",
+          "dec": 50,
+          "size": 4,
+          "is_dynamic": true
+        },
+        "GC_39": {
+          "hex": "0x39",
+          "dec": 57,
+          "size": 1,
+          "is_dynamic": false
+        },
+        "GC_3B": {
+          "hex": "0x3B",
+          "dec": 59,
+          "size": 4,
+          "is_dynamic": true
+        },
+        "GC_3C": {
+          "hex": "0x3C",
+          "dec": 60,
+          "size": 4,
+          "is_dynamic": true
+        },
+        "GC_3D": {
+          "hex": "0x3D",
+          "dec": 61,
+          "size": 18,
+          "is_dynamic": false
+        },
+        "GC_3E": {
+          "hex": "0x3E",
+          "dec": 62,
+          "size": 9,
+          "is_dynamic": false
+        },
+        "GC_3F": {
+          "hex": "0x3F",
+          "dec": 63,
+          "size": 13,
+          "is_dynamic": false
+        },
+        "WARP": {
+          "hex": "0x41",
+          "dec": 65,
+          "size": 15,
+          "struct": "TPacketGCWarpLuria",
+          "is_dynamic": false
+        },
+        "GC_45": {
+          "hex": "0x45",
+          "dec": 69,
+          "size": 17,
+          "is_dynamic": false
+        },
+        "GC_46": {
+          "hex": "0x46",
+          "dec": 70,
+          "size": 10,
+          "is_dynamic": false
+        },
+        "GC_47": {
+          "hex": "0x47",
+          "dec": 71,
+          "size": 17,
+          "is_dynamic": false
+        },
+        "GC_48": {
+          "hex": "0x48",
+          "dec": 72,
+          "size": 256,
+          "is_dynamic": false
+        },
+        "GC_49": {
+          "hex": "0x49",
+          "dec": 73,
+          "size": 2,
+          "is_dynamic": false
+        },
+        "GC_4A": {
+          "hex": "0x4A",
+          "dec": 74,
+          "size": 4,
+          "is_dynamic": true
+        },
+        "GC_4B": {
+          "hex": "0x4B",
+          "dec": 75,
+          "size": 4,
+          "is_dynamic": true
+        },
+        "GC_4C": {
+          "hex": "0x4C",
+          "dec": 76,
+          "size": 1531,
+          "is_dynamic": false
+        },
+        "GC_4D": {
+          "hex": "0x4D",
+          "dec": 77,
+          "size": 5,
+          "is_dynamic": false
+        },
+        "GC_4E": {
+          "hex": "0x4E",
+          "dec": 78,
+          "size": 30,
+          "is_dynamic": false
+        },
+        "GC_4F": {
+          "hex": "0x4F",
+          "dec": 79,
+          "size": 21,
+          "is_dynamic": false
+        },
+        "GC_50": {
+          "hex": "0x50",
+          "dec": 80,
+          "size": 5,
+          "is_dynamic": false
+        },
+        "EMPIRE": {
+          "hex": "0x5A",
+          "dec": 90,
+          "size": 2,
+          "is_dynamic": false
+        },
+        "TARGET_HP": {
+          "hex": "0x6C",
+          "dec": 108,
+          "size": 13,
+          "struct": "TPacketGCTargetHPLuria",
+          "is_dynamic": false
+        },
+        "DAMAGE_INFO": {
+          "hex": "0x87",
+          "dec": 135,
+          "size": 10,
+          "struct": "TPacketGCDamageInfoLuria",
+          "is_dynamic": false
+        },
+        "AUTH_SUCCESS": {
+          "hex": "0x96",
+          "dec": 150,
+          "size": 6,
+          "struct": "TPacketGCAuthSuccessLuria",
+          "is_dynamic": false
+        },
+        "DYNAMIC_32": {
+          "hex": "0xBE",
+          "dec": 190,
+          "size": 5,
+          "is_dynamic": true,
+          "description": "Dynamiczny pakiet z 32-bitowa dlugoscia na offsetcie 1"
+        },
+        "KEY_AGREEMENT_ACK": {
+          "hex": "0xFA",
+          "dec": 250,
+          "size": 4,
+          "is_dynamic": false
+        },
+        "KEY_AGREEMENT": {
+          "hex": "0xFB",
+          "dec": 251,
+          "size": 261,
+          "is_dynamic": false
+        },
+        "PHASE": {
+          "hex": "0xFD",
+          "dec": 253,
+          "size": 2,
+          "is_dynamic": false
+        },
+        "PONG": {
+          "hex": "0xFE",
+          "dec": 254,
+          "size": 7,
+          "is_dynamic": false
+        },
+        "HANDSHAKE": {
+          "hex": "0xFF",
+          "dec": 255,
+          "size": 13,
+          "is_dynamic": false
+        }
+      }
+    },
+    "beavium": {
+      "name": "beavium",
+      "display_name": "Beavium (Custom Security Profile)",
+      "description": "Customowy profil serwera Beavium z zabezpieczeniami AES-256-CTR, X25519 DH oraz specyficznym ukladem pakietow.",
+      "framing": {
+        "type": "TABLE_LOOKUP_1B",
+        "header_size_bytes": 1,
+        "format": "[Header: 1B (uint8_t)][Payload...]",
+        "dynamic_handling": "16-bit uint16_t na offsetcie 1 dla pakietow dynamicznych, oraz 32-bit uint32_t na offsetcie 1 dla pakietow glosowych (0x90/0x91)"
+      },
+      "cryptography": {
+        "key_agreement": "X25519 Diffie-Hellman (opcode 0xFA, 137B)",
+        "cipher": "AES-256-CTR (AesKey 32B, AesIv 16B, DefaultClientKey 16B)",
+        "block_size_bytes": 16,
+        "auth_security": "Base64 AES-CFB encrypted payload w pakiecie 0x67 (32B)"
+      },
+      "network": {
+        "default_ip": "127.0.0.1",
+        "default_auth_port": 11000,
+        "default_game_ports": [
+          11011,
+          11021
+        ],
+        "mark_port": 11011
+      },
+      "opcodes_cg": {
+        "LOGIN": {
+          "hex": "0x01",
+          "dec": 1,
+          "size": 53,
+          "name": "LOGIN",
+          "description": "Logowanie Beavium (53B)"
+        },
+        "ATTACK": {
+          "hex": "0x02",
+          "dec": 2,
+          "size": 8,
+          "struct": "ProxyPacketCGAttack",
+          "description": "Atak 8B z 16-bitowa sekwencja"
+        },
+        "CHAT": {
+          "hex": "0x03",
+          "dec": 3,
+          "is_dynamic": true,
+          "name": "CHAT",
+          "description": "Dynamiczny czat"
+        },
+        "CHARACTER_CREATE": {
+          "hex": "0x04",
+          "dec": 4,
+          "size": 42,
+          "name": "CHARACTER_CREATE",
+          "description": "Tworzenie postaci (42B)"
+        },
+        "CHARACTER_DESTROY": {
+          "hex": "0x05",
+          "dec": 5,
+          "size": 10,
+          "name": "CHARACTER_DESTROY",
+          "description": "Usuniecie postaci (10B)"
+        },
+        "CHAR_SELECT": {
+          "hex": "0x06",
+          "dec": 6,
+          "size": 14,
+          "name": "CHAR_SELECT",
+          "description": "Wybor postaci ze slotu z tokenem (14B)"
+        },
+        "MOVE": {
+          "hex": "0x07",
+          "dec": 7,
+          "size": 29,
+          "struct": "TPacketCGMoveBeavium",
+          "description": "Ruch 29B z mikrostopniami (* 1e6)"
+        },
+        "ENTERGAME": {
+          "hex": "0x0A",
+          "dec": 10,
+          "size": 1,
+          "name": "ENTERGAME",
+          "description": "Wejscie do gry (1B)"
+        },
+        "ITEM_USE": {
+          "hex": "0x0C",
+          "dec": 12,
+          "size": 12,
+          "struct": "TPacketCGItemUseBeavium",
+          "description": "Uzycie przedmiotu (12B: cell, win, vnum, vid)"
+        },
+        "ITEM_MOVE": {
+          "hex": "0x0D",
+          "dec": 13,
+          "size": 8,
+          "name": "ITEM_MOVE",
+          "description": "Przeniesienie w ekwipunku (8B)"
+        },
+        "ITEM_PICKUP": {
+          "hex": "0x0E",
+          "dec": 14,
+          "size": 5,
+          "name": "ITEM_PICKUP",
+          "description": "Podniesienie przedmiotu (5B: itemVid)"
+        },
+        "ON_CLICK": {
+          "hex": "0x14",
+          "dec": 20,
+          "size": 6,
+          "name": "ON_CLICK",
+          "description": "Klikniecie w cel (6B: targetVid, flag 0x00)"
+        },
+        "SCRIPT_ANSWER": {
+          "hex": "0x17",
+          "dec": 23,
+          "size": 2,
+          "name": "SCRIPT_ANSWER",
+          "description": "Odpowiedz na skrypt (2B)"
+        },
+        "WHISPER": {
+          "hex": "0x19",
+          "dec": 25,
+          "is_dynamic": true,
+          "name": "WHISPER",
+          "description": "Dynamiczny szept"
+        },
+        "SHOP": {
+          "hex": "0x1B",
+          "dec": 27,
+          "size": 7,
+          "name": "SHOP",
+          "description": "Sklep (2..7B)"
+        },
+        "ATTACK_ALT": {
+          "hex": "0x1D",
+          "dec": 29,
+          "size": 9,
+          "name": "ATTACK_ALT",
+          "description": "Alternatywny atak (9B)"
+        },
+        "EXCHANGE": {
+          "hex": "0x1F",
+          "dec": 31,
+          "size": 6,
+          "name": "EXCHANGE",
+          "description": "Handel (2..6B)"
+        },
+        "TARGET": {
+          "hex": "0x22",
+          "dec": 34,
+          "size": 5,
+          "struct": "TPacketCGTargetBeavium",
+          "description": "Wybor celu (5B: targetVid)"
+        },
+        "SCRIPT_BUTTON": {
+          "hex": "0x25",
+          "dec": 37,
+          "size": 5,
+          "name": "SCRIPT_BUTTON",
+          "description": "Przycisk questu (5B)"
+        },
+        "USE_SKILL": {
+          "hex": "0x34",
+          "dec": 52,
+          "size": 9,
+          "name": "USE_SKILL",
+          "description": "Umiejetnosc (9B)"
+        },
+        "QUEST_CONFIRM": {
+          "hex": "0x35",
+          "dec": 53,
+          "size": 6,
+          "name": "QUEST_CONFIRM",
+          "description": "Potwierdzenie questu (6B)",
+          "phase": "game"
+        },
+        "SELECT_EMPIRE": {
+          "hex": "0x35",
+          "dec": 53,
+          "size": 2,
+          "name": "SELECT_EMPIRE",
+          "description": "Wybor krolestwa (2B)",
+          "phase": "select"
+        },
+        "REFINE": {
+          "hex": "0x42",
+          "dec": 66,
+          "size": 6,
+          "name": "REFINE",
+          "description": "Ulepszanie (6B)"
+        },
+        "TREASURE_LOOT": {
+          "hex": "0x53",
+          "dec": 83,
+          "size": 11,
+          "name": "TREASURE_LOOT",
+          "description": "Loot skarbca (11B)"
+        },
+        "TARGET_LOOT": {
+          "hex": "0x54",
+          "dec": 84,
+          "size": 11,
+          "name": "TARGET_LOOT",
+          "description": "Loot celu (11B)"
+        },
+        "ITEM_USE_EXTEND": {
+          "hex": "0x5D",
+          "dec": 93,
+          "size": 11,
+          "name": "ITEM_USE_EXTEND",
+          "description": "Rozszerzone uzycie przedmiotu (11B)"
+        },
+        "AUTH_LOGIN": {
+          "hex": "0x67",
+          "dec": 103,
+          "size": 32,
+          "name": "AUTH_LOGIN",
+          "description": "Autoryzacja z AES-CFB payloadem"
+        },
+        "LOGIN2": {
+          "hex": "0x68",
+          "dec": 104,
+          "size": 56,
+          "name": "LOGIN2",
+          "description": "Logowanie z loginKey 8B i clientKey 16B (56B)"
+        },
+        "KEY_AGREEMENT": {
+          "hex": "0xFA",
+          "dec": 250,
+          "size": 137,
+          "name": "KEY_AGREEMENT",
+          "description": "Wymiana kluczy X25519 (137B)"
+        },
+        "PONG": {
+          "hex": "0xFC",
+          "dec": 252,
+          "size": 1,
+          "name": "PONG",
+          "description": "Keepalive (1B)"
+        },
+        "HANDSHAKE_ACK": {
+          "hex": "0xFF",
+          "dec": 255,
+          "size": 13,
+          "name": "HANDSHAKE_ACK",
+          "description": "Handshake (13B)"
+        }
+      },
+      "opcodes_gc": {
+        "CHARACTER_ADD": {
+          "hex": "0x01",
+          "dec": 1,
+          "size": 45,
+          "is_dynamic": false
+        },
+        "CHARACTER_DEL": {
+          "hex": "0x02",
+          "dec": 2,
+          "size": 6,
+          "is_dynamic": false
+        },
+        "CHARACTER_MOVE": {
+          "hex": "0x03",
+          "dec": 3,
+          "size": 31,
+          "is_dynamic": false
+        },
+        "CHAT": {
+          "hex": "0x04",
+          "dec": 4,
+          "size": 14,
+          "is_dynamic": true
+        },
+        "SYNC_POSITION": {
+          "hex": "0x05",
+          "dec": 5,
+          "size": 3,
+          "is_dynamic": true
+        },
+        "LOGIN_SUCCESS3": {
+          "hex": "0x06",
+          "dec": 6,
+          "size": 10,
+          "is_dynamic": false
+        },
+        "LOGIN_FAILURE": {
+          "hex": "0x07",
+          "dec": 7,
+          "size": 91,
+          "is_dynamic": false
+        },
+        "CHAR_CREATE_SUCCESS": {
+          "hex": "0x08",
+          "dec": 8,
+          "size": 2,
+          "is_dynamic": false
+        },
+        "CHAR_CREATE_FAILURE": {
+          "hex": "0x09",
+          "dec": 9,
+          "size": 1,
+          "is_dynamic": false
+        },
+        "CHAR_DELETE_SUCCESS": {
+          "hex": "0x0A",
+          "dec": 10,
+          "size": 1,
+          "is_dynamic": false
+        },
+        "CHAR_DELETE_WRONG_PIN": {
+          "hex": "0x0B",
+          "dec": 11,
+          "size": 5,
+          "is_dynamic": false
+        },
+        "ATTACK": {
+          "hex": "0x0C",
+          "dec": 12,
+          "size": 12,
+          "struct": "TPacketGCAttackBeavium",
+          "is_dynamic": false
+        },
+        "STUN": {
+          "hex": "0x0D",
+          "dec": 13,
+          "size": 3073,
+          "is_dynamic": false
+        },
+        "DEAD": {
+          "hex": "0x0E",
+          "dec": 14,
+          "size": 26,
+          "struct": "TPacketGCDeadBeavium",
+          "is_dynamic": false
+        },
+        "MAIN_CHARACTER": {
+          "hex": "0x0F",
+          "dec": 15,
+          "size": 6,
+          "is_dynamic": true
+        },
+        "CHARACTER_UPDATE": {
+          "hex": "0x10",
+          "dec": 16,
+          "size": 82,
+          "is_dynamic": false
+        },
+        "ITEM_USE": {
+          "hex": "0x11",
+          "dec": 17,
+          "size": 4,
+          "is_dynamic": false
+        },
+        "ITEM_UPDATE": {
+          "hex": "0x12",
+          "dec": 18,
+          "size": 281,
+          "is_dynamic": false
+        },
+        "ITEM_GROUND_ADD": {
+          "hex": "0x13",
+          "dec": 19,
+          "size": 16,
+          "is_dynamic": false
+        },
+        "QUICKSLOT_ADD": {
+          "hex": "0x15",
+          "dec": 21,
+          "size": 268,
+          "is_dynamic": false
+        },
+        "QUICKSLOT_DEL": {
+          "hex": "0x16",
+          "dec": 22,
+          "size": 26,
+          "is_dynamic": false
+        },
+        "QUICKSLOT_SWAP": {
+          "hex": "0x17",
+          "dec": 23,
+          "size": 5,
+          "is_dynamic": false
+        },
+        "ITEM_OWNERSHIP": {
+          "hex": "0x18",
+          "dec": 24,
+          "size": 4,
+          "is_dynamic": false
+        },
+        "WHISPER": {
+          "hex": "0x19",
+          "dec": 25,
+          "size": 2,
+          "is_dynamic": false
+        },
+        "MOTION": {
+          "hex": "0x1A",
+          "dec": 26,
+          "size": 3,
+          "is_dynamic": false
+        },
+        "SHOP": {
+          "hex": "0x1B",
+          "dec": 27,
+          "size": 38,
+          "is_dynamic": false
+        },
+        "SHOP_SIGN": {
+          "hex": "0x1C",
+          "dec": 28,
+          "size": 465,
+          "is_dynamic": false
+        },
+        "DUEL_START": {
+          "hex": "0x1D",
+          "dec": 29,
+          "size": 37,
+          "is_dynamic": false
+        },
+        "PVP": {
+          "hex": "0x1E",
+          "dec": 30,
+          "size": 11,
+          "is_dynamic": false
+        },
+        "EXCHANGE": {
+          "hex": "0x1F",
+          "dec": 31,
+          "size": 4,
+          "is_dynamic": true
+        },
+        "CHARACTER_POINTS": {
+          "hex": "0x20",
+          "dec": 32,
+          "size": 70,
+          "is_dynamic": false
+        },
+        "CHARACTER_POINT_CHANGE": {
+          "hex": "0x21",
+          "dec": 33,
+          "size": 3,
+          "is_dynamic": true
+        },
+        "EXCHANGE2": {
+          "hex": "0x22",
+          "dec": 34,
+          "size": 277,
+          "is_dynamic": false
+        },
+        "RANKING_DATA": {
+          "hex": "0x23",
+          "dec": 35,
+          "size": 277,
+          "is_dynamic": false
+        },
+        "HANDSHAKE": {
+          "hex": "0x24",
+          "dec": 36,
+          "size": 6,
+          "is_dynamic": false
+        },
+        "SCRIPT": {
+          "hex": "0x25",
+          "dec": 37,
+          "size": 3,
+          "is_dynamic": true
+        },
+        "QUEST_BUTTON": {
+          "hex": "0x26",
+          "dec": 38,
+          "size": 6,
+          "is_dynamic": true
+        },
+        "PING": {
+          "hex": "0x2C",
+          "dec": 44,
+          "size": 1,
+          "is_dynamic": false
+        },
+        "QUEST_INFO": {
+          "hex": "0x36",
+          "dec": 54,
+          "size": 45,
+          "is_dynamic": false
+        },
+        "WARP": {
+          "hex": "0x40",
+          "dec": 64,
+          "size": 15,
+          "is_dynamic": false
+        },
+        "DAMAGE_INFO": {
+          "hex": "0x87",
+          "dec": 135,
+          "size": 10,
+          "is_dynamic": false
+        },
+        "VOICE_CHAT_DATA": {
+          "hex": "0x90",
+          "dec": 144,
+          "size": 5,
+          "is_dynamic": true,
+          "description": "32-bit dynamic voice payload"
+        },
+        "VOICE_CHAT_DATA2": {
+          "hex": "0x91",
+          "dec": 145,
+          "size": 5,
+          "is_dynamic": true,
+          "description": "32-bit dynamic voice payload"
+        },
+        "KEY_AGREEMENT": {
+          "hex": "0xFA",
+          "dec": 250,
+          "size": 137,
+          "is_dynamic": false
+        },
+        "PHASE": {
+          "hex": "0xFD",
+          "dec": 253,
+          "size": 2,
+          "is_dynamic": false
+        },
+        "PONG": {
+          "hex": "0xFE",
+          "dec": 254,
+          "size": 1,
+          "is_dynamic": false
+        },
+        "HANDSHAKE_FIN": {
+          "hex": "0xFF",
+          "dec": 255,
+          "size": 13,
+          "is_dynamic": false
+        }
+      }
+    },
+    "martysama": {
+      "name": "martysama",
+      "display_name": "MartySama (Ymir Mainline Standard)",
+      "description": "Standardowy serwer vaniliowy MartySama (Ymir mainline) oparty na 1-bajtowym opkodzie naglowka.",
+      "framing": {
+        "type": "TABLE_LOOKUP_1B",
+        "header_size_bytes": 1,
+        "format": "[Header: 1B (uint8_t)][Payload...]",
+        "dynamic_handling": "16-bit uint16_t little-endian na offsetcie 1 dla pakietow dynamicznych (CHAT 0x04, WHISPER 0x22, SHOP 0x26, SHOP_SIGN 0x27, SCRIPT 0x2D, COMMAND 0x40, QUEST_INFO 0x51, PANAMA_PACK 0x97, RESPOND_CHANNELSTATUS 0xD2)"
+      },
+      "cryptography": {
+        "key_agreement": "Ymir Handshake / Opcjonalny XTEA",
+        "cipher": "TEA / XTEA (klucze 16B) lub Plaintext",
+        "block_size_bytes": 8,
+        "auth_security": "Standard Login Key + Ymir Token"
+      },
+      "network": {
+        "default_ip": "127.0.0.1",
+        "default_auth_port": 11002,
+        "default_game_ports": [
+          13000,
+          13001,
+          13002,
+          13003
+        ],
+        "mark_port": 13000
+      },
+      "opcodes_cg": {
+        "LOGIN": {
+          "hex": "0x01",
+          "dec": 1,
+          "size": 49,
+          "name": "LOGIN",
+          "description": "Logowanie standardowe (49B)"
+        },
+        "ATTACK": {
+          "hex": "0x02",
+          "dec": 2,
+          "size": 8,
+          "struct": "TPacketCGAttackMarty",
+          "description": "Atak 8B: opcode 2, bType, dwVictimVID, CRC"
+        },
+        "CHAT": {
+          "hex": "0x03",
+          "dec": 3,
+          "is_dynamic": true,
+          "name": "CHAT",
+          "description": "Dynamiczny czat"
+        },
+        "CHARACTER_CREATE": {
+          "hex": "0x04",
+          "dec": 4,
+          "size": 34,
+          "name": "CHARACTER_CREATE",
+          "description": "Tworzenie postaci (34B)"
+        },
+        "CHARACTER_DELETE": {
+          "hex": "0x05",
+          "dec": 5,
+          "size": 10,
+          "name": "CHARACTER_DELETE",
+          "description": "Usuniecie postaci kodem PIN (10B)"
+        },
+        "CHARACTER_SELECT": {
+          "hex": "0x06",
+          "dec": 6,
+          "size": 2,
+          "name": "CHARACTER_SELECT",
+          "description": "Wybor postaci ze slotu (2B)"
+        },
+        "MOVE": {
+          "hex": "0x07",
+          "dec": 7,
+          "size": 16,
+          "struct": "TPacketCGMoveMarty",
+          "description": "Ruch 16B: opcode 7, bFunc, bArg, bRot, lX, lY, dwTime"
+        },
+        "ENTERGAME": {
+          "hex": "0x0A",
+          "dec": 10,
+          "size": 1,
+          "name": "ENTERGAME",
+          "description": "Wejscie do gry (1B)"
+        },
+        "ITEM_USE": {
+          "hex": "0x0B",
+          "dec": 11,
+          "size": 4,
+          "struct": "TPacketCGItemUseMarty",
+          "description": "Uzycie przedmiotu 4B: opcode 11, window, cell"
+        },
+        "ITEM_DROP": {
+          "hex": "0x0C",
+          "dec": 12,
+          "size": 9,
+          "name": "ITEM_DROP",
+          "description": "Wyrzucenie przedmiotu (9B)"
+        },
+        "ITEM_MOVE": {
+          "hex": "0x0D",
+          "dec": 13,
+          "size": 9,
+          "name": "ITEM_MOVE",
+          "description": "Przeniesienie w ekwipunku (9B)"
+        },
+        "ITEM_PICKUP": {
+          "hex": "0x0F",
+          "dec": 15,
+          "size": 5,
+          "name": "ITEM_PICKUP",
+          "description": "Podniesienie przedmiotu (5B)"
+        },
+        "TARGET": {
+          "hex": "0x3D",
+          "dec": 61,
+          "size": 5,
+          "struct": "TPacketCGTargetMarty",
+          "description": "Wybor celu 5B: opcode 61, targetVid"
+        },
+        "EMPIRE": {
+          "hex": "0x5A",
+          "dec": 90,
+          "size": 2,
+          "name": "EMPIRE",
+          "description": "Wybor krolestwa (2B)"
+        },
+        "LOGIN2": {
+          "hex": "0x6D",
+          "dec": 109,
+          "size": 52,
+          "name": "LOGIN2",
+          "description": "Logowanie do gry (52B)"
+        },
+        "PONG": {
+          "hex": "0xFE",
+          "dec": 254,
+          "size": 1,
+          "name": "PONG",
+          "description": "Odpowiedz keepalive (1B)"
+        },
+        "HANDSHAKE": {
+          "hex": "0xFF",
+          "dec": 255,
+          "size": 13,
+          "name": "HANDSHAKE",
+          "description": "Handshake (13B)"
+        }
+      },
+      "opcodes_gc": {
+        "CHARACTER_ADD": {
+          "hex": "0x01",
+          "dec": 1,
+          "size": 39,
+          "is_dynamic": false
+        },
+        "CHARACTER_DEL": {
+          "hex": "0x02",
+          "dec": 2,
+          "size": 5,
+          "is_dynamic": false
+        },
+        "MOVE": {
+          "hex": "0x03",
+          "dec": 3,
+          "size": 24,
+          "struct": "TPacketGCMoveMarty",
+          "is_dynamic": false
+        },
+        "CHAT": {
+          "hex": "0x04",
+          "dec": 4,
+          "is_dynamic": true
+        },
+        "SYNC_POSITION": {
+          "hex": "0x05",
+          "dec": 5,
+          "size": 9,
+          "is_dynamic": false
+        },
+        "LOGIN_SUCCESS": {
+          "hex": "0x06",
+          "dec": 6,
+          "size": 10,
+          "is_dynamic": false
+        },
+        "LOGIN_FAILURE": {
+          "hex": "0x07",
+          "dec": 7,
+          "size": 91,
+          "is_dynamic": false
+        },
+        "CHARACTER_CREATE_SUCCESS": {
+          "hex": "0x08",
+          "dec": 8,
+          "size": 43,
+          "is_dynamic": false
+        },
+        "CHARACTER_CREATE_FAILURE": {
+          "hex": "0x09",
+          "dec": 9,
+          "size": 2,
+          "is_dynamic": false
+        },
+        "CHARACTER_DELETE_SUCCESS": {
+          "hex": "0x0A",
+          "dec": 10,
+          "size": 2,
+          "is_dynamic": false
+        },
+        "CHARACTER_DELETE_WRONG_SOCIAL_ID": {
+          "hex": "0x0B",
+          "dec": 11,
+          "size": 2,
+          "is_dynamic": false
+        },
+        "ATTACK": {
+          "hex": "0x0C",
+          "dec": 12,
+          "size": 10,
+          "struct": "TPacketGCAttackMarty",
+          "is_dynamic": false
+        },
+        "STUN": {
+          "hex": "0x0D",
+          "dec": 13,
+          "size": 5,
+          "is_dynamic": false
+        },
+        "DEAD": {
+          "hex": "0x0E",
+          "dec": 14,
+          "size": 5,
+          "struct": "TPacketGCDeadMarty",
+          "is_dynamic": false
+        },
+        "MAIN_CHARACTER": {
+          "hex": "0x0F",
+          "dec": 15,
+          "size": 7,
+          "is_dynamic": false
+        },
+        "CHARACTER_POINTS": {
+          "hex": "0x10",
+          "dec": 16,
+          "size": 65,
+          "is_dynamic": false
+        },
+        "CHARACTER_POINT_CHANGE": {
+          "hex": "0x11",
+          "dec": 17,
+          "size": 14,
+          "is_dynamic": false
+        },
+        "CHANGE_SPEED": {
+          "hex": "0x12",
+          "dec": 18,
+          "size": 6,
+          "is_dynamic": false
+        },
+        "CHARACTER_UPDATE": {
+          "hex": "0x13",
+          "dec": 19,
+          "size": 35,
+          "is_dynamic": false
+        },
+        "ITEM_DEL": {
+          "hex": "0x14",
+          "dec": 20,
+          "size": 4,
+          "is_dynamic": false
+        },
+        "ITEM_SET": {
+          "hex": "0x15",
+          "dec": 21,
+          "size": 51,
+          "is_dynamic": false
+        },
+        "ITEM_USE": {
+          "hex": "0x16",
+          "dec": 22,
+          "size": 4,
+          "is_dynamic": false
+        },
+        "ITEM_DROP": {
+          "hex": "0x17",
+          "dec": 23,
+          "size": 9,
+          "is_dynamic": false
+        },
+        "CHARACTER_UPDATE_NEW": {
+          "hex": "0x18",
+          "dec": 24,
+          "size": 42,
+          "is_dynamic": false
+        },
+        "ITEM_UPDATE": {
+          "hex": "0x19",
+          "dec": 25,
+          "size": 51,
+          "is_dynamic": false
+        },
+        "ITEM_GROUND_ADD": {
+          "hex": "0x1A",
+          "dec": 26,
+          "size": 19,
+          "is_dynamic": false
+        },
+        "ITEM_GROUND_DEL": {
+          "hex": "0x1B",
+          "dec": 27,
+          "size": 5,
+          "is_dynamic": false
+        },
+        "QUICKSLOT_ADD": {
+          "hex": "0x1C",
+          "dec": 28,
+          "size": 4,
+          "is_dynamic": false
+        },
+        "QUICKSLOT_DEL": {
+          "hex": "0x1D",
+          "dec": 29,
+          "size": 3,
+          "is_dynamic": false
+        },
+        "QUICKSLOT_SWAP": {
+          "hex": "0x1E",
+          "dec": 30,
+          "size": 4,
+          "is_dynamic": false
+        },
+        "ITEM_OWNERSHIP": {
+          "hex": "0x1F",
+          "dec": 31,
+          "size": 9,
+          "is_dynamic": false
+        },
+        "WHISPER": {
+          "hex": "0x22",
+          "dec": 34,
+          "is_dynamic": true
+        },
+        "MOTION": {
+          "hex": "0x24",
+          "dec": 36,
+          "size": 10,
+          "is_dynamic": false
+        },
+        "PARTS": {
+          "hex": "0x25",
+          "dec": 37,
+          "size": 11,
+          "is_dynamic": false
+        },
+        "SHOP": {
+          "hex": "0x26",
+          "dec": 38,
+          "is_dynamic": true
+        },
+        "SHOP_SIGN": {
+          "hex": "0x27",
+          "dec": 39,
+          "is_dynamic": true
+        },
+        "DUEL_START": {
+          "hex": "0x28",
+          "dec": 40,
+          "size": 37,
+          "is_dynamic": false
+        },
+        "PVP": {
+          "hex": "0x29",
+          "dec": 41,
+          "size": 11,
+          "is_dynamic": false
+        },
+        "EXCHANGE": {
+          "hex": "0x2A",
+          "dec": 42,
+          "size": 277,
+          "is_dynamic": false
+        },
+        "CHARACTER_POSITION": {
+          "hex": "0x2B",
+          "dec": 43,
+          "size": 9,
+          "is_dynamic": false
+        },
+        "PING": {
+          "hex": "0x2C",
+          "dec": 44,
+          "size": 1,
+          "is_dynamic": false
+        },
+        "SCRIPT": {
+          "hex": "0x2D",
+          "dec": 45,
+          "is_dynamic": true
+        },
+        "QUEST_CONFIRM": {
+          "hex": "0x2E",
+          "dec": 46,
+          "size": 73,
+          "is_dynamic": false
+        },
+        "MOUNT": {
+          "hex": "0x3D",
+          "dec": 61,
+          "size": 5,
+          "is_dynamic": false
+        },
+        "OWNERSHIP": {
+          "hex": "0x3E",
+          "dec": 62,
+          "size": 5,
+          "is_dynamic": false
+        },
+        "TARGET": {
+          "hex": "0x3F",
+          "dec": 63,
+          "size": 6,
+          "struct": "TPacketGCTargetMarty",
+          "is_dynamic": false
+        },
+        "COMMAND": {
+          "hex": "0x40",
+          "dec": 64,
+          "is_dynamic": true
+        },
+        "WARP": {
+          "hex": "0x41",
+          "dec": 65,
+          "size": 9,
+          "is_dynamic": false
+        },
+        "ADD_FLY_TARGETING": {
+          "hex": "0x45",
+          "dec": 69,
+          "size": 32,
+          "is_dynamic": false
+        },
+        "CREATE_FLY": {
+          "hex": "0x46",
+          "dec": 70,
+          "size": 4,
+          "is_dynamic": false
+        },
+        "FLY_TARGETING": {
+          "hex": "0x47",
+          "dec": 71,
+          "size": 20,
+          "is_dynamic": false
+        },
+        "SKILL_LEVEL": {
+          "hex": "0x4C",
+          "dec": 76,
+          "size": 17,
+          "is_dynamic": false
+        },
+        "QUEST_INFO": {
+          "hex": "0x51",
+          "dec": 81,
+          "is_dynamic": true
+        },
+        "SAFEBOX_SET": {
+          "hex": "0x55",
+          "dec": 85,
+          "size": 51,
+          "is_dynamic": false
+        },
+        "SAFEBOX_DEL": {
+          "hex": "0x56",
+          "dec": 86,
+          "size": 4,
+          "is_dynamic": false
+        },
+        "SAFEBOX_WRONG_PASSWORD": {
+          "hex": "0x57",
+          "dec": 87,
+          "size": 2,
+          "is_dynamic": false
+        },
+        "SAFEBOX_SIZE": {
+          "hex": "0x58",
+          "dec": 88,
+          "size": 2,
+          "is_dynamic": false
+        },
+        "MAIN_CHARACTER2": {
+          "hex": "0x71",
+          "dec": 113,
+          "size": 7,
+          "is_dynamic": false
+        },
+        "CHANNEL": {
+          "hex": "0x79",
+          "dec": 121,
+          "size": 2,
+          "is_dynamic": false
+        },
+        "AFFECT_ADD": {
+          "hex": "0x7E",
+          "dec": 126,
+          "size": 12,
+          "is_dynamic": false
+        },
+        "AFFECT_REMOVE": {
+          "hex": "0x7F",
+          "dec": 127,
+          "size": 5,
+          "is_dynamic": false
+        },
+        "DAMAGE_INFO": {
+          "hex": "0x87",
+          "dec": 135,
+          "size": 10,
+          "struct": "TPacketGCDamageInfoMarty",
+          "is_dynamic": false
+        },
+        "PANAMA_PACK": {
+          "hex": "0x97",
+          "dec": 151,
+          "is_dynamic": true
+        },
+        "RESPOND_CHANNELSTATUS": {
+          "hex": "0xD2",
+          "dec": 210,
+          "is_dynamic": true
+        },
+        "TIME_SYNC": {
+          "hex": "0xFC",
+          "dec": 252,
+          "size": 5,
+          "is_dynamic": false
+        },
+        "PHASE": {
+          "hex": "0xFD",
+          "dec": 253,
+          "size": 2,
+          "is_dynamic": false
+        },
+        "BINDUDP": {
+          "hex": "0xFE",
+          "dec": 254,
+          "size": 9,
+          "is_dynamic": false
+        },
+        "HANDSHAKE": {
+          "hex": "0xFF",
+          "dec": 255,
+          "size": 13,
+          "is_dynamic": false
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,129 @@
+# =============================================================================
+# .gitignore - SourceCodeClient (Metin2 x64 C++23) dla Jules Swarm & Antigravity
+# =============================================================================
+
+# ─── 1. DUZE FOLDERY RUNTIME I ZASOBOW KLIENTA (4.5+ GB) ────────────────────
+# Caly runtime klienta gry, nieskompresowane asety i archiwa gry
+/m2dev-client-main/
+/assets/
+/pack/
+/bgm/
+/upload/
+/mark/
+/servers/
+
+# ─── 2. ARTEFAKTY BUDOWANIA CMAKE I MSVC (6.0+ GB) ──────────────────────────
+/build/
+/buildtool/bin/
+/bin/
+/x64/
+/x86/
+/Debug/
+/Release/
+/RelWithDebInfo/
+/MinSizeRel/
+/Testing/
+/CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# Pliki obiektowe, symbole debugowania i logi kompilatora
+*.obj
+*.pdb
+*.idb
+*.ilk
+*.tlog
+*.res
+*.ipch
+*.iobj
+*.ipdb
+*.pch
+
+# Pliki wykonywalne i biblioteki generowane lokalnie (z wyjatkiem extern/library)
+*.exe
+*.dll
+*.dump
+*.dmp
+*.crash
+*.stackdump
+
+# Odblokowanie tylko zewnetrznych bibliotek SDK w extern/library/
+!/extern/library/**/*.lib
+!/extern/library/**/*.dll
+
+# ─── 3. LOGI I PLIKI TYMCZASOWE ──────────────────────────────────────────────
+/log/
+/Logs/
+/Temp/
+*.log
+*.tmp
+*.temp
+*.swp
+*~
+
+# ─── 4. KESZ I INDEKSY KODU AI / GRAPHIFY ───────────────────────────────────
+/graphify-out/
+/.pytest_cache/
+/__pycache__/
+*.pyc
+*.pyo
+
+# ─── 5. SRODOWISKA IDE I EDYTORY ────────────────────────────────────────────
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.sln.docstates
+*.opensdf
+*.sdf
+
+# ─── 6. PLIKI KOPII ZAPASOWYCH (*.bak, *.bk) ─────────────────────────────────
+*_BK
+*_Bk
+*_bK
+*_bk
+*.BK
+*.Bk
+*.bK
+*.bk
+*.*.BK
+*.*.Bk
+*.*.bK
+*.*.bk
+*_BAK
+*_BAk
+*_BaK
+*_Bak
+*_bAK
+*_bAk
+*_baK
+*_bak
+*.BAK
+*.BAk
+*.BaK
+*.Bak
+*.bAK
+*.bAk
+*.baK
+*.bak
+*.*.BAK
+*.*.BAk
+*.*.BaK
+*.*.Bak
+*.*.bAK
+*.*.bAk
+*.*.baK
+*.*.bak
+
+# ─── 7. ARTEFAKTY HARNESSU I LATKI ROBOCZE ──────────────────────────────────
+solution.patch
+patch.diff
+*.patch
+*.diff
+.gemini/ALLOW_STOP
+.agents/ALLOW_STOP
+Docs/state/ALLOW_STOP
+.gemini/session_window.json
+.agents/session_window.json

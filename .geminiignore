@@ -1,0 +1,50 @@
+# =============================================================================
+# .geminiignore - SourceCodeClient Workspace Exclusion dla Antigravity
+# =============================================================================
+
+# Wykluczenie ciezkich zasobow gry (modele 3D, tekstury, paczki)
+m2dev-client-main/
+assets/
+pack/
+bgm/
+mark/
+servers/
+upload/
+
+# Wykluczenie artefaktow kompilacji C++
+build/
+bin/
+x64/
+x86/
+Debug/
+Release/
+RelWithDebInfo/
+Testing/
+*.obj
+*.pdb
+*.ilk
+*.idb
+*.tlog
+*.res
+*.exe
+*.dll
+
+# Wykluczenie keszy i indeksow
+graphify-out/
+.vs/
+.idea/
+.vscode/
+log/
+Logs/
+Temp/
+__pycache__/
+*.pyc
+
+# Pliki kopii i latek
+*.bak
+*.bk
+*.tmp
+*.patch
+*.diff
+solution.patch
+patch.diff

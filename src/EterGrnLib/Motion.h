@@ -1,0 +1,31 @@
+#pragma once
+
+#include "EterModelLib/GltfTypes.h"
+
+class CGrannyMotion
+{
+	public:
+		CGrannyMotion();
+		virtual ~CGrannyMotion();
+
+		bool				IsEmpty();
+
+		void				Destroy();
+		bool				BindGrannyAnimation(granny_animation* pgrnAni);
+		bool				BindGltfAnimation(const GltfMotionData* pGltfMotion);
+
+		granny_animation *	GetGrannyAnimationPointer() const;
+		const GltfMotionData * GetGltfAnimationPointer() const;
+
+		const char *		GetName() const;
+		float				GetDuration() const;
+		void				GetTextTrack(const char * c_szTextTrackName, int * pCount, float * pArray) const;
+
+	protected:
+		void				Initialize();
+
+	protected:
+		granny_animation *	m_pgrnAni;
+		const GltfMotionData * m_pGltfMotion;
+};
+

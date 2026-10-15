@@ -1,0 +1,278 @@
+#pragma once
+
+#include <functional>
+#include <map>
+#include <list>
+#include <vector>
+#include <string>
+#include <optional>
+
+#include "AbstractCharacterManager.h"
+#include "InstanceBase.h"
+#include "GameLib/PhysicsObject.h"
+
+#include "Client/World/ActorRegistry.h"
+#include "Client/World/SpatialHashGrid.h"
+#include "InstanceSceneManager.h"
+#include "Client/Core/DomainErrors.h"
+#include "Actors/Subsystems/ActorRegistry.h"
+#include "Actors/Subsystems/CharacterPicker.h"
+#include "Actors/Subsystems/ActorProviderAdapter.h"
+
+class CPythonCharacterManager : public CSingleton<CPythonCharacterManager>, public IAbstractCharacterManager, public IObjectManager
+{
+	public:
+		// Character List
+		typedef std::list<CInstanceBase *>			TCharacterInstanceList;
+		typedef std::map<DWORD, CInstanceBase *>	TCharacterInstanceMap;
+
+		using TCharacterDeadCallback = std::function<void(DWORD)>;
+		void SetCharacterDeadCallback(TCharacterDeadCallback callback)
+		{
+			m_pfnCharacterDeadCallback = callback;
+			m_subsystemActorRegistry.SetDeadCallback(callback);
+		}
+
+		class CharacterIterator;
+
+	public:
+		CPythonCharacterManager();
+		virtual ~CPythonCharacterManager();
+
+		// Centralized Single-Source-of-Truth Lifecycle Operations
+		bool								CentralRegisterActor(DWORD dwVID, CInstanceBase* pInst, const CInstanceBase::SCreateData* pCreateData = nullptr);
+		bool								CentralUnregisterActor(DWORD dwVID, bool bFadeOut = false);
+		void								CentralUpdateActorPosition(DWORD dwVID, float x, float y, float z, float rot = 0.0f, float speed = 0.0f);
+		void								CentralClearActors(bool bClearDead = true);
+
+		virtual void AdjustCollisionWithOtherObjects(CActorInstance* pInst ); 
+
+		void EnableSortRendering(bool isEnable);
+
+		bool IsRegisteredVID(DWORD dwVID);
+		bool IsAliveVID(DWORD dwVID);
+		bool IsDeadVID(DWORD dwVID);
+		bool IsCacheMode();
+
+		bool GetPickedActorID(DWORD* pdwPickedActorID);
+		CInstanceBase* GetPickedActorPtr();
+		D3DXVECTOR2& GetPickedActorScreenPos();
+
+		CInstanceBase* FindClickableInstancePtr();
+
+		void InsertPVPKey(DWORD dwVIDSrc, DWORD dwVIDDst);
+		void RemovePVPKey(DWORD dwVIDSrc, DWORD dwVIDDst);
+		void ChangeGVG(DWORD dwSrcGuildID, DWORD dwDstGuildID);
+
+		void GetInfo(std::string* pstInfo);
+
+		void ClearMainInstance();
+		bool SetMainInstance(DWORD dwVID);
+		CInstanceBase* GetMainActorPtr();
+
+		// ========================================================================
+		// Nowoczesne interfejsy C++23 / AI-Friendly Boundary
+		// ========================================================================
+		using EntityVid = Client::World::EntityVid;
+		using EntityHandle = Client::Actor::EntityHandle;
+		using ActorInstance = CInstanceBase;
+
+		[[nodiscard]] EntityVid GetMainActorVid() const noexcept;
+		[[nodiscard]] std::optional<EntityHandle> GetMainActorHandle() const noexcept;
+		[[nodiscard]] std::optional<EntityHandle> GetActorHandle(EntityVid vid) const noexcept;
+		[[nodiscard]] std::optional<EntityHandle> GetActorHandle(DWORD vid) const noexcept;
+
+		[[nodiscard]] bool IsActorAlive(EntityVid vid) const noexcept;
+		[[nodiscard]] bool IsActorAlive(DWORD vid) const noexcept;
+		[[nodiscard]] bool IsActorDead(EntityVid vid) const noexcept;
+		[[nodiscard]] bool IsActorDead(DWORD vid) const noexcept;
+		[[nodiscard]] bool HasActor(EntityVid vid) const noexcept;
+		[[nodiscard]] bool HasActor(DWORD vid) const noexcept;
+
+		[[nodiscard]] CInstanceBase* GetActor(EntityVid vid) const noexcept;
+		[[nodiscard]] CInstanceBase* GetActor(DWORD vid) const noexcept;
+		[[nodiscard]] CInstanceBase* GetMainActor() const noexcept { return const_cast<CPythonCharacterManager*>(this)->GetMainActorPtr(); }
+
+		[[nodiscard]] std::optional<EntityVid> GetPickedActorVid() const noexcept;
+		[[nodiscard]] std::optional<EntityVid> GetSelectedActorVid() const noexcept;
+
+		bool SetMainActor(EntityVid vid) noexcept;
+		[[nodiscard]] size_t GetActorCount() const noexcept;
+
+		template <typename Func>
+		void for_each_actor(Func&& func) const
+		{
+			for (const auto& [vid, actor] : m_aliveActorsMap)
+			{
+				if (actor != nullptr)
+				{
+					func(actor);
+				}
+			}
+		}
+
+		template <typename Func>
+		void for_each_actor_vid(Func&& func) const
+		{
+			for (const auto& [vid, actor] : m_aliveActorsMap)
+			{
+				if (actor != nullptr)
+				{
+					func(EntityVid(vid), actor);
+				}
+			}
+		}
+
+		void								SCRIPT_SetAffect(DWORD dwVID, DWORD eAffect, BOOL isVisible);
+		void								SetEmoticon(DWORD dwVID, DWORD eEmoticon);
+		bool								IsPossibleEmoticon(DWORD dwVID);
+		void								ShowPointEffect(DWORD dwVID, DWORD ePoint);
+		bool								RegisterPointEffect(DWORD ePoint, const char* c_szFileName);
+
+		// System
+		void								Destroy();
+
+		void								DeleteAllInstances();
+
+		bool								CreateDeviceObjects();
+		void								DestroyDeviceObjects();
+
+		void								Update();
+		void								Deform();
+		void								Render();
+		void								RenderShadowMainInstance();
+		void								RenderShadowAllInstances();
+		void								RenderCollision();
+
+		// Create/Delete Instance
+		CInstanceBase *						CreateInstance(const CInstanceBase::SCreateData& c_rkCreateData);
+		CInstanceBase *						RegisterInstance(DWORD VirtualID);
+
+		void								DeleteInstance(DWORD VirtualID);
+		void								DeleteInstanceByFade(DWORD VirtualID);
+		void								DeleteVehicleInstance(DWORD VirtualID);
+
+		void 								DestroyAliveInstanceMap();
+		void 								DestroyDeadInstanceList();
+
+		inline CharacterIterator			CharacterInstanceBegin() { return CharacterIterator(m_aliveActorsMap.begin());}
+		inline CharacterIterator			CharacterInstanceEnd() { return CharacterIterator(m_aliveActorsMap.end());}
+
+		// Access Instance
+		void								SelectInstance(DWORD VirtualID);
+		CInstanceBase *						GetSelectedInstancePtr();
+
+		CInstanceBase *						FindInstancePtr(DWORD VirtualID);
+		CInstanceBase *						GetInstancePtr(DWORD VirtualID);
+		Core::Result<CInstanceBase*, Core::ActorError> GetInstanceResult(DWORD VirtualID);
+		CInstanceBase *						GetInstancePtrByName(const char *name);
+
+		// Pick		
+		int									PickAll();
+		CInstanceBase *						GetCloseInstance(CInstanceBase * pInstance);
+
+		// Subsystem coordinators
+		[[nodiscard]] Client::World::ActorRegistry& GetActorRegistry() noexcept { return m_actorRegistry; }
+		[[nodiscard]] const Client::World::ActorRegistry& GetActorRegistry() const noexcept { return m_actorRegistry; }
+		[[nodiscard]] Client::World::SpatialHashGrid& GetSpatialHashGrid() noexcept { return m_spatialGrid; }
+		[[nodiscard]] const Client::World::SpatialHashGrid& GetSpatialHashGrid() const noexcept { return m_spatialGrid; }
+		[[nodiscard]] UserInterface::InstanceSceneManager& GetSceneManager() noexcept { return m_sceneMgr; }
+		[[nodiscard]] const UserInterface::InstanceSceneManager& GetSceneManager() const noexcept { return m_sceneMgr; }
+
+		// Filar 2: Podsystemy encji i selekcji (Actors/Subsystems)
+		[[nodiscard]] UserInterface::Actors::Subsystems::ActorRegistry& GetSubsystemActorRegistry() noexcept { return m_subsystemActorRegistry; }
+		[[nodiscard]] const UserInterface::Actors::Subsystems::ActorRegistry& GetSubsystemActorRegistry() const noexcept { return m_subsystemActorRegistry; }
+		[[nodiscard]] UserInterface::Actors::Subsystems::CharacterPicker& GetCharacterPicker() noexcept { return m_characterPicker; }
+		[[nodiscard]] const UserInterface::Actors::Subsystems::CharacterPicker& GetCharacterPicker() const noexcept { return m_characterPicker; }
+		[[nodiscard]] UserInterface::Actors::Subsystems::ActorProviderAdapter& GetActorProviderAdapter() noexcept { return m_actorProviderAdapter; }
+		[[nodiscard]] const UserInterface::Actors::Subsystems::ActorProviderAdapter& GetActorProviderAdapter() const noexcept { return m_actorProviderAdapter; }
+
+		// Refresh TextTail
+		void								RefreshAllPCTextTail();
+		void								RefreshAllGuildMark();
+
+	protected:
+		void								UpdateTransform();
+		void								UpdateDeleting();
+
+	protected:
+		void __Initialize();
+
+		void __DeleteBlendOutInstance(CInstanceBase* pkInstDel);
+
+		void __OLD_Pick();
+		void __NEW_Pick();
+
+		void __UpdateSortPickedActorList();
+		void __UpdatePickedActorList();
+		void __SortPickedActorList();
+
+		void __RenderSortedAliveActorList();
+		void __RenderSortedDeadActorList();
+
+	protected:
+		CInstanceBase *						m_mainActor;
+		CInstanceBase *						m_pickedActor;
+		CInstanceBase *						m_boundActor;
+		D3DXVECTOR2							m_pickedActorScreenPos;
+
+		TCharacterInstanceMap				m_aliveActorsMap;
+
+		std::vector<CInstanceBase*>			m_pickedInstances;
+
+		DWORD								m_adwPointEffect[POINT_MAX_NUM];
+
+		TCharacterDeadCallback				m_pfnCharacterDeadCallback;
+
+		// Subsystems
+		Client::World::ActorRegistry		m_actorRegistry;
+		Client::World::SpatialHashGrid		m_spatialGrid;
+		UserInterface::InstanceSceneManager	m_sceneMgr;
+
+		// Filar 2: Podsystemy encji, selekcji i dostawcy aktorow
+		UserInterface::Actors::Subsystems::ActorRegistry m_subsystemActorRegistry;
+		UserInterface::Actors::Subsystems::CharacterPicker m_characterPicker;
+		UserInterface::Actors::Subsystems::ActorProviderAdapter m_actorProviderAdapter;
+
+	public:
+		class CharacterIterator
+		{
+		public:
+			CharacterIterator(){}
+			CharacterIterator(const TCharacterInstanceMap::iterator & it) : m_it(it) {}
+
+			inline CInstanceBase * operator * () {	return m_it->second; }
+
+			inline CharacterIterator & operator ++()
+			{
+				++m_it;
+				return *this;
+			}
+
+			inline CharacterIterator operator ++(int)
+			{
+				CharacterIterator new_it = *this;
+				++(*this);
+				return new_it;
+			}
+
+			inline CharacterIterator & operator = (const CharacterIterator & rhs)
+			{
+				m_it = rhs.m_it;
+				return (*this);
+			}
+
+			inline bool operator == (const CharacterIterator & rhs) const
+			{
+				return m_it == rhs.m_it;
+			}
+
+			inline bool operator != (const CharacterIterator & rhs) const
+			{
+				return m_it != rhs.m_it;
+			}
+
+			private:
+				TCharacterInstanceMap::iterator m_it;
+		};
+};

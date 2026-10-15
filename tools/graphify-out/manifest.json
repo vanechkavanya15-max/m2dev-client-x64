@@ -1,0 +1,122 @@
+{
+  "ai_preflight_check.py": {
+    "mtime": 1791712563.86778,
+    "seen": 1791884738.8406816,
+    "ast_hash": "6e471a301eb436c95bcd7cdcf8f6e944",
+    "semantic_hash": "6e471a301eb436c95bcd7cdcf8f6e944"
+  },
+  "analyze_and_migrate_dump.py": {
+    "mtime": 1791558157.6757016,
+    "seen": 1791884738.8406816,
+    "ast_hash": "26edf7b6d976be7fd09cf5e5272ba260",
+    "semantic_hash": "26edf7b6d976be7fd09cf5e5272ba260"
+  },
+  "batch_convert_gr2_to_glb.py": {
+    "mtime": 1791548145.1694899,
+    "seen": 1791884738.8406816,
+    "ast_hash": "b2f5845ac3365aa0cdd054cc4651f7ac",
+    "semantic_hash": "b2f5845ac3365aa0cdd054cc4651f7ac"
+  },
+  "find_harness_routes.py": {
+    "mtime": 1791713260.8163264,
+    "seen": 1791884738.8406816,
+    "ast_hash": "045a062fba4c73756611b91c13ff79b6",
+    "semantic_hash": "045a062fba4c73756611b91c13ff79b6"
+  },
+  "generate_protocol_code.py": {
+    "mtime": 1791711762.1671336,
+    "seen": 1791884738.8406816,
+    "ast_hash": "fa28f10dc46e5d27a648ed5174914489",
+    "semantic_hash": "fa28f10dc46e5d27a648ed5174914489"
+  },
+  "generate_repo_map.py": {
+    "mtime": 1791709219.7778418,
+    "seen": 1791884738.8406816,
+    "ast_hash": "b047c925f3c3f3e6e7b1d383b03b8ebd",
+    "semantic_hash": "b047c925f3c3f3e6e7b1d383b03b8ebd"
+  },
+  "gr2_to_glb/GlbWriter.cpp": {
+    "mtime": 1791575728.4361591,
+    "seen": 1791884738.8406816,
+    "ast_hash": "69d8652ffa6b9d195af02b5e5445dcc2",
+    "semantic_hash": "69d8652ffa6b9d195af02b5e5445dcc2"
+  },
+  "gr2_to_glb/GlbWriter.h": {
+    "mtime": 1791563851.2321565,
+    "seen": 1791884738.8406816,
+    "ast_hash": "02cec574e5fe1d5a590062ba87e17731",
+    "semantic_hash": "02cec574e5fe1d5a590062ba87e17731"
+  },
+  "gr2_to_glb/GrannyExtractor.cpp": {
+    "mtime": 1791575720.474553,
+    "seen": 1791884738.8406816,
+    "ast_hash": "d7cb91ea59aa3080f3085f6c6407d066",
+    "semantic_hash": "d7cb91ea59aa3080f3085f6c6407d066"
+  },
+  "gr2_to_glb/GrannyExtractor.h": {
+    "mtime": 1791575711.3432982,
+    "seen": 1791884738.8406816,
+    "ast_hash": "c9076e7ab3ecc2a4ba319e0e13a99923",
+    "semantic_hash": "c9076e7ab3ecc2a4ba319e0e13a99923"
+  },
+  "gr2_to_glb/main.cpp": {
+    "mtime": 1791563902.8227277,
+    "seen": 1791884738.8406816,
+    "ast_hash": "f330dbe22e3402f3346e637dac283d4f",
+    "semantic_hash": "f330dbe22e3402f3346e637dac283d4f"
+  },
+  "mcp/harness_schema.json": {
+    "mtime": 1791642240.2209332,
+    "seen": 1791884738.8406816,
+    "ast_hash": "b58a6be1221fd28f05364642a3c2fc9f",
+    "semantic_hash": "b58a6be1221fd28f05364642a3c2fc9f"
+  },
+  "mcp/m2_agent_harness_mcp.py": {
+    "mtime": 1791834589.8933663,
+    "seen": 1791884738.8406816,
+    "ast_hash": "af0f9f9f362ebe9d7437358ee90854cb",
+    "semantic_hash": "af0f9f9f362ebe9d7437358ee90854cb"
+  },
+  "mcp/test_auto.py": {
+    "mtime": 1791724052.030549,
+    "seen": 1791884738.8406816,
+    "ast_hash": "15789eb2f243e383dc019399f9cd7e2a",
+    "semantic_hash": "15789eb2f243e383dc019399f9cd7e2a"
+  },
+  "mcp/test_live_character_actions.py": {
+    "mtime": 1791743638.9792032,
+    "seen": 1791884738.8406816,
+    "ast_hash": "90248dad6820470eb6a9ea384e008718",
+    "semantic_hash": "90248dad6820470eb6a9ea384e008718"
+  },
+  "mcp/test_live_headless_client.py": {
+    "mtime": 1791705503.7622387,
+    "seen": 1791884738.8406816,
+    "ast_hash": "6bdd9691a06abedfd1cbcf3557807d62",
+    "semantic_hash": "6bdd9691a06abedfd1cbcf3557807d62"
+  },
+  "mcp/test_live_server_login.py": {
+    "mtime": 1791810969.74395,
+    "seen": 1791884738.8406816,
+    "ast_hash": "2372c714491fb24c49aff44d2b087490",
+    "semantic_hash": "2372c714491fb24c49aff44d2b087490"
+  },
+  "mcp/test_luria_live_harness.py": {
+    "mtime": 1791787957.782234,
+    "seen": 1791884738.8406816,
+    "ast_hash": "d801305f1a10c59cb82fadb463861b53",
+    "semantic_hash": "d801305f1a10c59cb82fadb463861b53"
+  },
+  "mcp/test_mcp_all_possibilities.py": {
+    "mtime": 1791829364.34832,
+    "seen": 1791884738.8406816,
+    "ast_hash": "c681362a88203db6634c98d95000057a",
+    "semantic_hash": "c681362a88203db6634c98d95000057a"
+  },
+  "mcp/test_mcp_heavy.py": {
+    "mtime": 1791738569.5995164,
+    "seen": 1791884738.8406816,
+    "ast_hash": "dc5fe2567d97b5417e55b6da6defc9fc",
+    "semantic_hash": "dc5fe2567d97b5417e55b6da6defc9fc"
+  }
+}

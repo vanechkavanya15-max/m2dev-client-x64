@@ -1,0 +1,1 @@
+{"nodes": [{"id": "$graphify-root$_mock_includes_winsock2_h", "label": "winsock2.h", "file_type": "code", "source_file": "mock_includes/winsock2.h", "source_location": "L1"}], "edges": [], "raw_calls": []}

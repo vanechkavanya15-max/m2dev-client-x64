@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Metin2HeadlessAgentHarnessProtocol",
+  "description": "Protokol IPC i narzedzi Model Context Protocol (MCP) dla klienta Metin2 x64 2026",
+  "version": "1.0.0",
+  "transport": {
+    "type": "named_pipe",
+    "pipe_name": "\\\\.\\pipe\\M2ClientEngineHarness",
+    "framing": "4-byte little-endian length prefix or raw JSON-RPC 2.0",
+    "buffer_size": 65536
+  },
+  "methods": {
+    "game_ping": {
+      "description": "Weryfikuje aktywnosc potoku i gotowosc silnika klienta",
+      "params": {},
+      "returns": {
+        "status": "pong",
+        "ready": true
+      }
+    },
+    "get_engine_state": {
+      "description": "Zwraca pelny, synchroniczny stan pamieci C++ klienta (gracz, kontrolery, siec)",
+      "params": {},
+      "returns": {
+        "player": {
+          "vid": "uint32",
+          "name": "string",
+          "race": "uint32",
+          "position": { "x": "float", "y": "float", "z": "float" },
+          "rotation": "float",
+          "hp": "int64",
+          "max_hp": "int64",
+          "sp": "int64",
+          "max_sp": "int64",
+          "level": "int64",
+          "gold": "int64",
+          "target_vid": "uint32"
+        },
+        "controllers": {
+          "movement": "object",
+          "combat": "object",
+          "target": "object",
+          "item": "object"
+        },
+        "network": {
+          "phase": "string"
+        }
+      }
+    },
+    "tick_frame": {
+      "description": "Przepycha zadana liczbe klatek deterministycznej logiki gry w trybie zamrozenia",
+      "params": {
+        "count": "uint32 (domyslnie 1)",
+        "delta_time": "float (domyslnie 0.016666)"
+      },
+      "returns": {
+        "ok": true,
+        "success": true,
+        "stepped_frames": "uint32",
+        "delta_time": "float",
+        "current_tick": "uint64"
+      }
+    },
+    "inject_packet": {
+      "description": "Wstrzykuje pakiet sieciowy bezposrednio do routera pakietow bez gniazda TCP",
+      "params": {
+        "header": "uint32",
+        "data": "hex string"
+      },
+      "returns": {
+        "ok": true,
+        "header": "uint32",
+        "bytes_count": "uint32"
+      }
+    },
+    "audit_state": {
+      "description": "Przeprowadza doglebny audyt synchronizacji stanu C++ vs Python VM",
+      "params": {},
+      "returns": {
+        "is_synchronized": "bool",
+        "discrepancies": "array[string]",
+        "cpp_state": "object",
+        "python_state": "object"
+      }
+    },
+    "shutdown": {
+      "description": "Czyste i bezpieczne zamkniecie procesu klienta z kodem wyjscia 0",
+      "params": {},
+      "returns": {
+        "status": "shutdown_acknowledged"
+      }
+    }
+  }
+}
